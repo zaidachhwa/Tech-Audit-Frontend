@@ -22,10 +22,10 @@ const StudentsDashboard = () => {
     to: "",
   });
 
-  const [viewReport, setViewReport] = useState(null);
+  const [viewReports, setViewReports] = useState(null); // for all reports of a student
   const [compareList, setCompareList] = useState([]);
 
-  // ✅ Fetch students with latest report
+  // ✅ Fetch students with reports
   const fetchData = async () => {
     const { data, error } = await supabase
       .from("students")
@@ -57,7 +57,6 @@ const StudentsDashboard = () => {
       return;
     }
 
-    // Attach latest report to each student
     const withLatest = data.map((s) => ({
       ...s,
       latestReport: s.reports?.[0] || null,
@@ -94,7 +93,7 @@ const StudentsDashboard = () => {
     };
   }, []);
 
-  // ✅ Filtering logic
+  // ✅ Filtering
   useEffect(() => {
     let result = [...students];
     const q = filters.search.toLowerCase();
@@ -129,7 +128,6 @@ const StudentsDashboard = () => {
     return (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1);
   };
 
-  // ✅ Render
   return (
     <div className="w-full min-h-screen bg-slate-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -166,14 +164,12 @@ const StudentsDashboard = () => {
               }
               className="border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
             />
-
             <input
               type="date"
               value={filters.from}
               onChange={(e) => setFilters({ ...filters, from: e.target.value })}
               className="border border-slate-300 rounded-md p-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
             />
-
             <input
               type="date"
               value={filters.to}
@@ -228,10 +224,10 @@ const StudentsDashboard = () => {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => setViewReport(s.latestReport)}
+                        onClick={() => setViewReports(s)}
                         className="text-sky-600 hover:underline mr-3 cursor-pointer"
                       >
-                        View
+                        View Reports
                       </button>
 
                       <button
@@ -308,54 +304,65 @@ const StudentsDashboard = () => {
         </div>
       </div>
 
-      {/* View Report Modal */}
+      {/* View Reports Modal */}
       <Dialog
-        open={!!viewReport}
-        onClose={() => setViewReport(null)}
+        open={!!viewReports}
+        onClose={() => setViewReports(null)}
         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
       >
-        <Dialog.Panel className="bg-white w-full max-w-md rounded-xl p-6 shadow-lg">
+        <Dialog.Panel className="bg-white w-full max-w-3xl rounded-xl p-6 shadow-lg overflow-y-auto max-h-[90vh]">
           <Dialog.Title className="text-lg font-semibold text-sky-700 mb-4">
-            Student Report
+            {viewReports?.name}'s Reports
           </Dialog.Title>
-          {viewReport ? (
-            <div className="space-y-3 text-slate-700">
-              <p>
-                <strong>HTML:</strong> {viewReport.html}
-              </p>
-              <p>
-                <strong>CSS:</strong> {viewReport.css}
-              </p>
-              <p>
-                <strong>JS:</strong> {viewReport.js}
-              </p>
-              <p>
-                <strong>React:</strong> {viewReport.react}
-              </p>
-              <p>
-                <strong>DevOps:</strong> {viewReport.devops}
-              </p>
-              <div className="mt-3">
-                <p className="font-medium text-sky-700">Feedbacks:</p>
-                <ul className="list-disc list-inside">
-                  {[
-                    viewReport.feedback_1,
-                    viewReport.feedback_2,
-                    viewReport.feedback_3,
-                  ]
-                    .filter(Boolean)
-                    .map((f, i) => (
-                      <li key={i}>{f}</li>
-                    ))}
-                </ul>
-              </div>
+
+          {viewReports?.reports?.length ? (
+            <div className="space-y-4">
+              {viewReports.reports.map((r, idx) => (
+                <div
+                  key={r.id}
+                  className="border border-slate-200 rounded-md p-4 bg-slate-50"
+                >
+                  <p className="font-medium text-slate-800 mb-2">
+                    Report #{idx + 1} -{" "}
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <p>
+                      <strong>HTML:</strong> {r.html}
+                    </p>
+                    <p>
+                      <strong>CSS:</strong> {r.css}
+                    </p>
+                    <p>
+                      <strong>JS:</strong> {r.js}
+                    </p>
+                    <p>
+                      <strong>React:</strong> {r.react}
+                    </p>
+                    <p>
+                      <strong>DevOps:</strong> {r.devops}
+                    </p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="font-medium text-sky-700">Feedbacks:</p>
+                    <ul className="list-disc list-inside">
+                      {[r.feedback_1, r.feedback_2, r.feedback_3]
+                        .filter(Boolean)
+                        .map((f, i) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <p>No report available.</p>
+            <p>No reports available.</p>
           )}
+
           <div className="mt-6 text-right">
             <button
-              onClick={() => setViewReport(null)}
+              onClick={() => setViewReports(null)}
               className="bg-sky-600 text-white px-4 py-2 rounded-md"
             >
               Close

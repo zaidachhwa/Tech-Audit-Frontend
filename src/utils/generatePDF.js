@@ -36,7 +36,7 @@ export default async function generatePDF(element, filename = "report") {
   });
 
   const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+  // const pageHeight = pdf.internal.pageSize.getHeight();
 
   // ⚡ Always fill full width of A4
   const imgWidth = pageWidth;
