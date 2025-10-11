@@ -11,6 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { Link } from "react-router-dom";
 
 const StudentsDashboard = () => {
   const [students, setStudents] = useState([]);
@@ -137,12 +138,20 @@ const StudentsDashboard = () => {
           <h1 className="text-2xl font-semibold text-sky-700">
             Students Dashboard
           </h1>
-          <button
-            onClick={fetchData}
-            className="mt-4 md:mt-0 cursor-pointer bg-sky-600 hover:bg-sky-700 text-white py-2 px-4 rounded-md"
-          >
-            Refresh Data
-          </button>
+          <div className="flex gap-5">
+            <button
+              onClick={fetchData}
+              className="mt-4 md:mt-0 cursor-pointer bg-sky-600 hover:bg-sky-700 text-white py-2 px-4 rounded-md"
+            >
+              Refresh Data
+            </button>
+            <Link
+              className="mt-4 md:mt-0 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-md"
+              to="/"
+            >
+              Create Audits
+            </Link>
+          </div>
         </div>
 
         {/* Filters */}

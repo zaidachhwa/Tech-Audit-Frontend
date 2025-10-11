@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../services/supabase";
+import { Link } from "react-router-dom";
 
 export default function ReportForm({
   student,
@@ -273,6 +274,13 @@ export default function ReportForm({
           Download PDF
         </button>
       </div>
+
+      <Link
+        to="/student-dashboard"
+        className="w-full flex items-center justify-center mt-6 underline cursor-pointer text-indigo-400"
+      >
+        Go to Student's Dashboard
+      </Link>
     </div>
   );
 }
