@@ -2,12 +2,18 @@ import React, { useState, useRef, useEffect } from "react";
 import ReportForm from "./components/ReportForm";
 import TechAuditReport from "./components/TechAuditReport";
 import generatePDF from "./utils/generatePDF";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import Login from "./components/Login";
 import { supabase } from "./services/supabase";
 import headImage from "./assets/letter_head.jpg";
 import StudentsDashboard from "./components/StudentDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import StudentLogin from "./components/student/StudentLogin";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import StudentDashboard from "./components/student/StudentDashboard";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import AdminLogin from "./components/admin/AdminLogin";
+import AddReport from "./components/admin/AddReport";
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -22,19 +28,19 @@ function fileToDataUrl(file) {
 export default function App() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error("Error getting user:", error.message);
-        navigate("/login");
-        return;
-      }
-      if (!data?.user) navigate("/login");
-    };
+  // useEffect(() => {
+  //   const getUser = async () => {
+  //     const { data, error } = await supabase.auth.getUser();
+  //     if (error) {
+  //       console.error("Error getting user:", error.message);
+  //       navigate("/login");
+  //       return;
+  //     }
+  //     if (!data?.user) navigate("/login");
+  //   };
 
-    getUser();
-  }, [navigate]);
+  //   getUser();
+  // }, [navigate]);
 
   const [student, setStudent] = useState({
     batch: "",
@@ -117,9 +123,46 @@ export default function App() {
     );
   };
 
+  function PrivateRoute({ children, role }) {
+    const { user } = useAuth();
+    if (!user) return <Navigate to={`/${role}/login`} />;
+    return children;
+  }
+
   return (
-    <Routes>
-      <Route
+    <AuthProvider>
+      <Routes>
+        <Route path="/student-login" element={<StudentLogin />} />
+        <Route
+          path="/student/reports"
+          element={
+            <PrivateRoute role="student">
+              <StudentDashboard />
+            </PrivateRoute>
+          }
+        />
+
+        {/*  Admin Routes  */}
+
+        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <PrivateRoute role="admin">
+              <AdminDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/add-reports"
+          element={
+            <PrivateRoute role="admin">
+              <AddReport />
+            </PrivateRoute>
+          }
+        />
+
+        {/* <Route
         path="/"
         element={
           <ProtectedRoute>
@@ -152,16 +195,17 @@ export default function App() {
             </div>
           </ProtectedRoute>
         }
-      ></Route>
-      <Route
+      ></Route> */}
+        {/* <Route
         path="/student-dashboard"
         element={
           <ProtectedRoute>
             <StudentsDashboard />
           </ProtectedRoute>
         }
-      />
-      <Route path="/login" element={<Login />} />
-    </Routes>
+      /> */}
+        {/* <Route path="/login" element={<Login />} /> */}
+      </Routes>
+    </AuthProvider>
   );
 }
