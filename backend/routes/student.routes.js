@@ -1,19 +1,18 @@
 import { Router } from "express";
 import {
-  deleteStudent,
-  getAllStudents,
-  loginStudent,
   registerStudent,
+  loginStudent,
+  getAllStudents,
+  deleteStudent,
+  getStudentById,
 } from "../controllers/student.controller.js";
-import { isAdmin, verifyToken } from "../middleware/auth.middleware.js";
+import { verifyToken, isAdmin } from "../middleware/auth.middleware.js";
 
 const router = Router();
-
 router.post("/register", registerStudent);
 router.post("/login", loginStudent);
-router.get("/list", getAllStudents);
-
-// Admin protected route
+router.get("/list", verifyToken, isAdmin, getAllStudents);
+router.get("/:id", verifyToken, isAdmin, getStudentById);
 router.delete("/delete/:id", verifyToken, isAdmin, deleteStudent);
 
 export default router;

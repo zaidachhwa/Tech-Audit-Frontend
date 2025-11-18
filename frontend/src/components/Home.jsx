@@ -1,5 +1,11 @@
+import Input from "./Input";
+
 const Home = () => {
-  return <div></div>;
+  return (
+    <div>
+      <Input type="text" />
+    </div>
+  );
 };
 
 export default Home;

@@ -1,196 +1,91 @@
-import Report from "../model/report.model.js";
-import { Student } from "../model/student.model.js";
+import * as reportService from "../services/report.service.js";
+import Report from "../models/report.model.js";
 
-// ============================
-// CREATE REPORT
-// ============================
 export const createReport = async (req, res) => {
   try {
     const { studentId, parameters, feedbackSchema, overallRemarks, auditDate } =
       req.body;
-
-    if (!studentId || !parameters?.length || !auditDate) {
+    if (!studentId || !parameters?.length)
       return res
         .status(400)
-        .json({ message: "Student, parameters and audit date are required." });
-    }
-
-    const studentExists = await Student.findById(studentId);
-    if (!studentExists) {
-      return res.status(404).json({ message: "Student not found." });
-    }
-
-    const report = await Report.create({
-      student: studentId,
+        .json({ message: "studentId & parameters required" });
+    const report = await reportService.createReportService({
+      studentId,
       parameters,
       feedbackSchema,
       overallRemarks,
-      auditDate, // ✅ added auditDate field
+      auditDate,
     });
-
-    res.status(201).json({
-      message: "Report created successfully.",
-      report,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: error.message });
+    return res.status(201).json({ message: "Report created", report });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// ============================
-// GET ALL REPORTS
-// ============================
 export const getAllReports = async (req, res) => {
   try {
-    const { batch_name, batch_no, from, to } = req.query;
-
+    const { page = 1, limit = 50, batch_name, batch_no, from, to } = req.query;
     const filter = {};
     if (from && to)
       filter.auditDate = { $gte: new Date(from), $lte: new Date(to) };
 
-    const reports = await Report.find(filter)
-      .populate({
-        path: "student",
-        match: {
-          ...(batch_name && { batch_name }),
-          ...(batch_no && { batch_no }),
-        },
-      })
-      .lean();
-
-    const filtered = reports.filter((r) => r.student !== null);
-
-    res.status(200).json({ count: filtered.length, reports: filtered });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    // If batch filters present we filter after populate
+    let query = Report.find(filter)
+      .populate("student", "-password")
+      .sort({ auditDate: -1 });
+    const skip = (Number(page) - 1) * Number(limit);
+    const total = await Report.countDocuments(filter);
+    const reports = await query.skip(skip).limit(Number(limit)).lean();
+    // If batch filters provided, filter in-memory by student batch fields
+    const filtered = reports.filter((r) => {
+      if (!r.student) return false;
+      if (batch_name && r.student.batch_name !== batch_name) return false;
+      if (batch_no && Number(r.student.batch_no) !== Number(batch_no))
+        return false;
+      return true;
+    });
+    return res.status(200).json({
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      count: filtered.length,
+      reports: filtered,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// ============================
-// GET REPORTS BY STUDENT
-// ============================
 export const getReportsByStudent = async (req, res) => {
   try {
-    if (
-      req.user.role === "student" &&
-      req.user._id.toString() !== req.params.studentId
-    ) {
+    if (req.user.role === "student" && req.user.id !== req.params.studentId) {
       return res
         .status(403)
         .json({ message: "You can only view your own reports." });
     }
-
-    const reports = await Report.find({ student: req.params.studentId });
-    res.status(200).json(reports);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const reports = await Report.find({ student: req.params.studentId })
+      .sort({ auditDate: -1 })
+      .lean();
+    return res.status(200).json({ count: reports.length, reports });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// ============================
-// COMPARE BATCHES BY AUDIT DATE, BATCH NAME, BATCH NO
-// ============================
-export const compareBatchesByParameterDetailed = async (req, res) => {
-  try {
-    const { parameter, batch_name, batch_no } = req.query;
-
-    // Validate parameters
-    if (!parameter || !batch_name || !batch_no) {
-      return res.status(400).json({
-        message: "parameter, batch_name, and batch_no are required.",
-      });
-    }
-
-    const matchConditions = {
-      "student.batch_name": batch_name,
-      "student.batch_no": Number(batch_no),
-      "parameters.name": parameter,
-    };
-
-    const results = await Report.aggregate([
-      {
-        $lookup: {
-          from: "students",
-          localField: "student",
-          foreignField: "_id",
-          as: "student",
-        },
-      },
-      { $unwind: "$student" },
-      { $unwind: "$parameters" },
-      { $match: matchConditions },
-      {
-        $project: {
-          _id: 0,
-          student_name: "$student.name",
-          batch_name: "$student.batch_name",
-          batch_no: "$student.batch_no",
-          parameter: "$parameters.name",
-          score: "$parameters.score",
-          audit_date: { $ifNull: ["$auditDate", "$createdAt"] },
-        },
-      },
-      { $sort: { student_name: 1, audit_date: 1 } },
-    ]);
-
-    res.status(200).json({
-      message: `Comparison for ${parameter} in ${batch_name} - ${batch_no}`,
-      results,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// ============================
-// BATCH AVERAGES
-// ============================
 export const getBatchAverages = async (req, res) => {
   try {
-    const { batch_name, batch_no } = req.query;
+    const { batch_name, batch_no, auditDate } = req.query;
     if (!batch_name || !batch_no)
       return res
         .status(400)
-        .json({ message: "Batch name and number required" });
-
-    const results = await Report.aggregate([
-      {
-        $lookup: {
-          from: "students",
-          localField: "student",
-          foreignField: "_id",
-          as: "student",
-        },
-      },
-      { $unwind: "$student" },
-      {
-        $match: {
-          "student.batch_name": batch_name,
-          "student.batch_no": Number(batch_no),
-        },
-      },
-      { $unwind: "$parameters" },
-      {
-        $group: {
-          _id: "$parameters.name",
-          avg_score: { $avg: "$parameters.score" },
-        },
-      },
-      {
-        $project: {
-          parameter: "$_id",
-          avg_score: 1,
-          _id: 0,
-        },
-      },
-    ]);
-
-    res.status(200).json({
-      batch: `${batch_name}-${batch_no}`,
-      averages: results,
+        .json({ message: "batch_name and batch_no required" });
+    const result = await reportService.getBatchAveragesService({
+      batch_name,
+      batch_no,
+      auditDate,
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
   }
 };

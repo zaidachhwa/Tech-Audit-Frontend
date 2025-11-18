@@ -1,19 +1,18 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-
 import StudentLogin from "./components/student/StudentLogin";
 import AdminLogin from "./components/admin/AdminLogin";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-
-// 🧩 New layout & pages
 import StudentLayout from "./components/student/StudentLayout";
 import Dashboard from "./components/student/Dashboard";
 import Projects from "./components/student/Projects";
 import Reports from "./components/student/Reports";
-
-// Existing admin components
 import AdminDashboard from "./components/admin/AdminDashboard";
 import AddReport from "./components/admin/AddReport";
 import ProjectTracking from "./components/admin/ProjectTracking";
+import BatchStudentsView from "./components/admin/BatchStudentsView";
+// import StudentProjectsView from "./components/admin/StudentProjectsView";
+import StudentSignup from "./components/student/StudentSignup";
+import StudentProjectsView from "./components/admin/StudentProjectsView";
 
 export default function App() {
   function PrivateRoute({ children, role }) {
@@ -25,9 +24,9 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* ---------------- STUDENT ROUTES ---------------- */}
+        {/* STUDENT ROUTES */}
         <Route path="/student/login" element={<StudentLogin />} />
-
+        <Route path="/student/signup" element={<StudentSignup />} />
         <Route
           path="/student"
           element={
@@ -42,9 +41,8 @@ export default function App() {
           <Route path="reports" element={<Reports />} />
         </Route>
 
-        {/* ---------------- ADMIN ROUTES ---------------- */}
+        {/* ADMIN ROUTES */}
         <Route path="/admin/login" element={<AdminLogin />} />
-
         <Route
           path="/admin/dashboard"
           element={
@@ -53,7 +51,6 @@ export default function App() {
             </PrivateRoute>
           }
         />
-
         <Route
           path="/admin/project-tracking"
           element={
@@ -62,7 +59,22 @@ export default function App() {
             </PrivateRoute>
           }
         />
-
+        <Route
+          path="/admin/project-tracking/batch/:batchId"
+          element={
+            <PrivateRoute role="admin">
+              <BatchStudentsView />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/project-tracking/student/:studentId"
+          element={
+            <PrivateRoute role="admin">
+              <StudentProjectsView />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/admin/add-reports"
           element={
@@ -72,7 +84,7 @@ export default function App() {
           }
         />
 
-        {/* ---------------- DEFAULT REDIRECT ---------------- */}
+        {/* DEFAULT REDIRECT */}
         <Route path="*" element={<Navigate to="/student/login" replace />} />
       </Routes>
     </AuthProvider>

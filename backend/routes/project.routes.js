@@ -1,8 +1,12 @@
 import express from "express";
 import {
   assignProjectToBatch,
+  createProject,
   getProjectsByBatch,
   getProjectsByStudent,
+  getProjectById,
+  updateProject,
+  deleteProject,
   updateModuleStatus,
   updateProjectStatus,
   submitProject,
@@ -16,25 +20,19 @@ import {
 
 const router = express.Router();
 
-// 🔹 Admin assigns a project to entire batch
+// ===== ADMIN ROUTES =====
 router.post("/assign-to-batch", verifyToken, isAdmin, assignProjectToBatch);
-
-// 🔹 Admin gets all projects for a batch
+router.post("/create", verifyToken, isAdmin, createProject);
 router.get("/batch/:batchId", verifyToken, isAdmin, getProjectsByBatch);
-
-// 🔹 Student gets their own projects
-router.get("/student/:studentId", verifyToken, isStudent, getProjectsByStudent);
-
-// 🔹 Student updates module status
-router.patch("/module/:moduleId", verifyToken, isStudent, updateModuleStatus);
-
-// 🔹 Student updates overall project progress
-router.patch("/:projectId/status", verifyToken, isStudent, updateProjectStatus);
-
-// 🔹 Student submits project for admin approval
-router.patch("/:projectId/submit", verifyToken, isStudent, submitProject);
-
-// 🔹 Admin approves a student's project
+router.get("/student/:studentId", verifyToken, getProjectsByStudent); // Allow both admin and student
+router.get("/:projectId", verifyToken, getProjectById);
+router.patch("/:projectId", verifyToken, isAdmin, updateProject);
+router.delete("/:projectId", verifyToken, isAdmin, deleteProject);
 router.patch("/:projectId/approve", verifyToken, isAdmin, approveProject);
+
+// ===== STUDENT ROUTES =====
+router.patch("/module/:moduleId", verifyToken, isStudent, updateModuleStatus);
+router.patch("/:projectId/status", verifyToken, isStudent, updateProjectStatus);
+router.patch("/:projectId/submit", verifyToken, isStudent, submitProject);
 
 export default router;

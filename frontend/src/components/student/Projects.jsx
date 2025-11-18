@@ -1,92 +1,588 @@
+// src/components/student/Projects.jsx
 import { useEffect, useState } from "react";
-import {
-  getStudentProjects,
-  updateModuleStatus,
-  submitProject,
-} from "../../api/project.api";
+import { API } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Send,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Target,
+  Award,
+  GitBranch,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  TrendingUp,
+  Layers,
+  RefreshCw,
+  FileText,
+  Calendar,
+  User,
+} from "lucide-react";
 
 export default function Projects() {
   const { user } = useAuth();
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [expandedProjects, setExpandedProjects] = useState(new Set());
 
+  // Fetch projects
   useEffect(() => {
-    async function fetchProjects() {
-      const res = await getStudentProjects(user.id);
-      console.log(res);
-      setProjects(res || []);
-    }
     fetchProjects();
   }, [user]);
 
-  const handleModuleToggle = async (moduleId, currentStatus) => {
-    const nextStatus =
-      currentStatus === "Pending" ? "In Progress" : "Completed";
-    await updateModuleStatus(moduleId, { status: nextStatus });
-    toast.success(`Module marked as ${nextStatus}`);
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get(`/projects/student/${user.id}`);
+      setProjects(res.data?.projects || res.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch projects");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = async (projectId) => {
-    await submitProject(projectId);
-    toast.success("Project submitted for approval");
+  // Toggle project expansion
+  const toggleExpanded = (projectId) => {
+    setExpandedProjects((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle module status
+  const handleModuleToggle = async (project, moduleId, currentStatus) => {
+    if (["Submitted", "Approved"].includes(project.overallStatus)) {
+      toast.error("Cannot modify modules after submission/approval");
+      return;
+    }
+
+    const statusFlow = ["Pending", "In Progress", "Completed"];
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    const nextStatus = statusFlow[(currentIndex + 1) % statusFlow.length];
+
+    try {
+      await API.patch(`/projects/module/${moduleId}`, { status: nextStatus });
+      toast.success(`Module updated to ${nextStatus}`);
+      fetchProjects();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update module");
+    }
+  };
+
+  // Submit project
+  const handleSubmit = async (project) => {
+    if (["Submitted", "Approved"].includes(project.overallStatus)) {
+      toast.error("Project already submitted");
+      return;
+    }
+
+    const allCompleted = project.modules?.every(
+      (m) => m.status === "Completed"
+    );
+    if (!allCompleted) {
+      toast.error("Complete all modules before submitting");
+      return;
+    }
+
+    try {
+      await API.patch(`/projects/${project._id}/submit`);
+      toast.success("Project submitted for approval! 🎉");
+      fetchProjects();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to submit project");
+    }
+  };
+
+  // Calculate progress
+  const calculateProgress = (modules) => {
+    if (!modules || modules.length === 0) return 0;
+    const completed = modules.filter((m) => m.status === "Completed").length;
+    return Math.round((completed / modules.length) * 100);
+  };
+
+  // Statistics
+  const stats = {
+    total: projects.length,
+    inProgress: projects.filter((p) => p.overallStatus === "In Progress")
+      .length,
+    completed: projects.filter((p) => p.overallStatus === "Completed").length,
+    submitted: projects.filter((p) => p.overallStatus === "Submitted").length,
+    approved: projects.filter((p) => p.overallStatus === "Approved").length,
   };
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold mb-4 text-slate-800">My Projects</h1>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-6">
+      <Toaster position="top-right" />
 
-      {projects.map((project) => (
-        <div
-          key={project._id}
-          className="bg-white rounded-xl p-4 mb-3 border shadow-sm"
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 text-white"
         >
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">{project.title}</h2>
-            <span
-              className={`px-3 py-1 text-sm rounded-full ${
-                project.status === "Pending"
-                  ? "bg-amber-100 text-amber-700"
-                  : project.status === "In Progress"
-                  ? "bg-blue-100 text-blue-700"
-                  : project.status === "Submitted"
-                  ? "bg-purple-100 text-purple-700"
-                  : "bg-green-100 text-green-700"
-              }`}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">My Projects</h1>
+              <p className="text-purple-100">
+                Track your progress and submit completed work
+              </p>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={fetchProjects}
+              disabled={loading}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-xl transition flex items-center gap-2 cursor-pointer"
             >
-              {project.status}
-            </span>
+              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+              Refresh
+            </motion.button>
           </div>
+        </motion.div>
 
-          <div className="mt-2">
-            <p className="text-sm text-slate-600 mb-2">{project.description}</p>
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <StatCard
+            icon={<Layers size={20} />}
+            label="Total"
+            value={stats.total}
+            color="bg-gradient-to-br from-blue-500 to-cyan-500"
+          />
+          <StatCard
+            icon={<Clock size={20} />}
+            label="In Progress"
+            value={stats.inProgress}
+            color="bg-gradient-to-br from-orange-500 to-amber-500"
+          />
+          <StatCard
+            icon={<CheckCircle2 size={20} />}
+            label="Completed"
+            value={stats.completed}
+            color="bg-gradient-to-br from-emerald-500 to-green-500"
+          />
+          <StatCard
+            icon={<Send size={20} />}
+            label="Submitted"
+            value={stats.submitted}
+            color="bg-gradient-to-br from-purple-500 to-pink-500"
+          />
+          <StatCard
+            icon={<Award size={20} />}
+            label="Approved"
+            value={stats.approved}
+            color="bg-gradient-to-br from-green-500 to-teal-500"
+          />
+        </div>
 
-            {project.modules?.map((mod) => (
-              <div
-                key={mod._id}
-                className="flex justify-between items-center border-b py-2"
-              >
-                <span>{mod.title}</span>
-                <button
-                  onClick={() => handleModuleToggle(mod._id, mod.status)}
-                  className="text-sm bg-emerald-100 text-emerald-700 px-2 py-1 rounded"
-                >
-                  {mod.status}
-                </button>
-              </div>
+        {/* Projects List */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <RefreshCw className="animate-spin text-purple-600" size={40} />
+          </div>
+        ) : projects.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-12 text-center"
+          >
+            <Layers size={64} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              No Projects Yet
+            </h3>
+            <p className="text-gray-500">
+              Projects assigned to you will appear here
+            </p>
+          </motion.div>
+        ) : (
+          <div className="space-y-4">
+            {projects.map((project, index) => (
+              <ProjectCard
+                key={project._id}
+                project={project}
+                index={index}
+                expanded={expandedProjects.has(project._id)}
+                onToggleExpand={() => toggleExpanded(project._id)}
+                onModuleToggle={handleModuleToggle}
+                onSubmit={handleSubmit}
+                calculateProgress={calculateProgress}
+              />
             ))}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-          {project.status === "In Progress" && (
-            <button
-              onClick={() => handleSubmit(project._id)}
-              className="mt-3 bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700"
-            >
-              Submit Project
-            </button>
-          )}
+// Stat Card Component
+function StatCard({ icon, label, value, color }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
+      className={`${color} rounded-2xl shadow-lg p-4 text-white`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="bg-white/20 p-2 rounded-lg">{icon}</div>
+        <div className="text-3xl font-bold">{value}</div>
+      </div>
+      <div className="text-sm font-medium opacity-90">{label}</div>
+    </motion.div>
+  );
+}
+
+// Project Card Component
+function ProjectCard({
+  project,
+  index,
+  expanded,
+  onToggleExpand,
+  onModuleToggle,
+  onSubmit,
+  calculateProgress,
+}) {
+  const progress = calculateProgress(project.modules);
+  const isLocked = ["Submitted", "Approved"].includes(project.overallStatus);
+  const canSubmit =
+    project.overallStatus === "Completed" &&
+    project.modules?.every((m) => m.status === "Completed") &&
+    !isLocked;
+
+  const getStatusConfig = (status) => {
+    const configs = {
+      Pending: {
+        icon: <Clock size={16} />,
+        color: "bg-amber-100 text-amber-700 border-amber-200",
+        gradient: "from-amber-400 to-orange-400",
+      },
+      "In Progress": {
+        icon: <TrendingUp size={16} />,
+        color: "bg-blue-100 text-blue-700 border-blue-200",
+        gradient: "from-blue-400 to-cyan-400",
+      },
+      Completed: {
+        icon: <CheckCircle2 size={16} />,
+        color: "bg-emerald-100 text-emerald-700 border-emerald-200",
+        gradient: "from-emerald-400 to-green-400",
+      },
+      Submitted: {
+        icon: <Send size={16} />,
+        color: "bg-purple-100 text-purple-700 border-purple-200",
+        gradient: "from-purple-400 to-pink-400",
+      },
+      Approved: {
+        icon: <Award size={16} />,
+        color: "bg-green-100 text-green-700 border-green-200",
+        gradient: "from-green-400 to-teal-400",
+      },
+    };
+    return configs[status] || configs.Pending;
+  };
+
+  const statusConfig = getStatusConfig(project.overallStatus);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all"
+    >
+      {/* Header */}
+      <div className="p-6 border-b border-gray-100">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div
+                className={`bg-gradient-to-r ${statusConfig.gradient} p-2 rounded-xl shadow-md`}
+              >
+                <Layers size={20} className="text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800">
+                {project.title}
+              </h3>
+            </div>
+            <p className="text-gray-600 text-sm">{project.description}</p>
+          </div>
+
+          <div
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 font-semibold ${statusConfig.color}`}
+          >
+            {statusConfig.icon}
+            {project.overallStatus}
+          </div>
         </div>
-      ))}
+
+        {/* Progress Bar */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">
+              Overall Progress
+            </span>
+            <span className="text-sm font-bold text-purple-600">
+              {progress}%
+            </span>
+          </div>
+          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 1, delay: 0.2 }}
+              className={`h-full bg-gradient-to-r ${statusConfig.gradient} rounded-full`}
+            />
+          </div>
+        </div>
+
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <InfoBadge
+            icon={<Layers size={14} />}
+            label="Batch"
+            value={project.batch?.batch_name || "-"}
+          />
+          <InfoBadge
+            icon={<Target size={14} />}
+            label="Batch No"
+            value={`#${project.batch?.batch_no || "-"}`}
+          />
+          <InfoBadge
+            icon={<User size={14} />}
+            label="Assigned By"
+            value={project.createdBy?.name || "-"}
+          />
+          <InfoBadge
+            icon={<Calendar size={14} />}
+            label="Created"
+            value={
+              project.createdAt
+                ? new Date(project.createdAt).toLocaleDateString()
+                : "-"
+            }
+          />
+        </div>
+
+        {/* Repository */}
+        {project.repo && (
+          <a
+            href={project.repo}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 mt-4 text-purple-600 hover:text-purple-700 font-medium text-sm"
+          >
+            <GitBranch size={16} />
+            View Repository
+            <ExternalLink size={14} />
+          </a>
+        )}
+      </div>
+
+      {/* Expandable Content */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-6 space-y-6 bg-gradient-to-br from-gray-50 to-purple-50">
+              {/* Modules */}
+              {project.modules && project.modules.length > 0 && (
+                <div>
+                  <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <Layers size={18} className="text-purple-600" />
+                    Modules ({project.modules.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {project.modules.map((module) => (
+                      <ModuleCard
+                        key={module._id}
+                        module={module}
+                        isLocked={isLocked}
+                        onToggle={() =>
+                          onModuleToggle(project, module._id, module.status)
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Learning Outcomes */}
+              {project.outcomes && project.outcomes.length > 0 && (
+                <div>
+                  <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <Target size={18} className="text-green-600" />
+                    Learning Outcomes
+                  </h4>
+                  <div className="space-y-2">
+                    {project.outcomes.map((outcome, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white rounded-xl p-4 border border-green-100"
+                      >
+                        <h5 className="font-semibold text-gray-800 mb-1">
+                          {outcome.title}
+                        </h5>
+                        {outcome.description && (
+                          <p className="text-sm text-gray-600">
+                            {outcome.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Skills */}
+              {project.skills && project.skills.length > 0 && (
+                <div>
+                  <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <Award size={18} className="text-orange-600" />
+                    Required Skills
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {project.skills.map((skill, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-gradient-to-r from-orange-100 to-amber-100 border border-orange-200 px-4 py-2 rounded-xl"
+                      >
+                        <div className="font-semibold text-orange-800 text-sm">
+                          {skill.name}
+                        </div>
+                        <div className="text-xs text-orange-600">
+                          {skill.level}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Footer */}
+      <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onToggleExpand}
+          className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium cursor-pointer"
+        >
+          {expanded ? (
+            <>
+              <ChevronUp size={18} />
+              Show Less
+            </>
+          ) : (
+            <>
+              <ChevronDown size={18} />
+              Show Details
+            </>
+          )}
+        </motion.button>
+
+        {canSubmit && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onSubmit(project)}
+            className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-6 py-2 rounded-xl font-semibold shadow-lg cursor-pointer"
+          >
+            <Send size={18} />
+            Submit Project
+          </motion.button>
+        )}
+
+        {isLocked && (
+          <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <AlertCircle size={16} />
+            {project.overallStatus === "Submitted"
+              ? "Awaiting approval"
+              : "Project approved"}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// Module Card Component
+function ModuleCard({ module, isLocked, onToggle }) {
+  const getModuleConfig = (status) => {
+    const configs = {
+      Pending: {
+        color: "bg-amber-50 border-amber-200 text-amber-700",
+        buttonColor: "bg-amber-100 hover:bg-amber-200 text-amber-700",
+      },
+      "In Progress": {
+        color: "bg-blue-50 border-blue-200 text-blue-700",
+        buttonColor: "bg-blue-100 hover:bg-blue-200 text-blue-700",
+      },
+      Completed: {
+        color: "bg-emerald-50 border-emerald-200 text-emerald-700",
+        buttonColor: "bg-emerald-100 hover:bg-emerald-200 text-emerald-700",
+      },
+    };
+    return configs[status] || configs.Pending;
+  };
+
+  const config = getModuleConfig(module.status);
+
+  return (
+    <div
+      className={`flex items-center justify-between p-4 rounded-xl border-2 ${config.color}`}
+    >
+      <div className="flex-1">
+        <h5 className="font-semibold">{module.name}</h5>
+        {module.notes && (
+          <p className="text-xs mt-1 opacity-75">{module.notes}</p>
+        )}
+      </div>
+      <motion.button
+        whileHover={{ scale: isLocked ? 1 : 1.05 }}
+        whileTap={{ scale: isLocked ? 1 : 0.95 }}
+        onClick={onToggle}
+        disabled={isLocked}
+        className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+          config.buttonColor
+        } ${isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+      >
+        {module.status}
+      </motion.button>
+    </div>
+  );
+}
+
+// Info Badge Component
+function InfoBadge({ icon, label, value }) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+      <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="text-sm font-semibold text-gray-800 truncate">
+        {value}
+      </div>
     </div>
   );
 }

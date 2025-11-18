@@ -10,6 +10,20 @@ const moduleSchema = new mongoose.Schema({
   notes: { type: String, default: "" },
 });
 
+const outcomeSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, default: "" },
+});
+
+const skillSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  level: {
+    type: String,
+    enum: ["Beginner", "Intermediate", "Advanced"],
+    default: "Intermediate",
+  },
+});
+
 const projectSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
@@ -21,10 +35,10 @@ const projectSchema = new mongoose.Schema(
     },
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "student",
+      ref: "Student",
       required: true,
     },
-    modules: [moduleSchema],
+    modules: { type: [moduleSchema], default: [] },
     overallStatus: {
       type: String,
       enum: ["Pending", "In Progress", "Completed", "Submitted", "Approved"],
@@ -32,9 +46,11 @@ const projectSchema = new mongoose.Schema(
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "admin",
+      ref: "Admin",
       required: true,
     },
+    outcomes: { type: [outcomeSchema], default: [] },
+    skills: { type: [skillSchema], default: [] },
   },
   { timestamps: true }
 );

@@ -1,35 +1,34 @@
+// AddReport.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import { API } from "../../api/axios";
-import { Users, Plus, Trash2, Eye, MoveLeft } from "lucide-react";
+import {
+  Users,
+  Plus,
+  Trash2,
+  Eye,
+  MoveLeft,
+  FileText,
+  Download,
+  Save,
+  Calendar,
+  Mail,
+  Hash,
+} from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import image from "../../assets/letter_head.jpg";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * AddReport (Save / Save & Download PDF / Preview)
- * - Header consumes full width and 10% page height.
- * - Print template sized A4: 794 x 1123 px (approx @96dpi).
- * - Marks badges centered.
- * - Uses tailwind classes where appropriate + a few inline px sizes for exact page sizing.
+ * Enhanced with Admin Dashboard theme and improved UI
  */
 
 const COMPANY_NAME = "Nexcore Alliance ";
 const LOGO_URL = image;
 const LOGO_DATA_URI = image;
-// "data:image/svg+xml;utf8," +
-// encodeURIComponent(
-//   `<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256' viewBox='0 0 256 256'>
-//      <rect rx='32' width='256' height='256' fill='#10B981'/>
-//      <text x='50%' y='56%' font-family='sans-serif' font-weight='700' font-size='96' text-anchor='middle' fill='white'>${COMPANY_NAME.split(
-//        " "
-//      )
-//        .map((w) => w[0])
-//        .slice(0, 2)
-//        .join("")}</text>
-//    </svg>`
-// );
 
 export default function AddReport() {
   const [students, setStudents] = useState([]);
@@ -45,18 +44,17 @@ export default function AddReport() {
   });
 
   const printRef = useRef();
-
-  // preview modal state
   const [previewData, setPreviewData] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  // A4 px at ~96dpi used for html2canvas capture
   const A4_WIDTH_PX = 794;
   const A4_HEIGHT_PX = 1123;
-  const HEADER_HEIGHT_PX = Math.round(A4_HEIGHT_PX * 0.2); // ~30%
+  const HEADER_HEIGHT_PX = Math.round(A4_HEIGHT_PX * 0.2);
+
+  const DEFAULTS_KEY = "report_param_defaults";
 
   useEffect(() => {
-    API.get("/student/list")
+    API.get("/students/list")
       .then((res) => {
         const data = res.data?.students || res.data?.data?.students || [];
         setStudents(data);
@@ -76,6 +74,7 @@ export default function AddReport() {
     setFilteredStudents(filtered);
   }, [form.batch_name, form.batch_no, students]);
 
+  // ---------- Parameter helpers ----------
   const handleParamChange = (index, field, value) => {
     const updated = [...form.parameters];
     updated[index][field] = value;
@@ -94,7 +93,56 @@ export default function AddReport() {
       parameters: form.parameters.filter((_, i) => i !== index),
     });
 
-  // ---------- Save only (original)
+  // ---------- Defaults utilities ----------
+  const saveDefaultsToLocal = () => {
+    try {
+      const names = form.parameters
+        .map((p) => (p.name || "").trim())
+        .filter(Boolean);
+      if (!names.length) {
+        toast.error("No parameter names to save");
+        return;
+      }
+      localStorage.setItem(DEFAULTS_KEY, JSON.stringify(names));
+      toast.success("Parameter defaults saved");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save defaults");
+    }
+  };
+
+  const loadDefaultsFromLocal = () => {
+    try {
+      const raw = localStorage.getItem(DEFAULTS_KEY);
+      if (!raw) {
+        toast.error("No saved defaults found");
+        return;
+      }
+      const names = JSON.parse(raw);
+      if (!Array.isArray(names) || !names.length) {
+        toast.error("Saved defaults invalid");
+        return;
+      }
+      const params = names.map((n) => ({ name: n, score: "" }));
+      setForm({ ...form, parameters: params });
+      toast.success("Defaults loaded (scores left empty)");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load defaults");
+    }
+  };
+
+  const clearDefaultsFromLocal = () => {
+    try {
+      localStorage.removeItem(DEFAULTS_KEY);
+      toast.success("Defaults cleared");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to clear defaults");
+    }
+  };
+
+  // ---------- Save only ----------
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -125,7 +173,7 @@ export default function AddReport() {
     }
   };
 
-  // ---------- Save + Generate PDF
+  // ---------- Save + Generate PDF ----------
   const handleSaveAndDownload = async (e) => {
     e?.preventDefault?.();
     try {
@@ -195,12 +243,11 @@ export default function AddReport() {
     };
   };
 
-  // ---------- Populate template (ensures centered badges)
+  // ---------- Populate template ----------
   const populatePrintTemplate = async (data) => {
     const container = printRef.current;
     if (!container) return;
 
-    // Student details
     const nameEl = container.querySelector(".print-student-name");
     const emailEl = container.querySelector(".print-student-email");
     const batchEl = container.querySelector(".print-batch");
@@ -217,7 +264,6 @@ export default function AddReport() {
     if (dateEl) dateEl.textContent = formatDateForPrint(data.auditDate) || "-";
     if (overallEl) overallEl.textContent = data.overallRemarks || "-";
 
-    // Parameters section
     const paramsContainer = container.querySelector(".print-parameters");
     if (paramsContainer) {
       paramsContainer.innerHTML = "";
@@ -239,12 +285,10 @@ export default function AddReport() {
         nameDiv.style.marginRight = "12px";
         nameDiv.style.wordBreak = "break-word";
 
-        // ---- FIXED BADGE ALIGNMENT ----
         const badge = document.createElement("div");
         const score = Number(p.score) || 0;
         badge.textContent = `${score} / 10`;
 
-        // inside populatePrintTemplate badge creation
         badge.style.display = "flex";
         badge.style.alignItems = "center";
         badge.style.justifyContent = "center";
@@ -257,15 +301,12 @@ export default function AddReport() {
         badge.style.boxSizing = "border-box";
         badge.style.padding = "0 10px 8px 10px";
         badge.style.whiteSpace = "nowrap";
-
-        // ensure crisp vertical centering (important!)
         badge.style.lineHeight = "1";
         badge.style.verticalAlign = "middle";
-        badge.style.margin = "0 auto"; // keep centered in flex rows
-        badge.style.transform = "translateY(0)"; // neutralize subpixel shift
-        badge.style.fontFamily = "Inter, Arial, Helvetica, sans-serif"; // consistent font metrics
+        badge.style.margin = "0 auto";
+        badge.style.transform = "translateY(0)";
+        badge.style.fontFamily = "Inter, Arial, Helvetica, sans-serif";
 
-        // Colors by score
         if (score >= 8) {
           badge.style.background = "#f0fdf4";
           badge.style.color = "#065f46";
@@ -286,7 +327,6 @@ export default function AddReport() {
       });
     }
 
-    // Feedback section
     const fbContainer = container.querySelector(".print-feedback");
     if (fbContainer) {
       fbContainer.innerHTML = "";
@@ -331,7 +371,7 @@ export default function AddReport() {
     );
   };
 
-  // ---------- PDF generation (unchanged slicing)
+  // ---------- PDF generation ----------
   const generatePdfFromElement = async (el, filename = "report") => {
     if (!el) {
       toast.error("PDF element missing");
@@ -351,8 +391,8 @@ export default function AddReport() {
         format: "a4",
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth(); // 210
-      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       const margin = 5;
       const imgWidth = pdfWidth - margin * 2;
 
@@ -413,7 +453,7 @@ export default function AddReport() {
     }
   };
 
-  // ---------- Preview handler (no save)
+  // ---------- Preview handler ----------
   const handlePreview = async (e) => {
     e?.preventDefault?.();
     const pdfData = buildPdfDataFrom(null);
@@ -423,174 +463,290 @@ export default function AddReport() {
   };
 
   return (
-    <div className="relative">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-100">
       <Toaster position="top-right" />
-      <Link to="/admin/dashboard" className="absolute top-10 left-20 ">
-        <MoveLeft className=" cursor-pointer text-emerald-600" />
+
+      {/* Back Button */}
+      <Link to="/admin/dashboard" className="fixed top-6 left-6 z-50">
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="bg-white/70 backdrop-blur-xl p-3 rounded-2xl shadow-lg hover:shadow-xl transition cursor-pointer"
+        >
+          <MoveLeft className="text-purple-600" size={24} />
+        </motion.div>
       </Link>
 
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-slate-50 p-6">
-        <div className="max-w-4xl mx-auto bg-white/90 backdrop-blur-md border border-slate-200 rounded-3xl shadow-2xl p-6 space-y-6">
-          {/* header */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-emerald-600 p-3 rounded-full text-white shadow-md">
-              <Users size={24} />
+      {/* Main Container */}
+      <div className="max-w-5xl mx-auto p-6 pt-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl overflow-hidden"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+                <FileText size={28} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">
+                  Add Student Report
+                </h2>
+                <p className="text-purple-100 text-sm">
+                  Create detailed performance reports with ease
+                </p>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-slate-800">
-              Add Student Report
-            </h2>
           </div>
 
-          {/* form */}
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Batch Name"
-                value={form.batch_name}
-                onChange={(e) =>
-                  setForm({ ...form, batch_name: e.target.value })
-                }
-                className="border outline-0 border-slate-300 rounded-xl px-4 py-2 bg-white/80 focus:ring-2 focus:ring-emerald-400"
-              />
-              <input
-                type="number"
-                placeholder="Batch No"
-                value={form.batch_no}
-                onChange={(e) => setForm({ ...form, batch_no: e.target.value })}
-                className="border outline-0 border-slate-300 rounded-xl px-4 py-2 bg-white/80 focus:ring-2 focus:ring-emerald-400"
-              />
-            </div>
-
-            <input
-              type="date"
-              value={form.auditDate}
-              onChange={(e) => setForm({ ...form, auditDate: e.target.value })}
-              className="border outline-0 border-slate-300 rounded-xl px-4 py-2 bg-white/80 focus:ring-2 focus:ring-emerald-400 w-full"
-            />
-
-            <select
-              value={form.studentId}
-              onChange={(e) => setForm({ ...form, studentId: e.target.value })}
-              className="border outline-0 border-slate-300 rounded-xl px-4 py-2 bg-white/80 focus:ring-2 focus:ring-emerald-400 w-full"
-            >
-              <option value="">Select Student</option>
-              {filteredStudents.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name} ({s.email})
-                </option>
-              ))}
-            </select>
-
-            {/* Parameters */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
-                <Plus size={18} /> Parameters
+          {/* Form */}
+          <form className="p-8 space-y-6" onSubmit={handleSubmit}>
+            {/* Batch Info Section */}
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-100">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Hash size={20} className="text-purple-600" />
+                Batch Information
               </h3>
-              {form.parameters.map((p, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col sm:flex-row items-center gap-2 border border-slate-200 rounded-xl p-2 bg-white/70"
-                >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
                   <input
                     type="text"
-                    placeholder="Parameter Name"
-                    value={p.name}
+                    placeholder="Batch Name"
+                    value={form.batch_name}
                     onChange={(e) =>
-                      handleParamChange(i, "name", e.target.value)
+                      setForm({ ...form, batch_name: e.target.value })
                     }
-                    className="flex-1 outline-0 px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-400"
+                    className="w-full border-0 outline-0 bg-white/80 backdrop-blur-sm rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm"
                   />
+                </div>
+                <div className="relative">
                   <input
                     type="number"
-                    placeholder="Score"
-                    value={p.score}
+                    placeholder="Batch No"
+                    value={form.batch_no}
                     onChange={(e) =>
-                      handleParamChange(i, "score", e.target.value)
+                      setForm({ ...form, batch_no: e.target.value })
                     }
-                    className="w-24 outline-0 px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-400"
+                    className="w-full border-0 outline-0 bg-white/80 backdrop-blur-sm rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm"
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeParameter(i)}
-                    className="text-red-500 cursor-pointer p-2 rounded-full  hover:bg-red-50"
-                  >
-                    <Trash2 size={16} />
-                  </button>
                 </div>
-              ))}
-              <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={addParameter}
-                  className="flex items-center cursor-pointer gap-1 text-blue-600 font-medium hover:underline"
-                >
-                  <Plus size={16} /> Add Parameter
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePreview}
-                  className="ml-auto cursor-pointer inline-flex items-center gap-2 bg-white border border-emerald-600 text-emerald-700 px-3 py-2 rounded-xl"
-                >
-                  <Eye size={16} /> Preview
-                </button>
               </div>
             </div>
 
-            {/* Feedback */}
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-slate-700">Feedback</h3>
-              {["point1", "point2", "point3"].map((p) => (
-                <textarea
-                  key={p}
-                  placeholder={`Point ${p.slice(-1)}`}
-                  value={form.feedbackSchema[p]}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      feedbackSchema: {
-                        ...form.feedbackSchema,
-                        [p]: e.target.value,
-                      },
-                    })
-                  }
-                  className="w-full outline-0 px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:ring-2 focus:ring-emerald-400 h-16"
+            {/* Date and Student Selection */}
+            <div className="space-y-4">
+              <div className="relative">
+                <Calendar
+                  size={18}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2  text-purple-400"
                 />
-              ))}
+                <input
+                  type="date"
+                  value={form.auditDate}
+                  onChange={(e) =>
+                    setForm({ ...form, auditDate: e.target.value })
+                  }
+                  className="w-full border-0 outline-0 bg-white/80 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm"
+                />
+              </div>
+
+              <div className="relative">
+                <Users
+                  size={18}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400"
+                />
+                <select
+                  value={form.studentId}
+                  onChange={(e) =>
+                    setForm({ ...form, studentId: e.target.value })
+                  }
+                  className="w-full border-0 outline-0 bg-white/80 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm appearance-none cursor-pointer"
+                >
+                  <option value="">Select Student</option>
+                  {filteredStudents.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name} ({s.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <textarea
-              placeholder="Overall Remarks"
-              value={form.overallRemarks}
-              onChange={(e) =>
-                setForm({ ...form, overallRemarks: e.target.value })
-              }
-              className="w-full outline-0 px-4 py-2 rounded-xl border border-slate-300 bg-white/80 focus:ring-2 focus:ring-emerald-400 h-24"
-            />
+            {/* Parameters Section */}
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Plus size={20} className="text-indigo-600" />
+                  Performance Parameters
+                </h3>
 
-            <div className="flex gap-3">
-              <button
+                <div className="flex items-center gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={saveDefaultsToLocal}
+                    className="cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:shadow-md transition"
+                    title="Save parameter names as defaults"
+                  >
+                    Save Defaults
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={loadDefaultsFromLocal}
+                    className="cursor-pointer bg-white border-2 border-purple-600 text-purple-700 px-3 py-1.5 rounded-lg text-sm hover:bg-purple-50 transition"
+                    title="Load default parameter names"
+                  >
+                    Load Defaults
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={clearDefaultsFromLocal}
+                    className="cursor-pointer bg-white border-2 border-red-400 text-red-600 px-3 py-1.5 rounded-lg text-sm hover:bg-red-50 transition"
+                    title="Clear saved defaults"
+                  >
+                    Clear
+                  </motion.button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {form.parameters.map((p, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex flex-col sm:flex-row items-center gap-3 bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm"
+                  >
+                    <input
+                      type="text"
+                      placeholder="Parameter Name"
+                      value={p.name}
+                      onChange={(e) =>
+                        handleParamChange(i, "name", e.target.value)
+                      }
+                      className="flex-1 outline-0 px-4 py-2.5 rounded-lg border-0 bg-white focus:ring-2 focus:ring-purple-400 transition"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Score"
+                      value={p.score}
+                      onChange={(e) =>
+                        handleParamChange(i, "score", e.target.value)
+                      }
+                      className="w-full sm:w-24 outline-0 px-4 py-2.5 rounded-lg border-0 bg-white focus:ring-2 focus:ring-purple-400 transition"
+                    />
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      type="button"
+                      onClick={() => removeParameter(i)}
+                      className="text-red-500 cursor-pointer p-2 rounded-full hover:bg-red-50 transition"
+                    >
+                      <Trash2 size={18} />
+                    </motion.button>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-4 mt-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="button"
+                  onClick={addParameter}
+                  className="flex items-center cursor-pointer gap-2 text-indigo-600 font-medium hover:text-indigo-700 transition"
+                >
+                  <Plus size={18} /> Add Parameter
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="button"
+                  onClick={handlePreview}
+                  className="ml-auto cursor-pointer inline-flex items-center gap-2 bg-white border-2 border-purple-600 text-purple-700 px-4 py-2 rounded-xl hover:bg-purple-50 transition shadow-sm"
+                >
+                  <Eye size={18} /> Preview Report
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Feedback Section */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FileText size={20} className="text-purple-600" />
+                Feedback Points
+              </h3>
+              <div className="space-y-3">
+                {["point1", "point2", "point3"].map((p, idx) => (
+                  <textarea
+                    key={p}
+                    placeholder={`Feedback Point ${idx + 1}`}
+                    value={form.feedbackSchema[p]}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        feedbackSchema: {
+                          ...form.feedbackSchema,
+                          [p]: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full outline-0 px-4 py-3 rounded-xl border-0 bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-purple-400 transition shadow-sm h-20 resize-none"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Overall Remarks */}
+            <div>
+              <textarea
+                placeholder="Overall Remarks & Summary"
+                value={form.overallRemarks}
+                onChange={(e) =>
+                  setForm({ ...form, overallRemarks: e.target.value })
+                }
+                className="w-full outline-0 px-4 py-3 rounded-xl border-0 bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-purple-400 transition shadow-sm h-28 resize-none"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 type="submit"
-                className="flex-1 cursor-pointer w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-2xl shadow-md"
+                className="flex-1 cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3.5 rounded-2xl shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2"
               >
+                <Save size={20} />
                 Save Report
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={handleSaveAndDownload}
-                className="flex-1 w-full bg-white border border-emerald-600 text-emerald-700 font-semibold py-3 rounded-2xl shadow-sm hover:shadow-md cursor-pointer"
+                className="flex-1 cursor-pointer bg-white border-2 border-purple-600 text-purple-700 font-semibold py-3.5 rounded-2xl shadow-sm hover:shadow-lg transition flex items-center justify-center gap-2"
               >
+                <Download size={20} />
                 Save & Download PDF
-              </button>
+              </motion.button>
             </div>
           </form>
-        </div>
+        </motion.div>
       </div>
 
-      {/* ----------------------------
-    Hidden printable template (A4 sized) — refactored
-   ---------------------------- */}
+      {/* Hidden printable template */}
       <div
         ref={printRef}
         style={{
@@ -608,7 +764,6 @@ export default function AddReport() {
         className="print-page"
         aria-hidden="true"
       >
-        {/* Letterhead: full width, fixed height (10% of A4) */}
         <div
           style={{
             width: `${A4_WIDTH_PX}px`,
@@ -622,7 +777,6 @@ export default function AddReport() {
             background: "#ffffff",
           }}
         >
-          {/* Left: logo area (keeps aspect, centered vertically) */}
           <div
             style={{
               flex: "0 0 auto",
@@ -637,7 +791,7 @@ export default function AddReport() {
               src={LOGO_URL || LOGO_DATA_URI}
               alt="logo"
               style={{
-                height: `${HEADER_HEIGHT_PX}`, // safe padding inside header
+                height: `${HEADER_HEIGHT_PX}`,
                 objectFit: "contain",
                 display: "block",
                 width: "100%",
@@ -645,7 +799,6 @@ export default function AddReport() {
             />
           </div>
 
-          {/* Right: small meta placeholder (keeps letterhead clean) */}
           <div
             style={{
               flex: "0 0 180px",
@@ -664,13 +817,7 @@ export default function AddReport() {
           </div>
         </div>
 
-        {/* === Content area starts below the letterhead === */}
-        <div
-          style={{
-            boxSizing: "border-box",
-          }}
-        >
-          {/* Student meta (separate row - avoids any overlap with header) */}
+        <div style={{ boxSizing: "border-box" }}>
           <div
             style={{
               display: "flex",
@@ -703,31 +850,24 @@ export default function AddReport() {
             </div>
           </div>
 
-          {/* Parameters header */}
           <div style={{ marginBottom: 16 }}>
             <h3 style={{ margin: 0, fontSize: 14, color: "#065f46" }}>
               Parameters
             </h3>
           </div>
 
-          {/* Parameters list container — scrollable if many items, but capture will include full content */}
           <div
             className="print-parameters"
             style={{
               borderRadius: 8,
               overflow: "hidden",
               marginBottom: 24,
-              // ensure there is plenty of room on page; html2canvas will capture whatever fits vertically,
-              // and your slicing logic will paginate content that overflows the visible A4 height.
               maxHeight: `${A4_HEIGHT_PX - HEADER_HEIGHT_PX - 300}px`,
               overflowY: "auto",
               background: "#fff",
             }}
-          >
-            {/* rows will be dynamically appended here by populatePrintTemplate */}
-          </div>
+          />
 
-          {/* Overall Remarks */}
           <div style={{ marginTop: 20, marginBottom: 12 }}>
             <h3 style={{ margin: "0 0 6px 0", fontSize: 14, color: "#065f46" }}>
               Overall Remarks
@@ -740,8 +880,7 @@ export default function AddReport() {
             </div>
           </div>
 
-          {/* Feedback */}
-          <div style={{ marginTop: 32 }}>
+          <div style={{ marginTop: 10 }}>
             <h3 style={{ margin: "0 0 6px 0", fontSize: 14, color: "#065f46" }}>
               Feedback
             </h3>
@@ -751,12 +890,10 @@ export default function AddReport() {
             />
           </div>
 
-          {/* Footer placeholders */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              marginTop: 60,
               alignItems: "flex-end",
             }}
           >
@@ -770,7 +907,7 @@ export default function AddReport() {
                 }}
               />
               <div style={{ fontSize: 12, color: "#334155" }}>
-                Evaluator's Signature
+                Evaluator's Signature and Stamp
               </div>
             </div>
 
@@ -784,26 +921,28 @@ export default function AddReport() {
                 }}
               />
               <div style={{ fontSize: 12, color: "#334155" }}>
-                Company Stamp
+                Student's Signature
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* --------- Preview modal (unchanged) ---------- */}
-      {showPreview && (
-        <PreviewModal
-          data={previewData}
-          onClose={() => setShowPreview(false)}
-          onDownload={() => {
-            const pdfData = previewData || buildPdfDataFrom(null);
-            const filename = buildPdfFilename(pdfData);
-            generatePdfFromElement(printRef.current, filename);
-          }}
-          logoSrc={LOGO_URL || LOGO_DATA_URI}
-        />
-      )}
+      {/* Preview modal */}
+      <AnimatePresence>
+        {showPreview && (
+          <PreviewModal
+            data={previewData}
+            onClose={() => setShowPreview(false)}
+            onDownload={() => {
+              const pdfData = previewData || buildPdfDataFrom(null);
+              const filename = buildPdfFilename(pdfData);
+              generatePdfFromElement(printRef.current, filename);
+            }}
+            logoSrc={LOGO_URL || LOGO_DATA_URI}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -816,59 +955,85 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
   const fb = data.feedbackSchema || {};
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-auto max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <div className="flex items-center gap-3">
-            <img
-              src={logoSrc}
-              alt="logo"
-              style={{ height: 44, width: 44, borderRadius: 8 }}
-            />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[90vh] flex flex-col"
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+              <img
+                src={logoSrc}
+                alt="logo"
+                className="h-10 w-10 object-contain"
+              />
+            </div>
             <div>
-              <div className="text-lg font-semibold text-emerald-700">
-                {COMPANY_NAME}
+              <div className="text-xl font-bold text-white">
+                Nexcore Alliance
               </div>
-              <div className="text-sm text-slate-500">
+              <div className="text-sm text-purple-100">
                 Technical Audit Report — Preview
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={onDownload}
-              className="inline-flex cursor-pointer items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg"
+              className="inline-flex cursor-pointer items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-xl transition"
             >
+              <Download size={18} />
               Download PDF
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={onClose}
-              className="bg-slate-100 px-3 py-1 rounded-lg cursor-pointer"
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-3 py-2 rounded-xl cursor-pointer text-white transition"
             >
               Close
-            </button>
+            </motion.button>
           </div>
         </div>
 
-        <div className="p-6 space-y-4">
-          <div className="flex items-start justify-between">
+        {/* Content */}
+        <div className="p-6 space-y-6 overflow-y-auto">
+          {/* Student Info */}
+          <div className="flex items-start justify-between bg-gradient-to-br from-purple-50 to-indigo-50 p-5 rounded-2xl border border-purple-100">
             <div>
-              <div className="text-sm text-slate-700 font-medium">
-                {student.name || "Unnamed Student"}
+              <div className="flex items-center gap-2 mb-2">
+                <Users size={18} className="text-purple-600" />
+                <div className="text-lg font-semibold text-gray-800">
+                  {student.name || "Unnamed Student"}
+                </div>
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Mail size={14} />
                 {student.email || "-"}
               </div>
             </div>
-            <div className="text-right text-sm text-slate-600">
-              <div>
+            <div className="text-right text-sm text-gray-700 space-y-2">
+              <div className="bg-white px-3 py-1.5 rounded-lg shadow-sm">
                 <strong>Batch:</strong> {data?.batch_name || "-"}
               </div>
-              <div>
+              <div className="bg-white px-3 py-1.5 rounded-lg shadow-sm">
                 <strong>Batch No:</strong> {data?.batch_no ?? "-"}
               </div>
-              <div>
+              <div className="bg-white px-3 py-1.5 rounded-lg shadow-sm">
                 <strong>Audit Date:</strong>{" "}
                 {data?.auditDate
                   ? new Date(data.auditDate).toLocaleDateString()
@@ -877,30 +1042,40 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
             </div>
           </div>
 
-          <div>
-            <h4 className="text-emerald-600 font-semibold mb-2">Parameters</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Parameters */}
+          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-100">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FileText size={18} className="text-indigo-600" />
+              Performance Parameters
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {params.length ? (
                 params.map((p, i) => {
                   const score = Number(p.score) || 0;
                   let badgeClass =
-                    "bg-red-50 text-red-700 border border-red-200";
+                    "bg-red-50 text-red-700 border-2 border-red-200";
                   if (score >= 8)
                     badgeClass =
-                      "bg-green-50 text-green-700 border border-green-200";
+                      "bg-green-50 text-green-700 border-2 border-green-200";
                   else if (score >= 5)
                     badgeClass =
-                      "bg-yellow-50 text-yellow-700 border border-yellow-200";
+                      "bg-yellow-50 text-yellow-700 border-2 border-yellow-200";
+
                   return (
-                    <div
+                    <motion.div
                       key={i}
-                      className="flex items-center justify-between p-3 rounded-xl border"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="flex items-center justify-between p-4 rounded-xl bg-white shadow-sm"
                     >
-                      <div className="text-sm font-medium">{p.name || "-"}</div>
+                      <div className="text-sm font-medium text-gray-800">
+                        {p.name || "-"}
+                      </div>
                       <div
-                        className={`px-3 py-1 rounded-md font-semibold ${badgeClass}`}
+                        className={`px-3 py-1.5 rounded-lg font-bold text-sm ${badgeClass}`}
                         style={{
-                          minWidth: 64,
+                          minWidth: 70,
                           display: "flex",
                           justifyContent: "center",
                           alignItems: "center",
@@ -908,47 +1083,68 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
                       >
                         {score} / 10
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })
               ) : (
-                <div className="text-sm text-slate-500">No parameters</div>
+                <div className="text-sm text-gray-500 col-span-2 text-center py-4">
+                  No parameters available
+                </div>
               )}
             </div>
           </div>
 
-          <div>
-            <h4 className="text-emerald-600 font-semibold mb-2">
+          {/* Overall Remarks */}
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 border border-purple-100">
+            <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <FileText size={18} className="text-purple-600" />
               Overall Remarks
             </h4>
-            <div className="text-sm text-slate-700">
+            <div className="text-sm text-gray-700 bg-white p-4 rounded-xl shadow-sm">
               {data?.overallRemarks || "-"}
             </div>
           </div>
 
-          <div>
-            <h4 className="text-emerald-600 font-semibold mb-2">Feedback</h4>
-            <ul className="list-disc pl-5 text-sm text-slate-700 space-y-1">
-              <li>{fb.point1 || "-"}</li>
-              <li>{fb.point2 || "-"}</li>
-              <li>{fb.point3 || "-"}</li>
-            </ul>
+          {/* Feedback */}
+          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-5 border border-indigo-100">
+            <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <FileText size={18} className="text-indigo-600" />
+              Feedback Points
+            </h4>
+            <div className="space-y-2">
+              {["point1", "point2", "point3"].map((key, idx) => (
+                <div
+                  key={key}
+                  className="flex gap-3 items-start bg-white p-3 rounded-xl shadow-sm"
+                >
+                  <div className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                    {idx + 1}
+                  </div>
+                  <div className="text-sm text-gray-700 flex-1">
+                    {fb[key] || "-"}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="flex justify-between items-end mt-6">
-            <div className="text-center">
-              <div className="h-14 w-48 border-b border-slate-200 mb-1" />
-              <div className="text-xs text-slate-600">
+          {/* Signatures */}
+          <div className="flex justify-between items-end gap-6 pt-6 border-t border-gray-200">
+            <div className="text-center flex-1">
+              <div className="h-16 border-b-2 border-gray-300 mb-2" />
+              <div className="text-xs text-gray-600 font-medium">
                 Evaluator's Signature
               </div>
             </div>
-            <div className="text-center">
-              <div className="h-14 w-48 border-b border-slate-200 mb-1" />
-              <div className="text-xs text-slate-600">Company Stamp</div>
+            <div className="text-center flex-1">
+              <div className="h-16 border-b-2 border-gray-300 mb-2" />
+              <div className="text-xs text-gray-600 font-medium">
+                Company Stamp
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
