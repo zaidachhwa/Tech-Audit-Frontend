@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Ban,
   FolderGit2,
+  Notebook,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -96,7 +97,7 @@ export default function AdminDashboard() {
       <Toaster position="top-right" />
 
       {/* HEADER */}
-      <header className="bg-white/70 backdrop-blur-xl shadow-sm px-6 py-4 flex justify-between items-center rounded-b-2xl">
+      <header className="bg-white/70 backdrop-blur-xl shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-center rounded-b-2xl">
         <div className="flex items-center gap-4">
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-2 rounded-2xl text-white shadow-md">
             <Users size={20} />
@@ -109,7 +110,13 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap mt-4 md:mt-0 items-center gap-3">
+          <NavLink
+            to="/admin/syllabus"
+            className="cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow transition flex items-center gap-2"
+          >
+            <Notebook size={18} /> <span>Syllabus Tracker</span>
+          </NavLink>
           <NavLink
             to="/admin/project-tracking"
             className="cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow transition flex items-center gap-2"

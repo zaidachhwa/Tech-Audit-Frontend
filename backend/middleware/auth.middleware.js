@@ -30,3 +30,10 @@ export const isStudent = async (req, res, next) => {
     return res.status(403).json({ message: "Forbidden: Students only" });
   next();
 };
+
+export const isTeacher = async (req, res, next) => {
+  if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+  if (req.user.role !== "teacher")
+    return res.status(403).json({ message: "Forbidden: Teachers only" });
+  next();
+};

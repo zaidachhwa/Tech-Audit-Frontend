@@ -8,6 +8,8 @@ import studentRoutes from "./routes/student.routes.js";
 import batchRoutes from "./routes/batch.routes.js";
 import projectRoutes from "./routes/project.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+import teacherRoutes from "./routes/teacher.routes.js";
+import syllabusRoutes from "./routes/syllabus.routes.js";
 
 import { errorHandler } from "./middleware/error.middleware.js";
 import { MONGODB_URL, PORT, CORS_ORIGIN } from "./config/env.js";
@@ -34,6 +36,8 @@ app.use("/api/students", studentRoutes);
 app.use("/api/batches", batchRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/teachers", teacherRoutes);
+app.use("/api/syllabus", syllabusRoutes);
 
 // ERROR HANDLER
 app.use(errorHandler);
