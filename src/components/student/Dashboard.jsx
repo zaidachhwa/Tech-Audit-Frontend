@@ -1,249 +1,210 @@
+// src/components/student/StudentDashboard.jsx
+import { useEffect, useState } from "react";
+import { API } from "../../api/axios";
+import { getMe } from "../../api/student.api";
+import toast from "react-hot-toast";
+import { RefreshCw, Layers, CheckCircle2, Clock, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  TrendingUp,
-  Clock,
-  CheckCircle2,
-  Award,
-  Layers,
-  Calendar,
-  Target,
-} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
-export default function Dashboard() {
-  const quickStats = [
-    {
-      icon: <Layers size={24} />,
-      label: "Total Projects",
-      value: "12",
-      change: "+2 this week",
-      color: "from-blue-500 to-cyan-500",
-    },
-    {
-      icon: <Clock size={24} />,
-      label: "In Progress",
-      value: "5",
-      change: "3 due soon",
-      color: "from-orange-500 to-amber-500",
-    },
-    {
-      icon: <CheckCircle2 size={24} />,
-      label: "Completed",
-      value: "7",
-      change: "58% complete",
-      color: "from-emerald-500 to-green-500",
-    },
-    {
-      icon: <Award size={24} />,
-      label: "Approved",
-      value: "4",
-      change: "Great work!",
-      color: "from-purple-500 to-pink-500",
-    },
-  ];
+export default function StudentDashboard() {
+  const { user: authUser } = useAuth();
+  const [me, setMe] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const recentActivity = [
-    {
-      title: "Submitted E-commerce Project",
-      time: "2 hours ago",
-      type: "success",
-    },
-    {
-      title: "Started React Dashboard Module",
-      time: "5 hours ago",
-      type: "info",
-    },
-    { title: "Completed API Integration", time: "1 day ago", type: "success" },
-    {
-      title: "New Project Assigned: Blog System",
-      time: "2 days ago",
-      type: "warning",
-    },
-  ];
+  const fetchAll = async () => {
+    try {
+      setLoading(true);
+      const meRes = await API.get("/students/me");
+      setMe(meRes.data.student || meRes.data);
+
+      // Projects for student
+      const projectRes = await API.get(
+        `/projects/student/${
+          meRes.data.student?.id ||
+          meRes.data?.student?._id ||
+          meRes.data?.studentId ||
+          meRes.data?.id
+        }`
+      );
+      // but your backend /projects/student/:studentId expects admin - you can call with id:
+      // fallback: if the API returns count wrapper
+      const projectsList = projectRes.data?.projects || projectRes.data || [];
+      setProjects(projectsList);
+
+      // Reports
+      const reportsRes = await API.get(
+        `/reports/student/${
+          meRes.data.student?.id || meRes.data?.student?._id || meRes.data?.id
+        }`
+      );
+      const reportsList = reportsRes.data?.reports || reportsRes.data || [];
+      setReports(reportsList);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const total = projects.length;
+  const inProgress = projects.filter(
+    (p) => p.overallStatus === "In Progress"
+  ).length;
+  const completed = projects.filter(
+    (p) => p.overallStatus === "Completed" || p.overallStatus === "Approved"
+  ).length;
+  const dueSoon = projects.filter((p) => {
+    // if you store a due date in project (e.g., p.dueDate). fallback false
+    if (!p.dueDate) return false;
+    const diff = (new Date(p.dueDate) - new Date()) / (1000 * 3600 * 24);
+    return diff <= 7 && diff >= 0;
+  }).length;
+
+  const upcomingDeadlines = projects
+    .filter((p) => p.dueDate)
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+    .slice(0, 5);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 text-white"
         >
-          <h1 className="text-3xl font-bold mb-2">Welcome Back! 👋</h1>
-          <p className="text-purple-100">
-            Here's what's happening with your projects today.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">
+                Hello, {me?.name || authUser?.name || "Student"}
+              </h1>
+              <p className="text-purple-100">
+                Here's your project & report overview.
+              </p>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={fetchAll}
+              disabled={loading}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-xl transition flex items-center gap-2 cursor-pointer"
+            >
+              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+              Refresh
+            </motion.button>
+          </div>
         </motion.div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickStats.map((stat, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ y: -4 }}
-              className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-white/30"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div
-                  className={`bg-gradient-to-r ${stat.color} p-3 rounded-xl text-white shadow-md`}
-                >
-                  {stat.icon}
-                </div>
-                <div className="text-3xl font-bold text-gray-800">
-                  {stat.value}
-                </div>
-              </div>
-              <div className="font-semibold text-gray-700 mb-1">
-                {stat.label}
-              </div>
-              <div className="text-sm text-gray-500">{stat.change}</div>
-            </motion.div>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <StatCard
+            icon={<Layers size={20} />}
+            label="Total Projects"
+            value={total}
+          />
+          <StatCard
+            icon={<Clock size={20} />}
+            label="In Progress"
+            value={inProgress}
+          />
+          <StatCard
+            icon={<CheckCircle2 size={20} />}
+            label="Completed"
+            value={completed}
+          />
+          <StatCard
+            icon={<Calendar size={20} />}
+            label="Reports"
+            value={reports.length}
+          />
         </div>
 
-        {/* Two Column Layout */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Recent Activity */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30"
-          >
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <TrendingUp size={20} className="text-purple-600" />
-              Recent Activity
-            </h3>
-            <div className="space-y-3">
-              {recentActivity.map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition"
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full mt-2 ${
-                      activity.type === "success"
-                        ? "bg-green-500"
-                        : activity.type === "info"
-                        ? "bg-blue-500"
-                        : "bg-amber-500"
-                    }`}
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-800">
-                      {activity.title}
-                    </div>
-                    <div className="text-sm text-gray-500">{activity.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Upcoming Deadlines */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30"
-          >
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Calendar size={20} className="text-orange-600" />
+          <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
               Upcoming Deadlines
             </h3>
-            <div className="space-y-3">
-              {[
-                {
-                  project: "E-commerce Frontend",
-                  due: "In 3 days",
-                  priority: "high",
-                },
-                {
-                  project: "API Documentation",
-                  due: "In 5 days",
-                  priority: "medium",
-                },
-                {
-                  project: "Database Design",
-                  due: "In 1 week",
-                  priority: "low",
-                },
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-gray-50 to-purple-50 border border-purple-100"
-                >
-                  <div>
-                    <div className="font-semibold text-gray-800">
-                      {item.project}
-                    </div>
-                    <div className="text-sm text-gray-500 mt-1">{item.due}</div>
-                  </div>
+            {upcomingDeadlines.length === 0 ? (
+              <p className="text-gray-500">No upcoming deadlines.</p>
+            ) : (
+              <div className="space-y-3">
+                {upcomingDeadlines.map((p) => (
                   <div
-                    className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      item.priority === "high"
-                        ? "bg-red-100 text-red-700"
-                        : item.priority === "medium"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-green-100 text-green-700"
-                    }`}
+                    key={p._id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-purple-50 border border-purple-100"
                   >
-                    {item.priority.toUpperCase()}
+                    <div>
+                      <div className="font-semibold text-gray-800">
+                        {p.title}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {p.description?.slice(0, 80) || ""}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {p.dueDate
+                        ? new Date(p.dueDate).toLocaleDateString()
+                        : "—"}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* Progress Overview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30"
-        >
-          <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <Target size={20} className="text-indigo-600" />
-            Your Progress This Month
-          </h3>
-          <div className="space-y-4">
-            {[
-              {
-                skill: "React Development",
-                progress: 85,
-                color: "bg-blue-500",
-              },
-              { skill: "Node.js Backend", progress: 70, color: "bg-green-500" },
-              {
-                skill: "Database Design",
-                progress: 60,
-                color: "bg-purple-500",
-              },
-              { skill: "UI/UX Design", progress: 45, color: "bg-pink-500" },
-            ].map((item, index) => (
-              <div key={index}>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="font-medium text-gray-700">
-                    {item.skill}
-                  </span>
-                  <span className="font-bold text-gray-800">
-                    {item.progress}%
-                  </span>
-                </div>
-                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${item.progress}%` }}
-                    transition={{ duration: 1, delay: index * 0.2 }}
-                    className={`h-full ${item.color} rounded-full`}
-                  />
+          {/* Recent Activity (reports/submissions) */}
+          <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Recent Activity
+            </h3>
+            {projects.slice(0, 6).map((p) => (
+              <div
+                key={p._id}
+                className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition"
+              >
+                <div className="w-2 h-2 rounded-full mt-2 bg-purple-600" />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-800">{p.title}</div>
+                  <div className="text-sm text-gray-500">
+                    {p.overallStatus} •{" "}
+                    {p.updatedAt ? new Date(p.updatedAt).toLocaleString() : ""}
+                  </div>
                 </div>
               </div>
             ))}
+            {projects.length === 0 && (
+              <p className="text-gray-500">No activity yet.</p>
+            )}
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
+  );
+}
+
+function StatCard({ icon, label, value }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
+      className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-white/30"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-3 rounded-xl text-white shadow-md">
+          {icon}
+        </div>
+        <div className="text-3xl font-bold text-gray-800">{value}</div>
+      </div>
+      <div className="font-semibold text-gray-700">{label}</div>
+    </motion.div>
   );
 }

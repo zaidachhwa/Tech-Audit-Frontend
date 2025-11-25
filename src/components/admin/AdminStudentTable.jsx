@@ -1,9 +1,14 @@
-// AdminStudentTable.jsx
+// src/components/admin/AdminStudentTable.jsx
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
-import { CheckCircle2, Ban, Pencil, Trash2 } from "lucide-react";
+import { CheckCircle2, Ban, Pencil, Trash2, X } from "lucide-react";
+import {
+  getAllStudents,
+  updateStudent,
+  deleteStudent as apiDeleteStudent,
+} from "../../api/student.api";
 
 export default function AdminStudentTable({ onRefresh, batches = [] }) {
   const [students, setStudents] = useState([]);
@@ -12,7 +17,16 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
   const [batchFilter, setBatchFilter] = useState("all");
   const [loading, setLoading] = useState(false);
 
-  // Load students
+  // Edit modal
+  const [editing, setEditing] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    batch_name: "",
+    batch_no: "",
+  });
+  const [editLoading, setEditLoading] = useState(false);
+
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -29,26 +43,18 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
     fetchStudents();
   }, []);
 
-  // -------------------------
-  // ✅ Generate Batch List From Props Instead of Students
-  // -------------------------
   const batchOptions = batches.map((b) => `${b.batch_name}#${b.batch_no}`);
 
-  // ---------------- Filtering ----------------
   const filtered = students
     .filter((s) => {
       const matchesSearch =
         s.name.toLowerCase().includes(search.toLowerCase()) ||
         s.email.toLowerCase().includes(search.toLowerCase());
-
       const studentBatch = `${s.batch_name}#${s.batch_no}`;
       const matchesBatch =
         batchFilter === "all" ? true : studentBatch === batchFilter;
-
       return matchesSearch && matchesBatch;
     })
-
-    // ---------------- Sorting ----------------
     .sort((a, b) => {
       if (sortBy === "newest")
         return new Date(b.createdAt) - new Date(a.createdAt);
@@ -61,18 +67,15 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
       return 0;
     });
 
-  // ---------------- Approve / Reject / Delete ----------------
-
+  // Approve / Reject / Delete
   const approveStudent = async (id) => {
     try {
       await API.patch(`/admin/approve-student/${id}`);
       toast.success("Student approved");
-
       setStudents((prev) =>
         prev.map((s) => (s._id === id ? { ...s, isActive: true } : s))
       );
-
-      if (onRefresh) onRefresh();
+      onRefresh?.();
     } catch {
       toast.error("Approval failed");
     }
@@ -82,12 +85,10 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
     try {
       await API.patch(`/admin/reject-student/${id}`);
       toast.success("Student rejected");
-
       setStudents((prev) =>
         prev.map((s) => (s._id === id ? { ...s, isActive: false } : s))
       );
-
-      if (onRefresh) onRefresh();
+      onRefresh?.();
     } catch {
       toast.error("Rejection failed");
     }
@@ -95,16 +96,51 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
 
   const deleteStudent = async (id) => {
     if (!confirm("Delete student permanently?")) return;
-
     try {
       await API.delete(`/students/delete/${id}`);
       toast.success("Student deleted");
-
       setStudents((prev) => prev.filter((s) => s._id !== id));
-
-      if (onRefresh) onRefresh();
+      onRefresh?.();
     } catch {
       toast.error("Delete failed");
+    }
+  };
+
+  // Edit flow
+  const openEdit = (s) => {
+    setEditing(s);
+    setEditForm({
+      name: s.name || "",
+      email: s.email || "",
+      batch_name: s.batch_name || "",
+      batch_no: s.batch_no || "",
+    });
+  };
+
+  const submitEdit = async () => {
+    try {
+      setEditLoading(true);
+      await API.patch(`/students/update/${editing._id}`, {
+        name: editForm.name,
+        email: editForm.email,
+        batch_name: editForm.batch_name,
+        batch_no: Number(editForm.batch_no),
+      });
+      toast.success("Student updated");
+      setStudents((prev) =>
+        prev.map((p) =>
+          p._id === editing._id
+            ? { ...p, ...editForm, batch_no: Number(editForm.batch_no) }
+            : p
+        )
+      );
+      setEditing(null);
+      onRefresh?.();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Update failed");
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -114,9 +150,7 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
       animate={{ opacity: 1, y: 0 }}
       className="bg-white/60 backdrop-blur-xl p-6 rounded-3xl shadow-xl"
     >
-      {/* ----------------- FILTER BAR ----------------- */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-3 mb-4">
-        {/* Search Field */}
         <div className="flex items-center gap-3 w-full md:w-1/2">
           <input
             type="text"
@@ -127,16 +161,13 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
           />
         </div>
 
-        {/* Right Filters */}
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {/* Batch Filter */}
           <select
             value={batchFilter}
             onChange={(e) => setBatchFilter(e.target.value)}
             className="p-3 rounded-xl bg-white/70 border outline-0 shadow cursor-pointer border-white/30"
           >
             <option value="all">All Batches</option>
-
             {batchOptions.map((b) => (
               <option key={b} value={b}>
                 {b.replace("#", " #")}
@@ -144,7 +175,6 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
             ))}
           </select>
 
-          {/* Sort Filter */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -156,7 +186,6 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
             <option value="pending">Pending First</option>
           </select>
 
-          {/* Refresh */}
           <button
             onClick={fetchStudents}
             className="cursor-pointer outline-0 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow"
@@ -166,7 +195,6 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
         </div>
       </div>
 
-      {/* ----------------- TABLE ----------------- */}
       <div className="overflow-x-auto rounded-xl">
         <table className="min-w-full">
           <thead className="bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-800">
@@ -220,7 +248,6 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
 
                   <td className="p-3">
                     <div className="flex items-center gap-2">
-                      {/* Approve / Reject */}
                       {!s.isActive ? (
                         <button
                           onClick={() => approveStudent(s._id)}
@@ -237,15 +264,13 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
                         </button>
                       )}
 
-                      {/* Edit */}
                       <button
-                        onClick={() => toast("Edit feature coming soon")}
+                        onClick={() => openEdit(s)}
                         className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-xl"
                       >
                         <Pencil size={16} />
                       </button>
 
-                      {/* Delete */}
                       <button
                         onClick={() => deleteStudent(s._id)}
                         className="cursor-pointer bg-red-600 hover:bg-red-700 text-white p-2 rounded-xl"
@@ -260,6 +285,74 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
           </tbody>
         </table>
       </div>
+
+      {/* Edit Modal */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Edit Student</h3>
+              <button onClick={() => setEditing(null)} className="p-2">
+                <X />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                value={editForm.name}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, name: e.target.value })
+                }
+                className="w-full p-3 rounded-xl border"
+                placeholder="Name"
+              />
+              <input
+                value={editForm.email}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, email: e.target.value })
+                }
+                className="w-full p-3 rounded-xl border"
+                placeholder="Email"
+              />
+              <div className="flex gap-2">
+                <input
+                  value={editForm.batch_name}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, batch_name: e.target.value })
+                  }
+                  className="flex-1 p-3 rounded-xl border"
+                  placeholder="Batch name"
+                />
+                <input
+                  type="number"
+                  value={editForm.batch_no}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, batch_no: e.target.value })
+                  }
+                  className="w-28 p-3 rounded-xl border"
+                  placeholder="No"
+                />
+              </div>
+
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={submitEdit}
+                  disabled={editLoading}
+                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setEditing(null)}
+                  className="flex-1 px-4 py-3 rounded-xl border"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -31,7 +31,9 @@ export default function Projects() {
 
   // Fetch projects
   useEffect(() => {
+    if (!user?.id) return;
     fetchProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchProjects = async () => {
@@ -51,16 +53,15 @@ export default function Projects() {
   const toggleExpanded = (projectId) => {
     setExpandedProjects((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        newSet.delete(projectId);
-      } else {
-        newSet.add(projectId);
-      }
+      if (newSet.has(projectId)) newSet.delete(projectId);
+      else newSet.add(projectId);
       return newSet;
     });
   };
 
-  // Toggle module status
+  // ----------------------
+  // Module toggle: optimistic update for better UX
+  // ----------------------
   const handleModuleToggle = async (project, moduleId, currentStatus) => {
     if (["Submitted", "Approved"].includes(project.overallStatus)) {
       toast.error("Cannot modify modules after submission/approval");
@@ -71,17 +72,44 @@ export default function Projects() {
     const currentIndex = statusFlow.indexOf(currentStatus);
     const nextStatus = statusFlow[(currentIndex + 1) % statusFlow.length];
 
+    // Optimistic update: update only the specific module in state
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p._id !== project._id) return p;
+        return {
+          ...p,
+          modules: p.modules.map((m) =>
+            m._id === moduleId ? { ...m, status: nextStatus } : m
+          ),
+        };
+      })
+    );
+
     try {
       await API.patch(`/projects/module/${moduleId}`, { status: nextStatus });
       toast.success(`Module updated to ${nextStatus}`);
-      fetchProjects();
     } catch (err) {
       console.error(err);
       toast.error("Failed to update module");
+
+      // Revert on error: fetch the single project from server or re-fetch all
+      // To avoid full fetch we attempt to revert locally by re-requesting that project
+      try {
+        const res = await API.get(`/projects/${project._id}`);
+        const freshProject = res.data || res.data?.project || res.data;
+        setProjects((prev) =>
+          prev.map((p) => (p._id === project._id ? freshProject : p))
+        );
+      } catch (fetchErr) {
+        // fallback: re-fetch all
+        fetchProjects();
+      }
     }
   };
 
-  // Submit project
+  // ----------------------
+  // Submit project (student)
+  // ----------------------
   const handleSubmit = async (project) => {
     if (["Submitted", "Approved"].includes(project.overallStatus)) {
       toast.error("Project already submitted");
@@ -96,13 +124,72 @@ export default function Projects() {
       return;
     }
 
+    // Additionally require overallStatus === 'Completed' to be allowed to submit
+    if (project.overallStatus !== "Completed") {
+      toast.error("Set overall status to Completed before submitting");
+      return;
+    }
+
     try {
-      await API.patch(`/projects/${project._id}/submit`);
+      const res = await API.patch(`/projects/${project._id}/submit`);
       toast.success("Project submitted for approval! 🎉");
-      fetchProjects();
+
+      // update local project status to Submitted
+      setProjects((prev) =>
+        prev.map((p) =>
+          p._id === project._id
+            ? { ...p, overallStatus: "Submitted", ...res.data?.project }
+            : p
+        )
+      );
     } catch (err) {
       console.error(err);
       toast.error("Failed to submit project");
+    }
+  };
+
+  // ----------------------
+  // Update overall project status (student)
+  // - Students can set overall status (but Completed only when all modules done)
+  // ----------------------
+  const handleSetOverallStatus = async (project, newStatus) => {
+    // Guard: Completed only when modules all completed
+    const allModulesCompleted = project.modules?.every(
+      (m) => m.status === "Completed"
+    );
+    if (newStatus === "Completed" && !allModulesCompleted) {
+      toast.error(
+        "All modules must be completed before setting overall status to Completed"
+      );
+      return;
+    }
+
+    // Optimistic update local project
+    const prevProject = projects.find((p) => p._id === project._id);
+    setProjects((prev) =>
+      prev.map((p) =>
+        p._id === project._id ? { ...p, overallStatus: newStatus } : p
+      )
+    );
+
+    try {
+      const res = await API.patch(`/projects/${project._id}/status`, {
+        status: newStatus,
+      });
+      toast.success("Overall status updated");
+      // Update with response project if provided
+      if (res.data?.project) {
+        setProjects((prev) =>
+          prev.map((p) => (p._id === project._id ? res.data.project : p))
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update overall status");
+      // revert
+      setProjects((prev) =>
+        prev.map((p) => (p._id === project._id ? prevProject : p))
+      );
     }
   };
 
@@ -218,6 +305,7 @@ export default function Projects() {
                 onToggleExpand={() => toggleExpanded(project._id)}
                 onModuleToggle={handleModuleToggle}
                 onSubmit={handleSubmit}
+                onSetOverallStatus={handleSetOverallStatus}
                 calculateProgress={calculateProgress}
               />
             ))}
@@ -254,14 +342,22 @@ function ProjectCard({
   onToggleExpand,
   onModuleToggle,
   onSubmit,
+  onSetOverallStatus,
   calculateProgress,
 }) {
   const progress = calculateProgress(project.modules);
   const isLocked = ["Submitted", "Approved"].includes(project.overallStatus);
+
+  // Student can Submit only when:
+  // - all modules completed
+  // - overallStatus is "Completed"
+  const allModulesCompleted = project.modules?.every(
+    (m) => m.status === "Completed"
+  );
   const canSubmit =
+    allModulesCompleted &&
     project.overallStatus === "Completed" &&
-    project.modules?.every((m) => m.status === "Completed") &&
-    !isLocked;
+    !["Submitted", "Approved"].includes(project.overallStatus);
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -500,26 +596,60 @@ function ProjectCard({
           )}
         </motion.button>
 
-        {canSubmit && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onSubmit(project)}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-6 py-2 rounded-xl font-semibold shadow-lg cursor-pointer"
-          >
-            <Send size={18} />
-            Submit Project
-          </motion.button>
-        )}
-
-        {isLocked && (
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
-            <AlertCircle size={16} />
-            {project.overallStatus === "Submitted"
-              ? "Awaiting approval"
-              : "Project approved"}
+        <div className="flex items-center gap-3">
+          {/* Overall status quick control for student */}
+          <div className="flex items-center gap-2 bg-white border border-gray-200 p-2 rounded-xl">
+            <label className="text-xs text-gray-600 mr-2">Status</label>
+            <select
+              value={project.overallStatus}
+              onChange={(e) => onSetOverallStatus(project, e.target.value)}
+              disabled={["Submitted", "Approved"].includes(
+                project.overallStatus
+              )}
+              className="text-sm px-2 py-1 rounded-md outline-none"
+            >
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed" disabled={!allModulesCompleted}>
+                Completed
+              </option>
+              <option value="Submitted" disabled>
+                Submitted
+              </option>
+              <option value="Approved" disabled>
+                Approved
+              </option>
+            </select>
+            {/* hint */}
+            {!allModulesCompleted && project.overallStatus !== "Completed" && (
+              <div className="text-xs text-gray-400 ml-2">
+                Finish modules to set Completed
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Submit button -> only when overallStatus is Completed & all modules completed */}
+          {canSubmit && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onSubmit(project)}
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-6 py-2 rounded-xl font-semibold shadow-lg cursor-pointer"
+            >
+              <Send size={18} />
+              Submit Project
+            </motion.button>
+          )}
+
+          {isLocked && (
+            <div className="flex items-center gap-2 text-gray-500 text-sm">
+              <AlertCircle size={16} />
+              {project.overallStatus === "Submitted"
+                ? "Awaiting approval"
+                : "Project approved"}
+            </div>
+          )}
+        </div>
       </div>
     </motion.div>
   );

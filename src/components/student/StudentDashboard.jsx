@@ -1,276 +1,210 @@
+// src/components/student/StudentDashboard.jsx
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
+import { getMe } from "../../api/student.api";
 import toast from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, Eye, LogOut, Calendar, GraduationCap } from "lucide-react";
+import { RefreshCw, Layers, CheckCircle2, Clock, Calendar } from "lucide-react";
+import { motion } from "framer-motion";
+import { useAuth } from "../../context/AuthContext";
 
 export default function StudentDashboard() {
-  const { user, logout } = useAuth();
+  const { user: authUser } = useAuth();
+  const [me, setMe] = useState(null);
+  const [projects, setProjects] = useState([]);
   const [reports, setReports] = useState([]);
-  const [filteredReports, setFilteredReports] = useState([]);
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [filter, setFilter] = useState({ date: "", search: "" });
+  const [loading, setLoading] = useState(false);
 
-  const fetchReports = async () => {
+  const fetchAll = async () => {
     try {
-      const { data } = await API.get(`/reports/student/${user.id}`);
-      setReports(data);
-      setFilteredReports(data);
-    } catch (error) {
-      toast.error("Failed to load reports");
-      console.error(error);
+      setLoading(true);
+      const meRes = await API.get("/students/me");
+      setMe(meRes.data.student || meRes.data);
+
+      // Projects for student
+      const projectRes = await API.get(
+        `/projects/student/${
+          meRes.data.student?.id ||
+          meRes.data?.student?._id ||
+          meRes.data?.studentId ||
+          meRes.data?.id
+        }`
+      );
+      // but your backend /projects/student/:studentId expects admin - you can call with id:
+      // fallback: if the API returns count wrapper
+      const projectsList = projectRes.data?.projects || projectRes.data || [];
+      setProjects(projectsList);
+
+      // Reports
+      const reportsRes = await API.get(
+        `/reports/student/${
+          meRes.data.student?.id || meRes.data?.student?._id || meRes.data?.id
+        }`
+      );
+      const reportsList = reportsRes.data?.reports || reportsRes.data || [];
+      setReports(reportsList);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchReports();
+    fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 🔍 Handle Filters
-  useEffect(() => {
-    let filtered = reports;
+  const total = projects.length;
+  const inProgress = projects.filter(
+    (p) => p.overallStatus === "In Progress"
+  ).length;
+  const completed = projects.filter(
+    (p) => p.overallStatus === "Completed" || p.overallStatus === "Approved"
+  ).length;
+  const dueSoon = projects.filter((p) => {
+    // if you store a due date in project (e.g., p.dueDate). fallback false
+    if (!p.dueDate) return false;
+    const diff = (new Date(p.dueDate) - new Date()) / (1000 * 3600 * 24);
+    return diff <= 7 && diff >= 0;
+  }).length;
 
-    if (filter.date) {
-      filtered = filtered.filter((r) =>
-        new Date(r.auditDate).toLocaleDateString().includes(filter.date)
-      );
-    }
-
-    if (filter.search) {
-      filtered = filtered.filter((r) =>
-        r.overallRemarks?.toLowerCase().includes(filter.search.toLowerCase())
-      );
-    }
-
-    setFilteredReports(filtered);
-  }, [filter, reports]);
+  const upcomingDeadlines = projects
+    .filter((p) => p.dueDate)
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+    .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 text-gray-800">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-md px-6 py-4 flex justify-between items-center border-b border-indigo-100">
-        <div className="flex items-center gap-3">
-          <GraduationCap className="text-indigo-600" size={30} />
-          <h1 className="text-2xl font-semibold text-indigo-700">
-            Welcome, {user?.name?.split(" ")[0]}
-          </h1>
-        </div>
-        <button
-          onClick={() => {
-            logout();
-            toast.success("Logged out successfully");
-          }}
-          className="flex cursor-pointer items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all"
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 text-white"
         >
-          <LogOut size={18} />
-          Logout
-        </button>
-      </header>
-
-      {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="p-6 flex flex-wrap gap-4 items-center justify-between"
-      >
-        <div className="flex gap-3 flex-wrap items-center">
-          <div className="flex items-center bg-white/80 backdrop-blur-sm border border-indigo-100 rounded-lg px-3 py-2">
-            <Calendar className="text-indigo-500 mr-2" size={18} />
-            <input
-              type="date"
-              value={filter.date}
-              onChange={(e) => setFilter({ ...filter, date: e.target.value })}
-              className="bg-transparent outline-none"
-            />
-          </div>
-
-          <div className="relative bg-white/80 backdrop-blur-sm border border-indigo-100 rounded-lg">
-            <Search
-              className="absolute left-3 top-2.5 text-indigo-500"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Search remarks..."
-              value={filter.search}
-              onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-              className="pl-10 pr-3 py-2 w-64 bg-transparent outline-none text-gray-700"
-            />
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Table / Card Layout */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="p-6"
-      >
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <div className="bg-white/80 backdrop-blur-md border border-indigo-100 rounded-2xl shadow-md overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-indigo-100/70 text-indigo-800">
-                <tr>
-                  <th className="text-left p-4 font-semibold">Audit Date</th>
-                  <th className="text-left p-4 font-semibold">
-                    Total Parameters
-                  </th>
-                  <th className="text-left p-4 font-semibold">Remarks</th>
-                  <th className="text-center p-4 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredReports.length > 0 ? (
-                  filteredReports.map((r, index) => (
-                    <motion.tr
-                      key={r._id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="border-t hover:bg-indigo-50/60 transition-all"
-                    >
-                      <td className="p-4">
-                        {new Date(r.auditDate).toLocaleDateString()}
-                      </td>
-                      <td className="p-4">{r.parameters?.length || 0}</td>
-                      <td className="p-4 truncate max-w-xs">
-                        {r.overallRemarks || "—"}
-                      </td>
-                      <td className="p-4 text-center">
-                        <button
-                          onClick={() => setSelectedReport(r)}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1 rounded-lg flex items-center gap-2 mx-auto transition-all cursor-pointer"
-                        >
-                          <Eye size={16} /> View
-                        </button>
-                      </td>
-                    </motion.tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="text-center text-gray-500 p-6">
-                      No reports found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Mobile Card Layout */}
-        <div className="md:hidden space-y-4">
-          {filteredReports.length > 0 ? (
-            filteredReports.map((r, index) => (
-              <motion.div
-                key={r._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white/80 backdrop-blur-md border border-indigo-100 rounded-2xl shadow-md p-4"
-              >
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>Date:</strong>{" "}
-                  {new Date(r.auditDate).toLocaleDateString()}
-                </p>
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>Parameters:</strong> {r.parameters?.length || 0}
-                </p>
-                <p className="text-sm text-gray-600 truncate mb-2">
-                  <strong>Remarks:</strong> {r.overallRemarks || "—"}
-                </p>
-                <button
-                  onClick={() => setSelectedReport(r)}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg flex items-center justify-center gap-2 transition-all"
-                >
-                  <Eye size={16} /> View Details
-                </button>
-              </motion.div>
-            ))
-          ) : (
-            <p className="text-center text-gray-500 py-6">No reports found</p>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Modal */}
-      <AnimatePresence>
-        {selectedReport && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center p-4 z-50"
-            onClick={() => setSelectedReport(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-[90vh]"
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">
+                Hello, {me?.name || authUser?.name || "Student"}
+              </h1>
+              <p className="text-purple-100">
+                Here's your project & report overview.
+              </p>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={fetchAll}
+              disabled={loading}
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-xl transition flex items-center gap-2 cursor-pointer"
             >
-              <h2 className="text-2xl font-semibold mb-4 text-indigo-700">
-                Report Details
-              </h2>
+              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+              Refresh
+            </motion.button>
+          </div>
+        </motion.div>
 
-              <div className="space-y-3 text-sm">
-                <p>
-                  <strong>Audit Date:</strong>{" "}
-                  {new Date(selectedReport.auditDate).toLocaleDateString()}
-                </p>
-                <p>
-                  <strong>Remarks:</strong>{" "}
-                  {selectedReport.overallRemarks || "N/A"}
-                </p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <StatCard
+            icon={<Layers size={20} />}
+            label="Total Projects"
+            value={total}
+          />
+          <StatCard
+            icon={<Clock size={20} />}
+            label="In Progress"
+            value={inProgress}
+          />
+          <StatCard
+            icon={<CheckCircle2 size={20} />}
+            label="Completed"
+            value={completed}
+          />
+          <StatCard
+            icon={<Calendar size={20} />}
+            label="Reports"
+            value={reports.length}
+          />
+        </div>
 
-                <h3 className="text-lg font-semibold mt-4 text-indigo-600">
-                  Scores:
-                </h3>
-                <ul className="space-y-1">
-                  {selectedReport.parameters.map((p, i) => (
-                    <li key={i} className="flex justify-between border-b py-1">
-                      <span>{p.name}</span>
-                      <span className="font-medium text-indigo-700">
-                        {p.score}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <h3 className="text-lg font-semibold mt-4 text-indigo-600">
-                  Feedback:
-                </h3>
-                {selectedReport.feedbackSchema.map((f, i) => (
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Upcoming Deadlines
+            </h3>
+            {upcomingDeadlines.length === 0 ? (
+              <p className="text-gray-500">No upcoming deadlines.</p>
+            ) : (
+              <div className="space-y-3">
+                {upcomingDeadlines.map((p) => (
                   <div
-                    key={i}
-                    className="border rounded-lg p-3 mb-2 bg-indigo-50/50"
+                    key={p._id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-purple-50 border border-purple-100"
                   >
-                    {Object.entries(f).map(([k, v]) => (
-                      <p key={k} className="text-sm">
-                        <strong className="capitalize">{k}:</strong> {v}
-                      </p>
-                    ))}
+                    <div>
+                      <div className="font-semibold text-gray-800">
+                        {p.title}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {p.description?.slice(0, 80) || ""}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {p.dueDate
+                        ? new Date(p.dueDate).toLocaleDateString()
+                        : "—"}
+                    </div>
                   </div>
                 ))}
               </div>
+            )}
+          </div>
 
-              <div className="text-right mt-6">
-                <button
-                  onClick={() => setSelectedReport(null)}
-                  className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded-lg font-medium transition-all"
-                >
-                  Close
-                </button>
+          {/* Recent Activity (reports/submissions) */}
+          <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Recent Activity
+            </h3>
+            {projects.slice(0, 6).map((p) => (
+              <div
+                key={p._id}
+                className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition"
+              >
+                <div className="w-2 h-2 rounded-full mt-2 bg-purple-600" />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-800">{p.title}</div>
+                  <div className="text-sm text-gray-500">
+                    {p.overallStatus} •{" "}
+                    {p.updatedAt ? new Date(p.updatedAt).toLocaleString() : ""}
+                  </div>
+                </div>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            ))}
+            {projects.length === 0 && (
+              <p className="text-gray-500">No activity yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function StatCard({ icon, label, value }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
+      className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-white/30"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-3 rounded-xl text-white shadow-md">
+          {icon}
+        </div>
+        <div className="text-3xl font-bold text-gray-800">{value}</div>
+      </div>
+      <div className="font-semibold text-gray-700">{label}</div>
+    </motion.div>
   );
 }

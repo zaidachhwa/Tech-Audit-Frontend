@@ -10,7 +10,7 @@ export default function StudentLayout() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50">
+    <div className="min-h-screen overflow-x-clip flex bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50">
       <Toaster position="top-right" />
 
       {/* Sidebar */}

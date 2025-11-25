@@ -16,6 +16,8 @@ import StudentProjectsView from "./components/admin/StudentProjectsView";
 import AdminSyllabusManagement from "./components/admin/AdminSyllabusManagement";
 import TeacherLogin from "./components/teacher/TeacherLogin";
 import TeacherSyllabusDashboard from "./components/teacher/TeacherSyllabusDashboard";
+import TeacherRegister from "./components/teacher/TeacherRegister";
+import StudentProfile from "./components/student/StudentProfile";
 
 export default function App() {
   function PrivateRoute({ children, role }) {
@@ -42,6 +44,7 @@ export default function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="projects" element={<Projects />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="profile" element={<StudentProfile />} />
         </Route>
 
         {/* ADMIN ROUTES */}
@@ -88,6 +91,7 @@ export default function App() {
         />
 
         <Route path="/teacher/login" element={<TeacherLogin />} />
+        <Route path="/teacher/register" element={<TeacherRegister />} />
 
         <Route
           path="/admin/syllabus"

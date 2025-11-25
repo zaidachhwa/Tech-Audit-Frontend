@@ -21,6 +21,7 @@ import { NavLink } from "react-router-dom";
 
 // Student table component (make sure this file exists at the path)
 import AdminStudentTable from "./AdminStudentTable";
+import AdminTeacherTable from "./AdminTeacherTable";
 
 export default function AdminDashboard() {
   const { logout } = useAuth();
@@ -194,6 +195,9 @@ export default function AdminDashboard() {
 
         {/* Student table */}
         <AdminStudentTable onRefresh={fetchBatches} batches={batches} />
+
+        {/* Teacher table */}
+        <AdminTeacherTable onRefresh={fetchBatches} batches={batches} />
       </main>
 
       {/* Add Batch Modal */}
