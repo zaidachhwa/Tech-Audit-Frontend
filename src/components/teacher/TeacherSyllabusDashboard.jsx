@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   LogOut,
   BookOpen,
@@ -22,19 +21,17 @@ import {
   FileText,
   ChevronDown,
   Users,
+  User,
+  BarChart3,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function TeacherSyllabusDashboard() {
   const { user, logout } = useAuth();
 
-  // Topics are batch-specific BatchTopic documents returned by:
-  // GET /syllabus/batch-topics?batchId=...&syllabusId=...
   const [topics, setTopics] = useState([]);
-
-  // batchesWithSyllabi contains full batch info + assignedSyllabi array
-  // fetched from backend: GET /syllabus/batches-with-syllabi
   const [batchesWithSyllabi, setBatchesWithSyllabi] = useState([]);
-  const [batches, setBatches] = useState([]); // simplified list for select
+  const [batches, setBatches] = useState([]);
   const [selectedBatchId, setSelectedBatchId] = useState("");
   const [assignedSyllabiForBatch, setAssignedSyllabiForBatch] = useState([]);
   const [selectedBatchSyllabusId, setSelectedBatchSyllabusId] = useState("");
@@ -51,12 +48,10 @@ export default function TeacherSyllabusDashboard() {
   const [expandedTopic, setExpandedTopic] = useState(null);
 
   useEffect(() => {
-    // Fetch batches along with their assigned syllabi
     fetchBatchesWithSyllabi();
   }, []);
 
   useEffect(() => {
-    // When selected batch changes, update the assigned syllabus options
     if (!selectedBatchId) {
       setAssignedSyllabiForBatch([]);
       setSelectedBatchSyllabusId("");
@@ -68,27 +63,22 @@ export default function TeacherSyllabusDashboard() {
     const assigned = batchObj?.assignedSyllabi || [];
     setAssignedSyllabiForBatch(assigned);
 
-    // If there's exactly one assigned syllabus, auto-select it (convenience)
     if (assigned.length === 1) {
       const id = assigned[0]._id;
       setSelectedBatchSyllabusId(id);
-      // fetch topics for this batch-syllabus
       fetchTopicsForBatchSyllabus(selectedBatchId, id);
     } else {
-      // clear previous selection / topics
       setSelectedBatchSyllabusId("");
       setTopics([]);
     }
   }, [selectedBatchId, batchesWithSyllabi]);
 
   useEffect(() => {
-    // When selected batch-syllabus changes, fetch topics
     if (selectedBatchId && selectedBatchSyllabusId) {
       fetchTopicsForBatchSyllabus(selectedBatchId, selectedBatchSyllabusId);
     }
   }, [selectedBatchSyllabusId, selectedBatchId]);
 
-  // Fetch batches with their assigned syllabi (admin-provided endpoint)
   const fetchBatchesWithSyllabi = async () => {
     try {
       setLoading(true);
@@ -96,7 +86,6 @@ export default function TeacherSyllabusDashboard() {
       const fetched = res.data?.batches || [];
       setBatchesWithSyllabi(fetched);
 
-      // also prepare a simple batches array for the first select
       const simple = fetched.map((b) => ({
         _id: b._id,
         batch_name: b.batch_name,
@@ -105,7 +94,6 @@ export default function TeacherSyllabusDashboard() {
       }));
       setBatches(simple);
 
-      // If only one batch exists, auto-select it (friendly)
       if (simple.length === 1) {
         setSelectedBatchId(simple[0]._id);
       }
@@ -117,15 +105,10 @@ export default function TeacherSyllabusDashboard() {
     }
   };
 
-  // Fetch topics for a given batch & assigned syllabus (BatchTopic documents)
   const fetchTopicsForBatchSyllabus = async (batchId, batchSyllabusId) => {
     try {
       setLoadingTopics(true);
 
-      // The backend expects syllabusId (template) and batchId for batch-topics
-      // But our batches-with-syllabi array contains assignedSyllabi where each has syllabus field populated.
-      // We need the syllabus template id (bs.syllabus._id) to call /batch-topics.
-      // Find batchSyllabus object in batch list to extract syllabus template id safely.
       const batchObj = batchesWithSyllabi.find((b) => b._id === batchId);
       if (!batchObj) {
         throw new Error("Selected batch not found");
@@ -133,19 +116,15 @@ export default function TeacherSyllabusDashboard() {
 
       const bsObj =
         batchObj.assignedSyllabi?.find((bs) => {
-          // bs._id is the BatchSyllabus document id
           return String(bs._id) === String(batchSyllabusId);
         }) || null;
 
       if (!bsObj) {
-        // Safety: if not found, try to use batchSyllabusId as the syllabus template id
-        // but this is unlikely; we'll throw a helpful message
         throw new Error(
           "Assignment info not found for selected batch. Please refresh."
         );
       }
 
-      // bsObj.syllabus may be an object (populated) or an ObjectId. Normalize:
       const syllabusTemplateId =
         typeof bsObj.syllabus === "object"
           ? bsObj.syllabus._id
@@ -159,7 +138,6 @@ export default function TeacherSyllabusDashboard() {
         `/syllabus/batch-topics-teacher?batchId=${batchId}&syllabusId=${syllabusTemplateId}`
       );
 
-      // API returns topics (BatchTopic docs) with assignedTo populated in controller
       const fetchedTopics = res.data?.topics || [];
       setTopics(fetchedTopics);
     } catch (err) {
@@ -175,12 +153,10 @@ export default function TeacherSyllabusDashboard() {
     }
   };
 
-  // Mark a batch-topic (BatchTopic) as completed
   const markComplete = async (topicId) => {
     try {
       await API.patch(`/syllabus/topic/${topicId}/complete`);
-      toast.success("Topic marked as completed! 🎉");
-      // refresh currently selected batch-syllabus topics
+      toast.success("Topic marked as completed!");
       if (selectedBatchId && selectedBatchSyllabusId) {
         fetchTopicsForBatchSyllabus(selectedBatchId, selectedBatchSyllabusId);
       }
@@ -190,7 +166,6 @@ export default function TeacherSyllabusDashboard() {
     }
   };
 
-  // Save teacher remark on batch-topic
   const addRemark = async () => {
     if (!selectedTopic) return;
     if (!remarkText.trim()) {
@@ -215,7 +190,6 @@ export default function TeacherSyllabusDashboard() {
     }
   };
 
-  // Filter & sort logic (same as before)
   const getFilteredTopics = () => {
     let filtered = [...topics];
 
@@ -225,7 +199,6 @@ export default function TeacherSyllabusDashboard() {
 
     filtered.sort((a, b) => {
       if (sortBy === "dueDate") {
-        // handle missing dueDate gracefully
         const da = a.dueDate ? new Date(a.dueDate) : null;
         const db = b.dueDate ? new Date(b.dueDate) : null;
         if (!da && !db) return 0;
@@ -247,7 +220,6 @@ export default function TeacherSyllabusDashboard() {
 
   const filteredTopics = getFilteredTopics();
 
-  // Stats computed from the topics currently displayed (batch-syllabus scope)
   const stats = {
     total: topics.length,
     completed: topics.filter((t) => t.completionStatus === "Completed").length,
@@ -260,39 +232,37 @@ export default function TeacherSyllabusDashboard() {
     stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <Toaster position="top-right" />
 
       <div className="max-w-7xl mx-auto space-y-6">
         {/* HEADER */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl shadow-xl p-6 md:p-8 text-white"
-        >
+        <header className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            {/* Heading */}
             <div className="flex items-center gap-4">
-              <div className="bg-white/20 backdrop-blur-sm p-3 rounded-2xl shadow-lg">
-                <BookOpen size={32} className="text-white" />
+              <div className="bg-indigo-100 p-3 rounded-lg">
+                <BookOpen size={28} className="text-indigo-600" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold">
+                <h1 className="text-2xl font-bold text-gray-900">
                   Teacher Dashboard
                 </h1>
-                <p className="text-purple-100 mt-1">
-                  Welcome back,{" "}
-                  <span className="font-semibold">{user?.name}</span>
+                <p className="text-sm text-gray-600 mt-1">
+                  Welcome back, <span className="font-medium">{user?.name}</span>
                 </p>
               </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex items-center gap-3 w-full md:w-auto">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
+              <Link to="/teacher/profile" className="flex-1 md:flex-none">
+                <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2">
+                  <User size={18} />
+                  Profile
+                </button>
+              </Link>
+
+              <button
                 onClick={() => {
-                  // refresh topics for current selection, otherwise refresh batches
                   if (selectedBatchId && selectedBatchSyllabusId) {
                     fetchTopicsForBatchSyllabus(
                       selectedBatchId,
@@ -303,79 +273,67 @@ export default function TeacherSyllabusDashboard() {
                   }
                 }}
                 disabled={loading || loadingTopics}
-                className="flex-1 md:flex-none bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <RefreshCw
                   size={18}
                   className={loading || loadingTopics ? "animate-spin" : ""}
                 />
                 Refresh
-              </motion.button>
+              </button>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
+              <button
                 onClick={logout}
-                className="flex-1 md:flex-none bg-white text-purple-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2"
               >
                 <LogOut size={18} />
                 Logout
-              </motion.button>
+              </button>
             </div>
           </div>
-        </motion.header>
+        </header>
 
-        {/* ============================ */}
-        {/*   BATCH + ASSIGNED SYLLABUS SELECTORS   */}
-        {/* ============================ */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-md p-5 rounded-3xl shadow-md"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 bg gap-4">
-            {/* Batch selector */}
+        {/* BATCH SELECTORS */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="text-gray-700 font-semibold mb-2 block">
+              <label className="text-gray-700 font-semibold mb-2 block flex items-center gap-2">
+                <Users size={16} className="text-indigo-600" />
                 Select Batch
               </label>
               <div className="relative">
-                <ChevronDown
-                  size={18}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
                 <select
                   value={selectedBatchId}
                   onChange={(e) => setSelectedBatchId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none cursor-pointer"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none cursor-pointer appearance-none"
                 >
                   <option value="">Select a batch...</option>
                   {batches.map((batch) => (
                     <option key={batch._id} value={batch._id}>
-                      {batch.batch_name} (#{batch.batch_no}) —{" "}
-                      {batch.studentsCount} students
+                      {batch.batch_name} (#{batch.batch_no}) — {batch.studentsCount} students
                     </option>
                   ))}
                 </select>
+                <ChevronDown
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
               </div>
             </div>
 
-            {/* Assigned Syllabus selector */}
             <div>
-              <label className="text-gray-700 font-semibold mb-2 block">
-                Assigned Syllabus (for selected batch)
+              <label className="text-gray-700 font-semibold mb-2 block flex items-center gap-2">
+                <BookOpen size={16} className="text-indigo-600" />
+                Assigned Syllabus
               </label>
               <div className="relative">
-                <ChevronDown
-                  size={18}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
                 <select
                   value={selectedBatchSyllabusId}
                   onChange={(e) => setSelectedBatchSyllabusId(e.target.value)}
                   disabled={
                     !selectedBatchId || assignedSyllabiForBatch.length === 0
                   }
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 bg-white focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none cursor-pointer"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">
                     {selectedBatchId
@@ -386,7 +344,6 @@ export default function TeacherSyllabusDashboard() {
                   </option>
 
                   {assignedSyllabiForBatch.map((bs) => {
-                    // bs.syllabus may be populated (object) or an id — handle both
                     const subject =
                       typeof bs.syllabus === "object"
                         ? bs.syllabus.subject
@@ -402,110 +359,114 @@ export default function TeacherSyllabusDashboard() {
                     );
                   })}
                 </select>
+                <ChevronDown
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* STATS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             label="Total Topics"
             value={stats.total}
             icon={<BookOpen size={20} />}
-            color="from-blue-500 to-cyan-500"
-            delay={0}
+            bgColor="bg-blue-50"
+            iconColor="text-blue-600"
+            borderColor="border-blue-200"
           />
           <StatCard
             label="Completed"
             value={stats.completed}
             icon={<CheckCircle2 size={20} />}
-            color="from-emerald-500 to-green-500"
-            delay={0.1}
+            bgColor="bg-green-50"
+            iconColor="text-green-600"
+            borderColor="border-green-200"
           />
           <StatCard
             label="In Progress"
             value={stats.inProgress}
             icon={<Clock size={20} />}
-            color="from-orange-500 to-amber-500"
-            delay={0.2}
+            bgColor="bg-orange-50"
+            iconColor="text-orange-600"
+            borderColor="border-orange-200"
           />
           <StatCard
             label="Pending"
             value={stats.pending}
             icon={<AlertCircle size={20} />}
-            color="from-red-400 to-pink-500"
-            delay={0.3}
+            bgColor="bg-red-50"
+            iconColor="text-red-600"
+            borderColor="border-red-200"
           />
         </div>
 
         {/* PROGRESS BAR */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30"
-        >
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-3 rounded-xl">
-                <TrendingUp size={24} className="text-white" />
+              <div className="bg-indigo-100 p-2.5 rounded-lg">
+                <TrendingUp size={24} className="text-indigo-600" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-800 text-lg">
-                  Overall Progress
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Your completion rate (current selection)
-                </p>
+                <h3 className="font-bold text-gray-900">Overall Progress</h3>
+                <p className="text-sm text-gray-600">Your completion rate</p>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-4xl font-bold text-purple-600">
+              <div className="text-4xl font-bold text-indigo-600">
                 {completionRate}%
               </div>
-              <div className="text-xs text-gray-600">
-                {stats.completed} of {stats.total}
+              <div className="text-xs text-gray-600 mt-1">
+                {stats.completed} of {stats.total} topics
               </div>
             </div>
           </div>
 
-          <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div
-              animate={{ width: `${completionRate}%` }}
-              className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
+          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+              style={{ width: `${completionRate}%` }}
             />
           </div>
-        </motion.div>
+
+          {completionRate === 100 && stats.total > 0 && (
+            <div className="mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2 font-medium">
+              <CheckCircle2 size={20} />
+              Congratulations! All topics completed!
+            </div>
+          )}
+        </div>
 
         {/* TOPICS SECTION */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg border border-white/30 overflow-hidden"
-        >
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
           {/* Filters */}
-          <div className="p-6 border-b bg-gradient-to-r from-purple-50 to-indigo-50">
-            <div className="flex flex-col md:flex-row justify-between gap-4">
+          <div className="p-6 border-b bg-gray-50">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h2 className="text-xl font-bold flex gap-2 items-center">
-                  <FileText className="text-purple-600" /> My Topics
+                <h2 className="text-xl font-bold flex gap-2 items-center text-gray-900">
+                  <FileText className="text-indigo-600" size={24} />
+                  My Topics
                 </h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
+                  <BarChart3 size={14} />
                   {filteredTopics.length} topics found
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                {/* Filter */}
-                <div className="relative">
+              <div className="flex flex-wrap gap-3 w-full md:w-auto">
+                <div className="relative flex-1 md:flex-none">
                   <Filter
                     size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
                   />
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="pl-10 pr-4 py-2 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-purple-500"
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
                   >
                     <option value="all">All Status</option>
                     <option value="Pending">Pending</option>
@@ -514,21 +475,20 @@ export default function TeacherSyllabusDashboard() {
                   </select>
                 </div>
 
-                {/* Sort */}
-                <div className="relative">
-                  <ChevronDown
-                    size={16}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
+                <div className="relative flex-1 md:flex-none">
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="pr-10 pl-4 py-2 rounded-xl border-2 border-gray-200 bg-white text-sm focus:border-purple-500 appearance-none"
+                    className="w-full pr-10 pl-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none appearance-none"
                   >
                     <option value="dueDate">Sort by Due Date</option>
                     <option value="title">Sort by Title</option>
                     <option value="status">Sort by Status</option>
                   </select>
+                  <ChevronDown
+                    size={16}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                  />
                 </div>
               </div>
             </div>
@@ -554,80 +514,67 @@ export default function TeacherSyllabusDashboard() {
               />
             ) : (
               <div className="space-y-4">
-                <AnimatePresence mode="popLayout">
-                  {filteredTopics.map((topic, index) => (
-                    <TopicCard
-                      key={topic._id}
-                      topic={topic}
-                      index={index}
-                      expanded={expandedTopic === topic._id}
-                      onToggleExpand={() =>
-                        setExpandedTopic(
-                          expandedTopic === topic._id ? null : topic._id
-                        )
-                      }
-                      onMarkComplete={markComplete}
-                      onOpenRemark={() => {
-                        setSelectedTopic(topic);
-                        setRemarkText(topic.remarks || "");
-                        setShowRemark(true);
-                      }}
-                    />
-                  ))}
-                </AnimatePresence>
+                {filteredTopics.map((topic) => (
+                  <TopicCard
+                    key={topic._id}
+                    topic={topic}
+                    expanded={expandedTopic === topic._id}
+                    onToggleExpand={() =>
+                      setExpandedTopic(
+                        expandedTopic === topic._id ? null : topic._id
+                      )
+                    }
+                    onMarkComplete={markComplete}
+                    onOpenRemark={() => {
+                      setSelectedTopic(topic);
+                      setRemarkText(topic.remarks || "");
+                      setShowRemark(true);
+                    }}
+                  />
+                ))}
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* REMARK MODAL */}
-      <AnimatePresence>
-        {showRemark && selectedTopic && (
-          <RemarkModal
-            topic={selectedTopic}
-            remarkText={remarkText}
-            setRemarkText={setRemarkText}
-            onClose={() => {
-              setShowRemark(false);
-              setRemarkText("");
-              setSelectedTopic(null);
-            }}
-            onSubmit={addRemark}
-          />
-        )}
-      </AnimatePresence>
+      {showRemark && selectedTopic && (
+        <RemarkModal
+          topic={selectedTopic}
+          remarkText={remarkText}
+          setRemarkText={setRemarkText}
+          onClose={() => {
+            setShowRemark(false);
+            setRemarkText("");
+            setSelectedTopic(null);
+          }}
+          onSubmit={addRemark}
+        />
+      )}
     </div>
   );
 }
 
-/* ------------------------------------------------------------- */
-/* UI HELPER COMPONENTS (kept same styling / logic as original)  */
-/* ------------------------------------------------------------- */
+/* HELPER COMPONENTS */
 
-function StatCard({ label, value, icon, color, delay }) {
+function StatCard({ label, value, icon, bgColor, iconColor, borderColor }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      whileHover={{ y: -4, scale: 1.02 }}
-      className={`bg-gradient-to-br ${color} rounded-2xl shadow-lg p-4 md:p-5 text-white`}
-    >
+    <div className={`${bgColor} border ${borderColor} rounded-lg p-4`}>
       <div className="flex items-center justify-between mb-3">
-        <div className="bg-white/20 p-2 rounded-xl">{icon}</div>
-        <div className="text-3xl md:text-4xl font-bold">{value}</div>
+        <div className={`${iconColor}`}>{icon}</div>
+        <div className="text-3xl font-bold text-gray-900">{value}</div>
       </div>
-      <div className="text-sm font-medium opacity-90">{label}</div>
-    </motion.div>
+      <div className="text-sm font-medium text-gray-700">{label}</div>
+    </div>
   );
 }
 
 function LoadingBlock() {
   return (
     <div className="py-20 flex flex-col items-center justify-center">
-      <RefreshCw className="animate-spin text-purple-600 mb-4" size={48} />
-      <p className="text-gray-600">Loading topics...</p>
+      <RefreshCw className="animate-spin text-indigo-600 mb-4" size={48} />
+      <p className="text-gray-600 font-medium">Loading topics...</p>
     </div>
   );
 }
@@ -635,74 +582,54 @@ function LoadingBlock() {
 function EmptyState({ filterStatus, onRefresh }) {
   return (
     <div className="py-16 text-center">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+        <BookOpen size={48} className="text-gray-400" />
+      </div>
+
+      <h3 className="text-xl font-bold text-gray-900 mb-2">
+        {filterStatus === "all"
+          ? "No Topics Assigned"
+          : `No ${filterStatus} Topics`}
+      </h3>
+      <p className="text-gray-600 mb-6">
+        {filterStatus === "all"
+          ? "You don't have any topics assigned for the selected batch & syllabus."
+          : `No topics with "${filterStatus}" status.`}
+      </p>
+
+      <button
+        onClick={onRefresh}
+        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 mx-auto transition"
       >
-        <div className="bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-          <BookOpen size={48} className="text-purple-600" />
-        </div>
-
-        <h3 className="text-xl font-bold text-gray-800 mb-2">
-          {filterStatus === "all"
-            ? "No Topics Assigned"
-            : `No ${filterStatus} Topics`}
-        </h3>
-        <p className="text-gray-600 mb-6">
-          {filterStatus === "all"
-            ? "You don't have any topics assigned for the selected batch & syllabus."
-            : `No topics with "${filterStatus}" status.`}
-        </p>
-
-        <button
-          onClick={onRefresh}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 mx-auto"
-        >
-          <RefreshCw size={18} /> Refresh Topics
-        </button>
-      </motion.div>
+        <RefreshCw size={18} /> Refresh Topics
+      </button>
     </div>
   );
 }
 
-/* Remark modal (same UX as before) */
 function RemarkModal({ topic, remarkText, setRemarkText, onClose, onSubmit }) {
   return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="relative bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden z-10"
-      >
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5 flex justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl">
+        <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center rounded-t-lg">
           <div>
-            <h3 className="text-xl font-bold text-white">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <MessageSquare size={20} />
               {remarkText ? "Edit Remark" : "Add Remark"}
             </h3>
-            <p className="text-sm text-purple-100 mt-1">{topic.title}</p>
+            <p className="text-sm text-indigo-100 mt-1">{topic.title}</p>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.1 }}
+          <button
             onClick={onClose}
-            className="text-white hover:bg-white/20 p-2 rounded-xl"
+            className="text-white hover:bg-indigo-700 p-2 rounded-lg transition"
           >
-            <X size={24} />
-          </motion.button>
+            <X size={20} />
+          </button>
         </div>
 
         <div className="p-6">
-          <label className="block text-sm font-semibold mb-2">
+          <label className="block text-sm font-semibold mb-2 text-gray-700">
             Your Remark
           </label>
 
@@ -710,20 +637,20 @@ function RemarkModal({ topic, remarkText, setRemarkText, onClose, onSubmit }) {
             rows={8}
             value={remarkText}
             onChange={(e) => setRemarkText(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 resize-none"
-            placeholder="Write your remarks..."
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 resize-none outline-none"
+            placeholder="Write your remarks here..."
           />
 
           <div className="flex gap-3 pt-4">
             <button
-              className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 hover:bg-gray-50"
+              className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 hover:bg-gray-50 font-medium transition"
               onClick={onClose}
             >
               Cancel
             </button>
 
             <button
-              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={onSubmit}
               disabled={!remarkText.trim()}
             >
@@ -731,15 +658,13 @@ function RemarkModal({ topic, remarkText, setRemarkText, onClose, onSubmit }) {
             </button>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
-/* Topic Card (keeps same design/logic as your original) */
 function TopicCard({
   topic,
-  index,
   expanded,
   onToggleExpand,
   onMarkComplete,
@@ -749,24 +674,24 @@ function TopicCard({
     switch (status) {
       case "Completed":
         return {
-          bg: "from-green-50 to-emerald-50",
+          bg: "bg-green-50",
           border: "border-green-200",
           icon: <CheckCircle2 size={20} className="text-green-600" />,
           badge: "bg-green-100 text-green-700 border-green-200",
         };
       case "In Progress":
         return {
-          bg: "from-blue-50 to-cyan-50",
+          bg: "bg-blue-50",
           border: "border-blue-200",
           icon: <Clock size={20} className="text-blue-600" />,
           badge: "bg-blue-100 text-blue-700 border-blue-200",
         };
       default:
         return {
-          bg: "from-amber-50 to-orange-50",
-          border: "border-amber-200",
-          icon: <AlertCircle size={20} className="text-amber-600" />,
-          badge: "bg-amber-100 text-amber-700 border-amber-200",
+          bg: "bg-orange-50",
+          border: "border-orange-200",
+          icon: <AlertCircle size={20} className="text-orange-600" />,
+          badge: "bg-orange-100 text-orange-700 border-orange-200",
         };
     }
   };
@@ -777,129 +702,106 @@ function TopicCard({
     dueDate && dueDate < new Date() && topic.completionStatus !== "Completed";
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ delay: index * 0.05 }}
-      className={`bg-gradient-to-br ${config.bg} border-2 ${config.border} rounded-2xl overflow-hidden hover:shadow-lg transition-all`}
-    >
-      <div className="p-4 md:p-5">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 bg-white rounded-xl p-3 shadow-sm">
-            {config.icon}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-800 text-lg mb-1">
-                  {topic.title}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {topic.syllabus?.subject || topic.syllabus || "No syllabus"}
-                </p>
-              </div>
-
-              <div
-                className={`px-3 py-1.5 rounded-lg border-2 ${config.badge} font-semibold text-xs whitespace-nowrap`}
-              >
-                {topic.completionStatus}
-              </div>
-            </div>
-
-            {topic.description && (
-              <p className="text-sm text-gray-700 mb-3 line-clamp-2">
-                {topic.description}
-              </p>
-            )}
-
-            <div className="flex items-center gap-2 mb-4">
-              <Calendar size={16} className="text-gray-500" />
-              <span className="text-sm text-gray-600">
-                Due:{" "}
-                {dueDate
-                  ? dueDate.toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  : "N/A"}
-              </span>
-              {isOverdue && (
-                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">
-                  Overdue
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {topic.completionStatus !== "Completed" && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => onMarkComplete(topic._id)}
-                  className="flex-1 md:flex-none bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-4 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                >
-                  <CheckCheck size={16} />
-                  <span>Mark Complete</span>
-                </motion.button>
-              )}
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={onOpenRemark}
-                className="flex-1 md:flex-none bg-white border-2 border-purple-300 text-purple-700 px-4 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-purple-50 cursor-pointer"
-              >
-                <Edit size={16} />
-                <span>{topic.remarks ? "Edit Remark" : "Add Remark"}</span>
-              </motion.button>
-
-              {topic.remarks && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onToggleExpand}
-                  className="flex-1 md:flex-none bg-white border-2 border-gray-200 text-gray-700 px-4 py-2 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer"
-                >
-                  <MessageSquare size={16} />
-                  <span>{expanded ? "Hide" : "View"} Remark</span>
-                </motion.button>
-              )}
-            </div>
-          </div>
+    <div className={`${config.bg} border ${config.border} rounded-lg p-5`}>
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 bg-white p-2.5 rounded-lg border border-gray-200">
+          {config.icon}
         </div>
 
-        <AnimatePresence>
-          {expanded && topic.remarks && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 text-lg mb-1">
+                {topic.title}
+              </h3>
+              <p className="text-sm text-gray-600 flex items-center gap-1">
+                <BookOpen size={14} />
+                {topic.syllabus?.subject || topic.syllabus || "No syllabus"}
+              </p>
+            </div>
+
+            <div
+              className={`px-3 py-1.5 rounded-lg border ${config.badge} font-semibold text-xs whitespace-nowrap`}
             >
-              <div className="mt-4 pt-4 border-t-2 border-white/50">
-                <div className="bg-white/80 rounded-xl p-4 border border-gray-200">
-                  <div className="flex items-start gap-2 mb-2">
-                    <MessageSquare
-                      size={16}
-                      className="text-purple-600 mt-1 flex-shrink-0"
-                    />
-                    <span className="text-sm font-semibold text-gray-700">
-                      Your Remark:
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700 ml-6 leading-relaxed">
-                    {topic.remarks}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
+              {topic.completionStatus}
+            </div>
+          </div>
+
+          {topic.description && (
+            <p className="text-sm text-gray-700 mb-4 line-clamp-2">
+              {topic.description}
+            </p>
           )}
-        </AnimatePresence>
+
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar size={16} className="text-gray-500" />
+            <span className="text-sm text-gray-600 font-medium">
+              Due:{" "}
+              {dueDate
+                ? dueDate.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                : "N/A"}
+            </span>
+            {isOverdue && (
+              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold border border-red-200">
+                Overdue
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {topic.completionStatus !== "Completed" && (
+              <button
+                onClick={() => onMarkComplete(topic._id)}
+                className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition"
+              >
+                <CheckCheck size={16} />
+                <span>Mark Complete</span>
+              </button>
+            )}
+
+            <button
+              onClick={onOpenRemark}
+              className="flex-1 md:flex-none bg-white hover:bg-gray-50 border border-indigo-300 text-indigo-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition"
+            >
+              <Edit size={16} />
+              <span>{topic.remarks ? "Edit Remark" : "Add Remark"}</span>
+            </button>
+
+            {topic.remarks && (
+              <button
+                onClick={onToggleExpand}
+                className="flex-1 md:flex-none bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition"
+              >
+                <MessageSquare size={16} />
+                <span>{expanded ? "Hide" : "View"} Remark</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </motion.div>
+
+      {expanded && topic.remarks && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="flex items-start gap-2 mb-2">
+              <MessageSquare
+                size={16}
+                className="text-indigo-600 mt-0.5 flex-shrink-0"
+              />
+              <span className="text-sm font-semibold text-gray-700">
+                Your Remark:
+              </span>
+            </div>
+            <p className="text-sm text-gray-700 ml-6 leading-relaxed">
+              {topic.remarks}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import {
   BookOpen,
   Plus,
@@ -15,14 +15,11 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
-  Target,
-  AlertCircle,
+  User,
 } from "lucide-react";
 import {
   EmptyState,
   Modal,
-  StatCard,
-  SyllabusCard,
 } from "./SyllabusComponents";
 import BatchAssignmentsPanel from "./BatchAssignmentsPanel";
 
@@ -39,39 +36,14 @@ export default function AdminSyllabusManagement() {
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [expandedSyllabi, setExpandedSyllabi] = useState(new Set());
 
-  // Form states
-  const [syllabusForm, setSyllabusForm] = useState({
-    subject: "",
-    description: "",
-  });
-
-  const [topicForm, setTopicForm] = useState({
-    title: "",
-    description: "",
-    dueDate: "",
-  });
-
-  const [assignForm, setAssignForm] = useState({
-    teacherId: "",
-  });
-
-  const [editForm, setEditForm] = useState({
-    subject: "",
-    description: "",
-  });
-
-  const [editTopicForm, setEditTopicForm] = useState({
-    title: "",
-    description: "",
-    dueDate: "",
-  });
-
-  // UI Tab state: "templates" | "batch"
+  const [syllabusForm, setSyllabusForm] = useState({ subject: "", description: "" });
+  const [topicForm, setTopicForm] = useState({ title: "", description: "", dueDate: "" });
+  const [assignForm, setAssignForm] = useState({ teacherId: "" });
+  const [editForm, setEditForm] = useState({ subject: "", description: "" });
+  const [editTopicForm, setEditTopicForm] = useState({ title: "", description: "", dueDate: "" });
   const [activeTab, setActiveTab] = useState("templates");
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
@@ -107,10 +79,7 @@ export default function AdminSyllabusManagement() {
   const handleAddTopic = async (e) => {
     e.preventDefault();
     try {
-      await API.post("/syllabus/topic", {
-        ...topicForm,
-        syllabusId: selectedSyllabus._id,
-      });
+      await API.post("/syllabus/topic", { ...topicForm, syllabusId: selectedSyllabus._id });
       toast.success("Topic added successfully!");
       setTopicForm({ title: "", description: "", dueDate: "" });
       setShowTopicModal(false);
@@ -124,10 +93,7 @@ export default function AdminSyllabusManagement() {
   const handleAssignTopic = async (e) => {
     e.preventDefault();
     try {
-      await API.patch("/syllabus/assign-topic", {
-        topicId: selectedTopic._id,
-        teacherId: assignForm.teacherId,
-      });
+      await API.patch("/syllabus/assign-topic", { topicId: selectedTopic._id, teacherId: assignForm.teacherId });
       toast.success("Topic assigned to teacher!");
       setAssignForm({ teacherId: "" });
       setShowAssignModal(false);
@@ -139,95 +105,89 @@ export default function AdminSyllabusManagement() {
   };
 
   const handleEditSyllabus = async (e) => {
-    e.preventDefault();
-    try {
-      await API.patch(`/syllabus/update/${selectedSyllabus._id}`, editForm);
-      toast.success("Syllabus updated successfully!");
-      setShowEditModal(false);
-      setSelectedSyllabus(null);
-      setEditForm({ subject: "", description: "" });
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to update syllabus");
-    }
-  };
+  e.preventDefault();
+  try {
+    await API.put(
+      `/syllabus/template/${selectedSyllabus._id}`,
+      editForm
+    );
 
-  const handleEditTopic = async (e) => {
-    e.preventDefault();
-    try {
-      await API.patch(`/syllabus/topic/${selectedTopic._id}`, editTopicForm);
-      toast.success("Topic updated successfully!");
-      setShowEditTopicModal(false);
-      setSelectedTopic(null);
-      setEditTopicForm({ title: "", description: "", dueDate: "" });
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to update topic");
-    }
-  };
+    toast.success("Syllabus updated successfully!");
+    setShowEditModal(false);
+    setSelectedSyllabus(null);
+    setEditForm({ subject: "", description: "" });
+    fetchData();
+  } catch (err) {
+    console.error(err);
+    toast.error(err?.response?.data?.message || "Failed to update syllabus");
+  }
+};
 
-  const handleDeleteSyllabus = async (syllabusId) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this syllabus? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
 
-    try {
-      await API.delete(`/syllabus/delete/${syllabusId}`);
-      toast.success("Syllabus deleted successfully!");
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to delete syllabus");
-    }
-  };
+ const handleEditTopic = async (e) => {
+  e.preventDefault();
+  try {
+    await API.put(
+      `/syllabus/topic/${selectedTopic._id}`,
+      editTopicForm
+    );
 
-  const handleDeleteTopic = async (topicId) => {
-    if (!confirm("Are you sure you want to delete this topic?")) {
-      return;
-    }
+    toast.success("Topic updated successfully!");
+    setShowEditTopicModal(false);
+    setSelectedTopic(null);
+    setEditTopicForm({ title: "", description: "", dueDate: "" });
+    fetchData();
+  } catch (err) {
+    console.error(err);
+    toast.error(err?.response?.data?.message || "Failed to update topic");
+  }
+};
 
-    try {
-      await API.delete(`/syllabus/topic/${topicId}`);
-      toast.success("Topic deleted successfully!");
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to delete topic");
-    }
-  };
+
+const handleDeleteSyllabus = async (syllabusId) => {
+  if (!window.confirm("Are you sure you want to delete this syllabus? This action cannot be undone.")) return;
+
+  try {
+    await API.delete(`/syllabus/template/${syllabusId}`);
+    toast.success("Syllabus deleted successfully!");
+    fetchData();
+  } catch (err) {
+    console.error(err);
+    toast.error(err?.response?.data?.message || "Failed to delete syllabus");
+  }
+};
+
+
+ const handleDeleteTopic = async (topicId) => {
+  if (!confirm("Are you sure you want to delete this topic?")) return;
+
+  try {
+    await API.delete(`/syllabus/topic/${topicId}`);
+    toast.success("Topic deleted successfully!");
+    fetchData();
+  } catch (err) {
+    console.error(err);
+    toast.error(err?.response?.data?.message || "Failed to delete topic");
+  }
+};
 
   const toggleExpanded = (syllabusId) => {
     setExpandedSyllabi((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(syllabusId)) {
-        newSet.delete(syllabusId);
-      } else {
-        newSet.add(syllabusId);
-      }
+      newSet.has(syllabusId) ? newSet.delete(syllabusId) : newSet.add(syllabusId);
       return newSet;
     });
   };
 
   const calculateProgress = (topics) => {
     if (!topics || topics.length === 0) return 0;
-    const completed = topics.filter(
-      (t) => t.completionStatus === "Completed"
-    ).length;
+    const completed = topics.filter((t) => t.completionStatus === "Completed").length;
     return Math.round((completed / topics.length) * 100);
   };
 
   const openEditModal = (syllabus) => {
     setSelectedSyllabus(syllabus);
-    setEditForm({
-      subject: syllabus.subject,
-      description: syllabus.description || "",
-    });
+    setEditForm({ subject: syllabus.subject, description: syllabus.description || "" });
     setShowEditModal(true);
   };
 
@@ -236,9 +196,7 @@ export default function AdminSyllabusManagement() {
     setEditTopicForm({
       title: topic.title,
       description: topic.description || "",
-      dueDate: topic.dueDate
-        ? new Date(topic.dueDate).toISOString().split("T")[0]
-        : "",
+      dueDate: topic.dueDate ? new Date(topic.dueDate).toISOString().split("T")[0] : "",
     });
     setShowEditTopicModal(true);
   };
@@ -246,487 +204,221 @@ export default function AdminSyllabusManagement() {
   const stats = {
     total: syllabi.length,
     totalTopics: syllabi.reduce((sum, s) => sum + (s.topics?.length || 0), 0),
-    completed: syllabi.reduce(
-      (sum, s) =>
-        sum +
-        (s.topics?.filter((t) => t.completionStatus === "Completed").length ||
-          0),
-      0
-    ),
+    completed: syllabi.reduce((sum, s) => sum + (s.topics?.filter((t) => t.completionStatus === "Completed").length || 0), 0),
     teachers: teachers.length,
   };
 
+  const StatusBadge = ({ status }) => {
+    const styles = {
+      Completed: "bg-green-50 text-green-700 border-green-200",
+      "In Progress": "bg-blue-50 text-blue-700 border-blue-200",
+      Pending: "bg-gray-50 text-gray-600 border-gray-200",
+    };
+    return <span className={`text-xs px-2 py-1 rounded border ${styles[status]}`}>{status}</span>;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4">
       <Toaster position="top-right" />
-
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-4">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 text-white"
-        >
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Syllabus Management</h1>
-              <p className="text-purple-100">
-                Create syllabi, manage topics, and track progress
-              </p>
+              <h1 className="text-xl font-semibold text-gray-900">Syllabus Management</h1>
+              <p className="text-sm text-gray-500 mt-1">Create syllabi, manage topics, and track progress</p>
             </div>
-
-            {/* Tab Controls */}
-            <div className="flex items-center gap-3">
-              <div className="bg-white/10 rounded-xl p-1 flex items-center">
-                <button
-                  onClick={() => setActiveTab("templates")}
-                  className={`px-4 py-2 rounded-lg font-semibold transition ${
-                    activeTab === "templates"
-                      ? "bg-white text-purple-700"
-                      : "text-white/80 hover:text-white"
-                  }`}
-                >
-                  Templates
-                </button>
-                <button
-                  onClick={() => setActiveTab("batch")}
-                  className={`px-4 py-2 rounded-lg font-semibold transition ${
-                    activeTab === "batch"
-                      ? "bg-white text-purple-700"
-                      : "text-white/80 hover:text-white"
-                  }`}
-                >
-                  Batch Assignments
-                </button>
+            <div className="flex items-center gap-2">
+              <div className="bg-gray-100 rounded-lg p-1 flex items-center">
+                <button onClick={() => setActiveTab("templates")} className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${activeTab === "templates" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Templates</button>
+                <button onClick={() => setActiveTab("batch")} className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${activeTab === "batch" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Batch Assignments</button>
               </div>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={fetchData}
-                disabled={loading}
-                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-xl transition flex items-center gap-2"
-              >
-                <RefreshCw
-                  size={18}
-                  className={loading ? "animate-spin" : ""}
-                />
-                Refresh
-              </motion.button>
-
+              <button onClick={fetchData} disabled={loading} className="p-2 hover:bg-gray-100 rounded-lg transition">
+                <RefreshCw size={18} className={`text-gray-600 ${loading ? "animate-spin" : ""}`} />
+              </button>
               {activeTab === "templates" && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowCreateModal(true)}
-                  className="bg-white text-purple-600 hover:bg-gray-100 px-4 py-2 rounded-xl font-semibold transition flex items-center gap-2"
-                >
-                  <Plus size={18} />
-                  Create Syllabus
-                </motion.button>
+                <button onClick={() => setShowCreateModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2">
+                  <Plus size={16} />Create Syllabus
+                </button>
               )}
             </div>
           </div>
-        </motion.div>
+          {activeTab === "templates" && (
+            <div className="grid grid-cols-4 gap-3">
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                <div className="flex items-center gap-2 text-blue-700 mb-1"><BookOpen size={16} /><span className="text-xs font-medium">Total Syllabi</span></div>
+                <div className="text-2xl font-bold text-blue-900">{stats.total}</div>
+              </div>
+              <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
+                <div className="flex items-center gap-2 text-purple-700 mb-1"><FileText size={16} /><span className="text-xs font-medium">Total Topics</span></div>
+                <div className="text-2xl font-bold text-purple-900">{stats.totalTopics}</div>
+              </div>
+              <div className="bg-green-50 rounded-lg p-3 border border-green-100">
+                <div className="flex items-center gap-2 text-green-700 mb-1"><CheckCircle2 size={16} /><span className="text-xs font-medium">Completed Topics</span></div>
+                <div className="text-2xl font-bold text-green-900">{stats.completed}</div>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-3 border border-orange-100">
+                <div className="flex items-center gap-2 text-orange-700 mb-1"><Users size={16} /><span className="text-xs font-medium">Teachers</span></div>
+                <div className="text-2xl font-bold text-orange-900">{stats.teachers}</div>
+              </div>
+            </div>
+          )}
+        </div>
 
-        {/* Conditional content: Templates OR Batch Assignments */}
         {activeTab === "templates" ? (
           <>
-            {/* Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <StatCard
-                icon={<BookOpen size={20} />}
-                label="Total Syllabi"
-                value={stats.total}
-                color="from-blue-500 to-cyan-500"
-              />
-              <StatCard
-                icon={<FileText size={20} />}
-                label="Total Topics"
-                value={stats.totalTopics}
-                color="from-purple-500 to-pink-500"
-              />
-              <StatCard
-                icon={<CheckCircle2 size={20} />}
-                label="Completed Topics"
-                value={stats.completed}
-                color="from-green-500 to-emerald-500"
-              />
-              <StatCard
-                icon={<Users size={20} />}
-                label="Teachers"
-                value={stats.teachers}
-                color="from-orange-500 to-amber-500"
-              />
-            </div>
-
-            {/* Syllabi List */}
             {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <RefreshCw className="animate-spin text-purple-600" size={40} />
-              </div>
+              <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-blue-600" size={40} /></div>
             ) : syllabi.length === 0 ? (
               <EmptyState onCreateClick={() => setShowCreateModal(true)} />
             ) : (
-              <div className="space-y-4">
-                {syllabi.map((syllabus, index) => (
-                  <SyllabusCard
-                    key={syllabus._id}
-                    syllabus={syllabus}
-                    index={index}
-                    expanded={expandedSyllabi.has(syllabus._id)}
-                    onToggleExpand={() => toggleExpanded(syllabus._id)}
-                    onAddTopic={() => {
-                      setSelectedSyllabus(syllabus);
-                      setShowTopicModal(true);
-                    }}
-                    onEditSyllabus={() => openEditModal(syllabus)}
-                    onDeleteSyllabus={() => handleDeleteSyllabus(syllabus._id)}
-                    onEditTopic={(topic) => openEditTopicModal(topic)}
-                    onDeleteTopic={(topicId) => handleDeleteTopic(topicId)}
-                    onAssignTopic={(topic) => {
-                      setSelectedTopic(topic);
-                      setShowAssignModal(true);
-                    }}
-                    calculateProgress={calculateProgress}
-                  />
-                ))}
+              <div className="space-y-3">
+                {syllabi.map((syllabus) => {
+                  const isExpanded = expandedSyllabi.has(syllabus._id);
+                  const progress = calculateProgress(syllabus.topics);
+                  return (
+                    <div key={syllabus._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-gray-900">{syllabus.subject}</h3>
+                              <span className="text-xs text-gray-500">{syllabus.topics?.length || 0} topics</span>
+                            </div>
+                            {syllabus.description && <p className="text-sm text-gray-600">{syllabus.description}</p>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => openEditModal(syllabus)} className="p-1.5 hover:bg-gray-100 rounded transition"><Edit2 size={16} className="text-gray-600" /></button>
+                            <button onClick={() => handleDeleteSyllabus(syllabus._id)} className="p-1.5 hover:bg-red-50 rounded transition"><Trash2 size={16} className="text-red-600" /></button>
+                            <button onClick={() => toggleExpanded(syllabus._id)} className="p-1.5 hover:bg-gray-100 rounded transition">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div className="bg-blue-600 h-full transition-all duration-500" style={{ width: `${progress}%` }} />
+                          </div>
+                          <span className="text-xs font-medium text-gray-600">{progress}%</span>
+                        </div>
+                      </div>
+                      {isExpanded && (
+                        <div className="border-t border-gray-100">
+                          <div className="p-4 bg-gray-50">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="text-sm font-semibold text-gray-700">Topics</h4>
+                              <button onClick={() => { setSelectedSyllabus(syllabus); setShowTopicModal(true); }} className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition flex items-center gap-1"><Plus size={12} />Add Topic</button>
+                            </div>
+                            <div className="space-y-2">
+                              {syllabus.topics?.map((topic) => (
+                                <div key={topic._id} className="bg-white rounded-lg border border-gray-200 p-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                      <h5 className="text-sm font-medium text-gray-900 mb-1">{topic.title}</h5>
+                                      {topic.description && <p className="text-xs text-gray-600">{topic.description}</p>}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <button onClick={() => openEditTopicModal(topic)} className="p-1 hover:bg-gray-100 rounded"><Edit2 size={14} className="text-gray-500" /></button>
+                                      <button onClick={() => handleDeleteTopic(topic._id)} className="p-1 hover:bg-red-50 rounded"><Trash2 size={14} className="text-red-500" /></button>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <StatusBadge status={topic.completionStatus} />
+                                      <div className="flex items-center gap-1 text-xs text-gray-500"><Calendar size={12} />{new Date(topic.dueDate).toLocaleDateString()}</div>
+                                      {topic.assignedTo && <div className="flex items-center gap-1 text-xs text-gray-600"><User size={12} />{topic.assignedTo.name}</div>}
+                                    </div>
+                                    {!topic.assignedTo && <button onClick={() => { setSelectedTopic(topic); setShowAssignModal(true); }} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">Assign</button>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </>
         ) : (
-          // Batch assignments panel
-          <BatchAssignmentsPanel
-            onActionComplete={() => {
-              fetchData();
-            }}
-          />
+          <BatchAssignmentsPanel onActionComplete={() => { fetchData(); }} />
         )}
       </div>
 
-      {/* Create Syllabus Modal */}
+      {/* Modals */}
       <AnimatePresence>
         {showCreateModal && (
-          <Modal
-            title="Create New Syllabus"
-            onClose={() => setShowCreateModal(false)}
-          >
+          <Modal title="Create New Syllabus" onClose={() => setShowCreateModal(false)}>
             <form onSubmit={handleCreateSyllabus} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Subject *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., React.js Advanced"
-                  value={syllabusForm.subject}
-                  onChange={(e) =>
-                    setSyllabusForm({
-                      ...syllabusForm,
-                      subject: e.target.value,
-                    })
-                  }
-                  required
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  placeholder="Describe the syllabus..."
-                  value={syllabusForm.description}
-                  onChange={(e) =>
-                    setSyllabusForm({
-                      ...syllabusForm,
-                      description: e.target.value,
-                    })
-                  }
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none resize-none"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition"
-                >
-                  Create Syllabus
-                </button>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+                <input type="text" placeholder="e.g., React.js Advanced" value={syllabusForm.subject} onChange={(e) => setSyllabusForm({...syllabusForm, subject: e.target.value})} required className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea placeholder="Describe the syllabus..." value={syllabusForm.description} onChange={(e) => setSyllabusForm({...syllabusForm, description: e.target.value})} rows={4} className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none text-sm" /></div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition text-sm">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition text-sm">Create Syllabus</button>
               </div>
             </form>
           </Modal>
         )}
-      </AnimatePresence>
-
-      {/* Edit Syllabus Modal */}
-      <AnimatePresence>
         {showEditModal && selectedSyllabus && (
-          <Modal
-            title="Edit Syllabus"
-            onClose={() => {
-              setShowEditModal(false);
-              setSelectedSyllabus(null);
-            }}
-          >
+          <Modal title="Edit Syllabus" onClose={() => { setShowEditModal(false); setSelectedSyllabus(null); }}>
             <form onSubmit={handleEditSyllabus} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Subject *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., React.js Advanced"
-                  value={editForm.subject}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, subject: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  placeholder="Describe the syllabus..."
-                  value={editForm.description}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, description: e.target.value })
-                  }
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none resize-none"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedSyllabus(null);
-                  }}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition"
-                >
-                  Update Syllabus
-                </button>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+                <input type="text" value={editForm.subject} onChange={(e) => setEditForm({...editForm, subject: e.target.value})} required className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} rows={4} className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none text-sm" /></div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setShowEditModal(false); setSelectedSyllabus(null); }} className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition text-sm">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition text-sm">Update Syllabus</button>
               </div>
             </form>
           </Modal>
         )}
-      </AnimatePresence>
-
-      {/* Add Topic Modal */}
-      <AnimatePresence>
         {showTopicModal && selectedSyllabus && (
-          <Modal
-            title={`Add Topic to ${selectedSyllabus.subject}`}
-            onClose={() => setShowTopicModal(false)}
-          >
+          <Modal title={`Add Topic to ${selectedSyllabus.subject}`} onClose={() => setShowTopicModal(false)}>
             <form onSubmit={handleAddTopic} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Topic Title *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Hooks and State Management"
-                  value={topicForm.title}
-                  onChange={(e) =>
-                    setTopicForm({ ...topicForm, title: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  placeholder="Describe the topic..."
-                  value={topicForm.description}
-                  onChange={(e) =>
-                    setTopicForm({ ...topicForm, description: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Due Date *
-                </label>
-                <input
-                  type="date"
-                  value={topicForm.dueDate}
-                  onChange={(e) =>
-                    setTopicForm({ ...topicForm, dueDate: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowTopicModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition"
-                >
-                  Add Topic
-                </button>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Topic Title *</label>
+                <input type="text" placeholder="e.g., Hooks and State Management" value={topicForm.title} onChange={(e) => setTopicForm({...topicForm, title: e.target.value})} required className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea placeholder="Describe the topic..." value={topicForm.description} onChange={(e) => setTopicForm({...topicForm, description: e.target.value})} rows={3} className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none text-sm" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+                <input type="date" value={topicForm.dueDate} onChange={(e) => setTopicForm({...topicForm, dueDate: e.target.value})} required className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm" /></div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowTopicModal(false)} className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition text-sm">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition text-sm">Add Topic</button>
               </div>
             </form>
           </Modal>
         )}
-      </AnimatePresence>
-
-      {/* Edit Topic Modal */}
-      <AnimatePresence>
         {showEditTopicModal && selectedTopic && (
-          <Modal
-            title="Edit Topic"
-            onClose={() => {
-              setShowEditTopicModal(false);
-              setSelectedTopic(null);
-            }}
-          >
+          <Modal title="Edit Topic" onClose={() => { setShowEditTopicModal(false); setSelectedTopic(null); }}>
             <form onSubmit={handleEditTopic} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Topic Title *
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Hooks and State Management"
-                  value={editTopicForm.title}
-                  onChange={(e) =>
-                    setEditTopicForm({
-                      ...editTopicForm,
-                      title: e.target.value,
-                    })
-                  }
-                  required
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  placeholder="Describe the topic..."
-                  value={editTopicForm.description}
-                  onChange={(e) =>
-                    setEditTopicForm({
-                      ...editTopicForm,
-                      description: e.target.value,
-                    })
-                  }
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none resize-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Due Date *
-                </label>
-                <input
-                  type="date"
-                  value={editTopicForm.dueDate}
-                  onChange={(e) =>
-                    setEditTopicForm({
-                      ...editTopicForm,
-                      dueDate: e.target.value,
-                    })
-                  }
-                  required
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditTopicModal(false);
-                    setSelectedTopic(null);
-                  }}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition"
-                >
-                  Update Topic
-                </button>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Topic Title *</label>
+                <input type="text" value={editTopicForm.title} onChange={(e) => setEditTopicForm({...editTopicForm, title: e.target.value})} required className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea value={editTopicForm.description} onChange={(e) => setEditTopicForm({...editTopicForm, description: e.target.value})} rows={3} className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none text-sm" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+                <input type="date" value={editTopicForm.dueDate} onChange={(e) => setEditTopicForm({...editTopicForm, dueDate: e.target.value})} required className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm" /></div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setShowEditTopicModal(false); setSelectedTopic(null); }} className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition text-sm">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition text-sm">Update Topic</button>
               </div>
             </form>
           </Modal>
         )}
-      </AnimatePresence>
-
-      {/* Assign Topic Modal */}
-      <AnimatePresence>
         {showAssignModal && selectedTopic && (
-          <Modal
-            title={`Assign "${selectedTopic.title}" to Teacher`}
-            onClose={() => setShowAssignModal(false)}
-          >
+          <Modal title={`Assign "${selectedTopic.title}" to Teacher`} onClose={() => setShowAssignModal(false)}>
             <form onSubmit={handleAssignTopic} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Select Teacher *
-                </label>
-                <select
-                  value={assignForm.teacherId}
-                  onChange={(e) => setAssignForm({ teacherId: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-                >
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Select Teacher *</label>
+                <select value={assignForm.teacherId} onChange={(e) => setAssignForm({teacherId: e.target.value})} required className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
                   <option value="">Choose a teacher...</option>
-                  {teachers.map((teacher) => (
-                    <option key={teacher._id} value={teacher._id}>
-                      {teacher.name} ({teacher.email})
-                    </option>
-                  ))}
+                  {teachers.map((teacher) => (<option key={teacher._id} value={teacher._id}>{teacher.name} ({teacher.email})</option>))}
                 </select>
               </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAssignModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition"
-                >
-                  Assign Teacher
-                </button>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowAssignModal(false)} className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition text-sm">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition text-sm">Assign Teacher</button>
               </div>
             </form>
           </Modal>

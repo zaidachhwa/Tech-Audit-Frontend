@@ -96,33 +96,44 @@ export default function AdminBatches() {
     setShowEdit(true);
   };
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      await API.patch(`/batches/update/${selectedBatch._id}`, {
-        batch_name: form.batch_name,
-        batch_no: Number(form.batch_no),
-      });
-      toast.success("Batch updated successfully");
-      resetForm();
-      setShowEdit(false);
-      setSelectedBatch(null);
-      fetchBatches();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to update batch");
-    }
-  };
+const handleUpdate = async (e) => {
+  e.preventDefault();
+  try {
+    await API.put(`/batches/${selectedBatch._id}`, {
+      batch_name: form.batch_name,
+      batch_no: Number(form.batch_no),
+    });
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this batch? This action cannot be undone.")) return;
-    try {
-      await API.delete(`/batches/delete/${id}`);
-      toast.success("Batch deleted successfully");
-      fetchBatches();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to delete batch");
-    }
-  };
+    toast.success("Batch updated successfully");
+    resetForm();
+    setShowEdit(false);
+    setSelectedBatch(null);
+    fetchBatches();
+  } catch (err) {
+    toast.error(
+      err?.response?.data?.message || "Failed to update batch"
+    );
+  }
+};
+
+
+
+const handleDelete = async (id) => {
+  if (!window.confirm("Delete this batch? This action cannot be undone."))
+    return;
+
+  try {
+    await API.delete(`/batches/${id}`);
+    toast.success("Batch deleted successfully");
+    fetchBatches();
+  } catch (err) {
+    toast.error(
+      err?.response?.data?.message || "Failed to delete batch"
+    );
+  }
+};
+
+
 
   const openAddStudent = (batch) => {
     setSelectedBatch(batch);

@@ -14,6 +14,8 @@ import {
   Calendar,
   Mail,
   Hash,
+  BookOpen,
+  ChevronDown,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -32,6 +34,7 @@ const LOGO_DATA_URI = image;
 
 export default function AddReport() {
   const [students, setStudents] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [form, setForm] = useState({
     batch_name: "",
@@ -63,6 +66,15 @@ export default function AddReport() {
         console.error(err);
         toast.error("Failed to fetch students");
       });
+
+    API.get("/batches/public")
+      .then((res) => {
+        setBatches(res.data || []);
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to fetch batches");
+      });
   }, []);
 
   useEffect(() => {
@@ -73,6 +85,22 @@ export default function AddReport() {
     );
     setFilteredStudents(filtered);
   }, [form.batch_name, form.batch_no, students]);
+
+  // Get unique batch names
+  const getUniqueBatchNames = () => {
+    const uniqueNames = [...new Set(batches.map((b) => b.batch_name))];
+    return uniqueNames.sort();
+  };
+
+  // Get batch numbers for selected batch name
+  const getBatchNumbers = (batchName) => {
+    if (!batchName) return [];
+    const numbers = batches
+      .filter((b) => b.batch_name === batchName)
+      .map((b) => b.batch_no)
+      .sort((a, b) => a - b);
+    return numbers;
+  };
 
   // ---------- Parameter helpers ----------
   const handleParamChange = (index, field, value) => {
@@ -510,26 +538,69 @@ export default function AddReport() {
                 Batch Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* BATCH NAME DROPDOWN */}
                 <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Batch Name"
+                  <BookOpen
+                    size={18}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400 z-10"
+                  />
+                  <select
                     value={form.batch_name}
-                    onChange={(e) =>
-                      setForm({ ...form, batch_name: e.target.value })
-                    }
-                    className="w-full border-0 outline-0 bg-white/80 backdrop-blur-sm rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm"
+                    onChange={(e) => {
+                      setForm({
+                        ...form,
+                        batch_name: e.target.value,
+                        batch_no: "", // Reset batch number when batch name changes
+                        studentId: "", // Reset student when batch changes
+                      });
+                    }}
+                    className="w-full border-0 outline-0 bg-white/80 backdrop-blur-sm rounded-xl pl-12 pr-10 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm appearance-none cursor-pointer"
+                  >
+                    <option value="">Select Batch Name</option>
+                    {getUniqueBatchNames().map((batchName) => (
+                      <option key={batchName} value={batchName}>
+                        {batchName}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={18}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-400 pointer-events-none"
                   />
                 </div>
+
+                {/* BATCH NUMBER DROPDOWN */}
                 <div className="relative">
-                  <input
-                    type="number"
-                    placeholder="Batch No"
+                  <Hash
+                    size={18}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400 z-10"
+                  />
+                  <select
                     value={form.batch_no}
-                    onChange={(e) =>
-                      setForm({ ...form, batch_no: e.target.value })
-                    }
-                    className="w-full border-0 outline-0 bg-white/80 backdrop-blur-sm rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm"
+                    onChange={(e) => {
+                      setForm({
+                        ...form,
+                        batch_no: e.target.value,
+                        studentId: "", // Reset student when batch changes
+                      });
+                    }}
+                    disabled={!form.batch_name}
+                    className="w-full border-0 outline-0 bg-white/80 backdrop-blur-sm rounded-xl pl-12 pr-10 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {form.batch_name
+                        ? "Select Batch Number"
+                        : "Select Batch Name First"}
+                    </option>
+                    {getBatchNumbers(form.batch_name).map((batchNo) => (
+                      <option key={batchNo} value={batchNo}>
+                        Batch #{batchNo}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={18}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-400 pointer-events-none"
                   />
                 </div>
               </div>
@@ -562,9 +633,14 @@ export default function AddReport() {
                   onChange={(e) =>
                     setForm({ ...form, studentId: e.target.value })
                   }
-                  className="w-full border-0 outline-0 bg-white/80 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm appearance-none cursor-pointer"
+                  disabled={!form.batch_name || !form.batch_no}
+                  className="w-full border-0 outline-0 bg-white/80 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <option value="">Select Student</option>
+                  <option value="">
+                    {form.batch_name && form.batch_no
+                      ? "Select Student"
+                      : "Select Batch First"}
+                  </option>
                   {filteredStudents.map((s) => (
                     <option key={s._id} value={s._id}>
                       {s.name} ({s.email})

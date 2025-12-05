@@ -16,10 +16,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  BookOpen,
+  Hash,
+  ChevronDown,
 } from "lucide-react";
 
 export default function AdminStudents() {
   const [students, setStudents] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
@@ -43,6 +47,7 @@ export default function AdminStudents() {
 
   useEffect(() => {
     fetchStudents();
+    fetchBatches();
   }, [page, search]);
 
   const fetchStudents = async () => {
@@ -65,6 +70,32 @@ export default function AdminStudents() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchBatches = async () => {
+    try {
+      const res = await API.get("/batches/public");
+      setBatches(res.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load batches");
+    }
+  };
+
+  // Get unique batch names
+  const getUniqueBatchNames = () => {
+    const uniqueNames = [...new Set(batches.map((b) => b.batch_name))];
+    return uniqueNames.sort();
+  };
+
+  // Get batch numbers for selected batch name
+  const getBatchNumbers = (batchName) => {
+    if (!batchName) return [];
+    const numbers = batches
+      .filter((b) => b.batch_name === batchName)
+      .map((b) => b.batch_no)
+      .sort((a, b) => a - b);
+    return numbers;
   };
 
   const handleCreate = async (e) => {
@@ -500,23 +531,80 @@ export default function AdminStudents() {
               placeholder="••••••••"
               required
             />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                label="Batch Name"
-                value={form.batch_name}
-                onChange={(v) => setForm({ ...form, batch_name: v })}
-                placeholder="Morning Batch"
-                required
-              />
-              <FormField
-                label="Batch Number"
-                type="number"
-                value={form.batch_no}
-                onChange={(v) => setForm({ ...form, batch_no: v })}
-                placeholder="101"
-                required
-              />
+
+            {/* BATCH NAME DROPDOWN */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Batch Name <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <BookOpen
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <select
+                  value={form.batch_name}
+                  onChange={(e) => {
+                    setForm({
+                      ...form,
+                      batch_name: e.target.value,
+                      batch_no: "", // Reset batch number when batch name changes
+                    });
+                  }}
+                  required
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                >
+                  <option value="">-- Select Batch Name --</option>
+                  {getUniqueBatchNames().map((batchName) => (
+                    <option key={batchName} value={batchName}>
+                      {batchName}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+              </div>
             </div>
+
+            {/* BATCH NUMBER DROPDOWN */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Batch Number <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Hash
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <select
+                  value={form.batch_no}
+                  onChange={(e) => {
+                    setForm({ ...form, batch_no: e.target.value });
+                  }}
+                  required
+                  disabled={!form.batch_name}
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {form.batch_name
+                      ? "-- Select Batch Number --"
+                      : "-- Select Batch Name First --"}
+                  </option>
+                  {getBatchNumbers(form.batch_name).map((batchNo) => (
+                    <option key={batchNo} value={batchNo}>
+                      Batch #{batchNo}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+              </div>
+            </div>
+
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -563,21 +651,80 @@ export default function AdminStudents() {
               onChange={(v) => setForm({ ...form, email: v })}
               required
             />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                label="Batch Name"
-                value={form.batch_name}
-                onChange={(v) => setForm({ ...form, batch_name: v })}
-                required
-              />
-              <FormField
-                label="Batch Number"
-                type="number"
-                value={form.batch_no}
-                onChange={(v) => setForm({ ...form, batch_no: v })}
-                required
-              />
+
+            {/* BATCH NAME DROPDOWN */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Batch Name <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <BookOpen
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <select
+                  value={form.batch_name}
+                  onChange={(e) => {
+                    setForm({
+                      ...form,
+                      batch_name: e.target.value,
+                      batch_no: "", // Reset batch number when batch name changes
+                    });
+                  }}
+                  required
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                >
+                  <option value="">-- Select Batch Name --</option>
+                  {getUniqueBatchNames().map((batchName) => (
+                    <option key={batchName} value={batchName}>
+                      {batchName}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+              </div>
             </div>
+
+            {/* BATCH NUMBER DROPDOWN */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Batch Number <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Hash
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <select
+                  value={form.batch_no}
+                  onChange={(e) => {
+                    setForm({ ...form, batch_no: e.target.value });
+                  }}
+                  required
+                  disabled={!form.batch_name}
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {form.batch_name
+                      ? "-- Select Batch Number --"
+                      : "-- Select Batch Name First --"}
+                  </option>
+                  {getBatchNumbers(form.batch_name).map((batchNo) => (
+                    <option key={batchNo} value={batchNo}>
+                      Batch #{batchNo}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+              </div>
+            </div>
+
             <div className="flex gap-3 pt-2">
               <button
                 type="button"

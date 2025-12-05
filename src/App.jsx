@@ -22,6 +22,7 @@ import StudentManagement from "./components/management/StudentManagement";
 import AdminStudents from "./pages/AdminStudents";
 import AdminBatches from "./pages/AdminBatches";
 import AdminTeachers from "./pages/AdminTeachers";
+import TeacherProfile from "./components/teacher/TeacherProfile";
 
 export default function App() {
   function PrivateRoute({ children, role }) {
@@ -122,9 +123,6 @@ export default function App() {
           }
         />
 
-        <Route path="/teacher/login" element={<TeacherLogin />} />
-        <Route path="/teacher/register" element={<TeacherRegister />} />
-
         <Route
           path="/admin/syllabus"
           element={
@@ -134,11 +132,21 @@ export default function App() {
           }
         />
 
+        <Route path="/teacher/login" element={<TeacherLogin />} />
+        <Route path="/teacher/register" element={<TeacherRegister />} />
         <Route
           path="/teacher/dashboard"
           element={
             <PrivateRoute role="teacher">
               <TeacherSyllabusDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/teacher/profile"
+          element={
+            <PrivateRoute role="teacher">
+              <TeacherProfile />
             </PrivateRoute>
           }
         />

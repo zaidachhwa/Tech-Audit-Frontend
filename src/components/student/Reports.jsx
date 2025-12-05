@@ -263,7 +263,7 @@ function ReportCard({
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-800">
-                  {/* Performance Report #{reports.length - index} */}
+                  Performance Report #{index + 1}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar size={14} className="text-gray-500" />

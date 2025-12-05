@@ -20,21 +20,32 @@ import {
   Filter,
   ChevronDown,
   AlertCircle,
+  LayoutDashboard,
+  GraduationCap,
+  UserCheck,
+  FolderGit2,
+  Notebook,
+  Menu,
+  LogOut,
+  Hash,
 } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function StudentManagement() {
+  const { logout } = useAuth();
+  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [students, setStudents] = useState([]);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
-  // Forms
   const [addForm, setAddForm] = useState({
     name: "",
     email: "",
@@ -50,6 +61,44 @@ export default function StudentManagement() {
     batch_no: "",
   });
 
+  const navItems = [
+    {
+      name: "Dashboard",
+      path: "/admin/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      name: "Students",
+      path: "/admin/student-management",
+      icon: GraduationCap,
+    },
+    {
+      name: "Teachers",
+      path: "/admin/teacher-management",
+      icon: UserCheck,
+    },
+    {
+      name: "Batches",
+      path: "/admin/batch-management",
+      icon: Users,
+    },
+    {
+      name: "Syllabus Tracker",
+      path: "/admin/syllabus",
+      icon: BookOpen,
+    },
+    {
+      name: "Project Tracking",
+      path: "/admin/project-tracking",
+      icon: FolderGit2,
+    },
+    {
+      name: "Add Reports",
+      path: "/admin/add-reports",
+      icon: Notebook,
+    },
+  ];
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -62,9 +111,11 @@ export default function StudentManagement() {
         API.get("/batches/public"),
       ]);
 
-      console.log(studentsRes);
+      console.log("Students:", studentsRes.data);
+      console.log("Batches:", batchesRes.data);
+
       setStudents(studentsRes.data?.students || []);
-      setBatches(batchesRes.data?.batches || batchesRes.data || []);
+      setBatches(batchesRes.data || []);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch data");
@@ -73,7 +124,22 @@ export default function StudentManagement() {
     }
   };
 
-  // CREATE
+  // Get unique batch names
+  const getUniqueBatchNames = () => {
+    const uniqueNames = [...new Set(batches.map((b) => b.batch_name))];
+    return uniqueNames.sort();
+  };
+
+  // Get batch numbers for selected batch name
+  const getBatchNumbers = (batchName) => {
+    if (!batchName) return [];
+    const numbers = batches
+      .filter((b) => b.batch_name === batchName)
+      .map((b) => b.batch_no)
+      .sort((a, b) => a - b);
+    return numbers;
+  };
+
   const handleAddStudent = async (e) => {
     e.preventDefault();
     try {
@@ -94,7 +160,6 @@ export default function StudentManagement() {
     }
   };
 
-  // UPDATE
   const handleEditStudent = async (e) => {
     e.preventDefault();
     try {
@@ -109,9 +174,8 @@ export default function StudentManagement() {
     }
   };
 
-  // DELETE
   const handleDeleteStudent = async (studentId) => {
-    if (!confirm("Are you sure you want to delete this student?")) return;
+    if (!window.confirm("Are you sure you want to delete this student?")) return;
 
     try {
       await API.delete(`/students/delete/${studentId}`);
@@ -123,7 +187,6 @@ export default function StudentManagement() {
     }
   };
 
-  // APPROVE
   const handleApproveStudent = async (studentId) => {
     try {
       await API.patch(`/admin/approve-student/${studentId}`);
@@ -135,7 +198,6 @@ export default function StudentManagement() {
     }
   };
 
-  // REJECT
   const handleRejectStudent = async (studentId) => {
     try {
       await API.patch(`/admin/reject-student/${studentId}`);
@@ -158,11 +220,9 @@ export default function StudentManagement() {
     setShowEditModal(true);
   };
 
-  // Filter and search
   const getFilteredStudents = () => {
     let filtered = [...students];
 
-    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (s) =>
@@ -172,7 +232,6 @@ export default function StudentManagement() {
       );
     }
 
-    // Status filter
     if (filterStatus === "active") {
       filtered = filtered.filter((s) => s.isActive === true);
     } else if (filterStatus === "pending") {
@@ -191,155 +250,223 @@ export default function StudentManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
+    <div className="min-h-screen bg-white flex">
       <Toaster position="top-right" />
 
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl shadow-xl p-8 text-white"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-                <Users size={36} />
-                Student Management
-              </h1>
-              <p className="text-blue-100">
-                Manage all students, approvals, and batch assignments
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={fetchData}
-                disabled={loading}
-                className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl transition flex items-center gap-2"
-              >
-                <RefreshCw
-                  size={18}
-                  className={loading ? "animate-spin" : ""}
-                />
-                Refresh
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAddModal(true)}
-                className="bg-white text-blue-600 hover:bg-gray-100 px-4 py-2 rounded-xl font-semibold transition flex items-center gap-2"
-              >
-                <Plus size={18} />
-                Add Student
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard
-            label="Total Students"
-            value={stats.total}
-            icon={<Users size={20} />}
-            color="from-blue-500 to-cyan-500"
-          />
-          <StatCard
-            label="Active Students"
-            value={stats.active}
-            icon={<CheckCircle size={20} />}
-            color="from-green-500 to-emerald-500"
-          />
-          <StatCard
-            label="Pending Approval"
-            value={stats.pending}
-            icon={<AlertCircle size={20} />}
-            color="from-orange-500 to-amber-500"
-          />
-        </div>
-
-        {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg p-6"
-        >
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="Search by name, email, or batch..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div className="relative w-full md:w-48">
-              <Filter
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full pl-12 pr-10 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none appearance-none"
-              >
-                <option value="all">All Students</option>
-                <option value="active">Active Only</option>
-                <option value="pending">Pending Only</option>
-              </select>
-              <ChevronDown
-                size={18}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-              />
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Student List */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg overflow-hidden"
-        >
-          <div className="p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Users size={20} className="text-blue-600" />
-              Students List ({filteredStudents.length})
-            </h3>
-
-            {loading ? (
-              <LoadingBlock />
-            ) : filteredStudents.length === 0 ? (
-              <EmptyState searchTerm={searchTerm} filterStatus={filterStatus} />
-            ) : (
-              <div className="space-y-3">
-                {filteredStudents.map((student, index) => (
-                  <StudentCard
-                    key={student._id}
-                    student={student}
-                    index={index}
-                    onEdit={() => openEditModal(student)}
-                    onDelete={() => handleDeleteStudent(student._id)}
-                    onApprove={() => handleApproveStudent(student._id)}
-                    onReject={() => handleRejectStudent(student._id)}
-                  />
-                ))}
+      {/* SIDEBAR */}
+      <aside
+        className={`fixed left-0 top-0 h-screen bg-gray-50 border-r border-gray-200 transition-all duration-300 z-40 ${
+          sidebarOpen ? "w-64" : "w-0 -translate-x-full lg:translate-x-0 lg:w-16"
+        }`}
+      >
+        <div className="flex flex-col h-full">
+          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+            {sidebarOpen && (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <GraduationCap size={18} className="text-white" />
+                </div>
+                <span className="font-semibold text-gray-900">Admin Panel</span>
               </div>
             )}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition hidden lg:block"
+            >
+              <Menu size={20} className="text-gray-600" />
+            </button>
           </div>
-        </motion.div>
+
+          <nav className="flex-1 py-6 px-3 overflow-y-auto">
+            <div className="space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group relative ${
+                      isActive
+                        ? "bg-indigo-50 text-indigo-600"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    <Icon
+                      size={20}
+                      className={isActive ? "text-indigo-600" : "text-gray-500"}
+                    />
+                    {sidebarOpen && (
+                      <span className="font-medium text-sm">{item.name}</span>
+                    )}
+                    {isActive && (
+                      <div className="absolute right-0 w-1 h-full bg-indigo-600 rounded-l-full" />
+                    )}
+                  </NavLink>
+                );
+              })}
+            </div>
+          </nav>
+
+          <div className="border-t border-gray-200 p-4">
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition group"
+            >
+              <LogOut size={20} className="text-gray-500 group-hover:text-red-600" />
+              {sidebarOpen && <span className="font-medium text-sm">Logout</span>}
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <div
+        className={`flex-1 transition-all duration-300 ${
+          sidebarOpen ? "lg:ml-64" : "lg:ml-16"
+        }`}
+      >
+        {/* Top Bar */}
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition lg:hidden"
+            >
+              <Menu size={20} className="text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">
+                Student Management
+              </h1>
+              <p className="text-sm text-gray-500">
+                Manage students, approvals & batches
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchData}
+              disabled={loading}
+              className="p-2 hover:bg-gray-100 rounded-lg transition"
+              title="Refresh"
+            >
+              <RefreshCw
+                size={18}
+                className={`text-gray-600 ${loading ? "animate-spin" : ""}`}
+              />
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition shadow-sm"
+            >
+              <Plus size={18} />
+              <span>Add Student</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="p-6 max-w-7xl mx-auto space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StatCard
+              label="Total Students"
+              value={stats.total}
+              icon={Users}
+              bgColor="bg-blue-50"
+              textColor="text-blue-600"
+            />
+            <StatCard
+              label="Active Students"
+              value={stats.active}
+              icon={CheckCircle}
+              bgColor="bg-green-50"
+              textColor="text-green-600"
+            />
+            <StatCard
+              label="Pending Approval"
+              value={stats.pending}
+              icon={AlertCircle}
+              bgColor="bg-yellow-50"
+              textColor="text-yellow-600"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, or batch..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+
+              <div className="relative w-full md:w-48">
+                <Filter
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none transition"
+                >
+                  <option value="all">All Students</option>
+                  <option value="active">Active Only</option>
+                  <option value="pending">Pending Only</option>
+                </select>
+                <ChevronDown
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Student List */}
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Students List
+                </h3>
+                <span className="text-sm text-gray-500">
+                  {filteredStudents.length} students
+                </span>
+              </div>
+
+              {loading ? (
+                <LoadingBlock />
+              ) : filteredStudents.length === 0 ? (
+                <EmptyState searchTerm={searchTerm} filterStatus={filterStatus} />
+              ) : (
+                <div className="space-y-3">
+                  {filteredStudents.map((student) => (
+                    <StudentCard
+                      key={student._id}
+                      student={student}
+                      onEdit={() => openEditModal(student)}
+                      onDelete={() => handleDeleteStudent(student._id)}
+                      onApprove={() => handleApproveStudent(student._id)}
+                      onReject={() => handleRejectStudent(student._id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
       </div>
 
       {/* Add Modal */}
@@ -355,7 +482,6 @@ export default function StudentManagement() {
                   setAddForm({ ...addForm, name: e.target.value })
                 }
                 required
-                icon={<User size={18} />}
               />
 
               <InputField
@@ -366,7 +492,6 @@ export default function StudentManagement() {
                   setAddForm({ ...addForm, email: e.target.value })
                 }
                 required
-                icon={<Mail size={18} />}
               />
 
               <InputField
@@ -379,39 +504,90 @@ export default function StudentManagement() {
                 required
               />
 
-              <div className="grid grid-cols-2 gap-3">
-                <InputField
-                  label="Batch Name"
-                  type="text"
-                  value={addForm.batch_name}
-                  onChange={(e) =>
-                    setAddForm({ ...addForm, batch_name: e.target.value })
-                  }
-                  required
-                />
+              {/* BATCH NAME DROPDOWN */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Batch Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <BookOpen
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <select
+                    value={addForm.batch_name}
+                    onChange={(e) => {
+                      setAddForm({
+                        ...addForm,
+                        batch_name: e.target.value,
+                        batch_no: "", // Reset batch number when batch name changes
+                      });
+                    }}
+                    required
+                    className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none transition"
+                  >
+                    <option value="">-- Select Batch Name --</option>
+                    {getUniqueBatchNames().map((batchName) => (
+                      <option key={batchName} value={batchName}>
+                        {batchName}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={18}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
+                </div>
+              </div>
 
-                <InputField
-                  label="Batch Number"
-                  type="text"
-                  value={addForm.batch_no}
-                  onChange={(e) =>
-                    setAddForm({ ...addForm, batch_no: e.target.value })
-                  }
-                  required
-                />
+              {/* BATCH NUMBER DROPDOWN */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Batch Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Hash
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <select
+                    value={addForm.batch_no}
+                    onChange={(e) => {
+                      setAddForm({ ...addForm, batch_no: e.target.value });
+                    }}
+                    required
+                    disabled={!addForm.batch_name}
+                    className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {addForm.batch_name
+                        ? "-- Select Batch Number --"
+                        : "-- Select Batch Name First --"}
+                    </option>
+                    {getBatchNumbers(addForm.batch_name).map((batchNo) => (
+                      <option key={batchNo} value={batchNo}>
+                        Batch #{batchNo}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={18}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:from-blue-700 hover:to-indigo-700 transition"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
                 >
                   Add Student
                 </button>
@@ -434,7 +610,6 @@ export default function StudentManagement() {
                   setEditForm({ ...editForm, name: e.target.value })
                 }
                 required
-                icon={<User size={18} />}
               />
 
               <InputField
@@ -445,42 +620,92 @@ export default function StudentManagement() {
                   setEditForm({ ...editForm, email: e.target.value })
                 }
                 required
-                icon={<Mail size={18} />}
               />
 
-              <div className="grid grid-cols-2 gap-3">
-                <InputField
-                  label="Batch Name"
-                  type="text"
-                  value={editForm.batch_name}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, batch_name: e.target.value })
-                  }
-                  required
-                />
+              {/* BATCH NAME DROPDOWN */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Batch Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <BookOpen
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <select
+                    value={editForm.batch_name}
+                    onChange={(e) => {
+                      setEditForm({
+                        ...editForm,
+                        batch_name: e.target.value,
+                        batch_no: "", // Reset batch number when batch name changes
+                      });
+                    }}
+                    required
+                    className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none transition"
+                  >
+                    <option value="">-- Select Batch Name --</option>
+                    {getUniqueBatchNames().map((batchName) => (
+                      <option key={batchName} value={batchName}>
+                        {batchName}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={18}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
+                </div>
+              </div>
 
-                <InputField
-                  label="Batch Number"
-                  type="text"
-                  value={editForm.batch_no}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, batch_no: e.target.value })
-                  }
-                  required
-                />
+              {/* BATCH NUMBER DROPDOWN */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Batch Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Hash
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <select
+                    value={editForm.batch_no}
+                    onChange={(e) => {
+                      setEditForm({ ...editForm, batch_no: e.target.value });
+                    }}
+                    required
+                    disabled={!editForm.batch_name}
+                    className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none transition disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {editForm.batch_name
+                        ? "-- Select Batch Number --"
+                        : "-- Select Batch Name First --"}
+                    </option>
+                    {getBatchNumbers(editForm.batch_name).map((batchNo) => (
+                      <option key={batchNo} value={batchNo}>
+                        Batch #{batchNo}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={18}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:from-blue-700 hover:to-indigo-700 transition"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
                 >
                   Update Student
                 </button>
@@ -495,29 +720,24 @@ export default function StudentManagement() {
 
 // ============ HELPER COMPONENTS ============
 
-function StatCard({ label, value, icon, color }) {
+function StatCard({ label, value, icon: Icon, bgColor, textColor }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className={`bg-gradient-to-br ${color} rounded-2xl shadow-lg p-6 text-white`}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-white/80 text-sm font-medium mb-1">{label}</p>
-          <p className="text-3xl font-bold">{value}</p>
+    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`${bgColor} p-3 rounded-lg`}>
+          <Icon size={24} className={textColor} />
         </div>
-        <div className="bg-white/20 p-3 rounded-xl">{icon}</div>
       </div>
-    </motion.div>
+      <h3 className="text-2xl font-bold text-gray-900 mb-1">{value}</h3>
+      <p className="text-sm text-gray-500">{label}</p>
+    </div>
   );
 }
 
 function LoadingBlock() {
   return (
-    <div className="py-20 flex flex-col items-center justify-center">
-      <RefreshCw className="animate-spin text-blue-600 mb-4" size={40} />
+    <div className="py-12 flex flex-col items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4" />
       <p className="text-gray-600">Loading students...</p>
     </div>
   );
@@ -525,14 +745,14 @@ function LoadingBlock() {
 
 function EmptyState({ searchTerm, filterStatus }) {
   return (
-    <div className="py-16 text-center">
-      <div className="bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-        <Users size={48} className="text-blue-600" />
+    <div className="py-12 text-center">
+      <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+        <Users size={32} className="text-gray-400" />
       </div>
-      <h3 className="text-xl font-bold text-gray-800 mb-2">
+      <h3 className="text-lg font-semibold text-gray-900 mb-1">
         No Students Found
       </h3>
-      <p className="text-gray-600">
+      <p className="text-sm text-gray-500">
         {searchTerm
           ? `No students match "${searchTerm}"`
           : filterStatus !== "all"
@@ -543,43 +763,33 @@ function EmptyState({ searchTerm, filterStatus }) {
   );
 }
 
-function StudentCard({
-  student,
-  index,
-  onEdit,
-  onDelete,
-  onApprove,
-  onReject,
-}) {
+function StudentCard({ student, onEdit, onDelete, onApprove, onReject }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.05 }}
-      className="bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 rounded-xl p-4 hover:shadow-lg transition-all"
-    >
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:border-indigo-200 hover:shadow-sm transition">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1">
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-500 p-3 rounded-xl">
-            <User size={24} className="text-white" />
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <User size={20} className="text-indigo-600" />
           </div>
 
-          <div className="flex-1">
-            <h4 className="font-bold text-gray-800 text-lg">{student.name}</h4>
-            <p className="text-sm text-gray-600 flex items-center gap-2">
-              <Mail size={14} />
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-gray-900 truncate">
+              {student.name}
+            </h4>
+            <p className="text-sm text-gray-500 truncate flex items-center gap-1">
+              <Mail size={12} />
               {student.email}
             </p>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-lg font-semibold flex items-center gap-1">
-                <BookOpen size={12} />
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1">
+                <BookOpen size={10} />
                 {student.batch_name} #{student.batch_no}
               </span>
               <span
-                className={`text-xs px-2 py-1 rounded-lg font-semibold ${
+                className={`text-xs px-2 py-0.5 rounded font-medium ${
                   student.isActive
                     ? "bg-green-100 text-green-700"
-                    : "bg-orange-100 text-orange-700"
+                    : "bg-yellow-100 text-yellow-700"
                 }`}
               >
                 {student.isActive ? "Active" : "Pending"}
@@ -588,45 +798,45 @@ function StudentCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {!student.isActive && (
             <button
               onClick={onApprove}
-              className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition"
-              title="Approve Student"
+              className="p-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition"
+              title="Approve"
             >
-              <Check size={18} />
+              <Check size={16} />
             </button>
           )}
 
           {student.isActive && (
             <button
               onClick={onReject}
-              className="p-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition"
-              title="Deactivate Student"
+              className="p-2 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition"
+              title="Deactivate"
             >
-              <XCircle size={18} />
+              <XCircle size={16} />
             </button>
           )}
 
           <button
             onClick={onEdit}
-            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
-            title="Edit Student"
+            className="p-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+            title="Edit"
           >
-            <Edit2 size={18} />
+            <Edit2 size={16} />
           </button>
 
           <button
             onClick={onDelete}
-            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition"
-            title="Delete Student"
+            className="p-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition"
+            title="Delete"
           >
-            <Trash2 size={18} />
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -636,23 +846,23 @@ function Modal({ title, onClose, children }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
+        initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
+        exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
       >
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h3 className="text-xl font-bold text-gray-800">{title}</h3>
+        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition"
+            className="p-2 hover:bg-gray-100 rounded-lg transition"
           >
-            <X size={24} />
+            <X size={20} className="text-gray-500" />
           </button>
         </div>
         <div className="p-6">{children}</div>
@@ -661,28 +871,19 @@ function Modal({ title, onClose, children }) {
   );
 }
 
-function InputField({ label, type, value, onChange, required, icon }) {
+function InputField({ label, type, value, onChange, required }) {
   return (
     <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      <div className="relative">
-        {icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-            {icon}
-          </div>
-        )}
-        <input
-          type={type}
-          value={value}
-          onChange={onChange}
-          required={required}
-          className={`w-full ${
-            icon ? "pl-12" : "pl-4"
-          } pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none`}
-        />
-      </div>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        required={required}
+        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+      />
     </div>
   );
 }
