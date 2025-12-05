@@ -18,6 +18,10 @@ import TeacherLogin from "./components/teacher/TeacherLogin";
 import TeacherSyllabusDashboard from "./components/teacher/TeacherSyllabusDashboard";
 import TeacherRegister from "./components/teacher/TeacherRegister";
 import StudentProfile from "./components/student/StudentProfile";
+import StudentManagement from "./components/management/StudentManagement";
+import AdminStudents from "./pages/AdminStudents";
+import AdminBatches from "./pages/AdminBatches";
+import AdminTeachers from "./pages/AdminTeachers";
 
 export default function App() {
   function PrivateRoute({ children, role }) {
@@ -57,6 +61,34 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
+        {/* Management Routes */}
+
+        <Route
+          path="/admin/student-management"
+          element={
+            <PrivateRoute role="admin">
+              <AdminStudents />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/teacher-management"
+          element={
+            <PrivateRoute role="admin">
+              <AdminTeachers />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/batch-management"
+          element={
+            <PrivateRoute role="admin">
+              <AdminBatches />
+            </PrivateRoute>
+          }
+        />
+
         <Route
           path="/admin/project-tracking"
           element={
