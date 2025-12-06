@@ -12,6 +12,7 @@ import {
   Hash,
   Loader2,
   CheckCircle2,
+  BookOpen,
 } from "lucide-react";
 
 export default function StudentSignup() {
@@ -93,29 +94,30 @@ export default function StudentSignup() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           >
             <motion.div
-              initial={{ scale: 0.7 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.7 }}
-              transition={{ type: "spring", stiffness: 120 }}
-              className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md mx-auto"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white p-8 rounded-xl shadow-lg text-center max-w-md w-full border border-gray-200"
             >
-              <CheckCircle2 className="text-green-600 mx-auto mb-4" size={60} />
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="text-emerald-600" size={32} />
+              </div>
 
-              <h2 className="text-2xl font-semibold text-gray-800">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 Account Created Successfully!
               </h2>
 
-              <p className="text-gray-600 mt-2 leading-relaxed">
+              <p className="text-gray-600 text-sm leading-relaxed">
                 Your student profile has been created.
                 <br />
-                You can login once an <b>admin approves your account.</b>
+                You can login once an <span className="font-semibold">admin approves your account.</span>
               </p>
 
-              <p className="text-xs text-gray-400 mt-4">
-                Redirecting to login...
+              <p className="text-xs text-gray-500 mt-4">
+                Redirecting to login page...
               </p>
             </motion.div>
           </motion.div>
@@ -123,138 +125,165 @@ export default function StudentSignup() {
       </AnimatePresence>
 
       {/* MAIN SIGNUP UI */}
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl"
+          className="w-full max-w-md bg-white p-8 rounded-xl shadow-sm border border-gray-200"
         >
           {/* Header */}
-          <div className="flex flex-col items-center mb-6">
-            <GraduationCap className="text-indigo-600 mb-3" size={40} />
-            <h2 className="text-3xl font-semibold text-indigo-700">
-              Student Signup
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-14 h-14 bg-emerald-500 rounded-lg flex items-center justify-center mb-4 shadow-sm">
+              <GraduationCap className="text-white" size={28} />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Create Account
             </h2>
-            <p className="text-gray-500 text-sm mt-1">
-              Create your student account
+            <p className="text-gray-600 text-sm mt-1">
+              Join our student portal
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name */}
-            <div className="relative group">
-              <User
-                className="absolute left-3 top-3 text-gray-400 group-hover:text-indigo-600 transition-all"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Full Name"
-                className="w-full pl-10 border border-gray-300 py-2 rounded-lg transition-all
-                focus:ring-2 focus:ring-indigo-500 outline-none group-hover:ring group-hover:ring-indigo-200"
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name
+              </label>
+              <div className="relative">
+                <User
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400"
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                />
+              </div>
             </div>
 
             {/* Email */}
-            <div className="relative group">
-              <Mail
-                className="absolute left-3 top-3 text-gray-400 group-hover:text-indigo-600 transition-all"
-                size={20}
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                className="w-full pl-10 border border-gray-300 py-2 rounded-lg transition-all
-                focus:ring-2 focus:ring-indigo-500 outline-none group-hover:ring group-hover:ring-indigo-200"
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <input
+                  type="email"
+                  placeholder="student@example.com"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400"
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  required
+                />
+              </div>
             </div>
 
             {/* Password */}
-            <div className="relative group">
-              <Lock
-                className="absolute left-3 top-3 text-gray-400 group-hover:text-indigo-600 transition-all"
-                size={20}
-              />
-              <input
-                type="password"
-                placeholder="Password (min 6 characters)"
-                className="w-full pl-10 border border-gray-300 py-2 rounded-lg transition-all
-                focus:ring-2 focus:ring-indigo-500 outline-none group-hover:ring group-hover:ring-indigo-200"
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-              />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <input
+                  type="password"
+                  placeholder="Min. 6 characters"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400"
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  required
+                />
+              </div>
             </div>
 
             {/* Batch Name */}
-            <div className="relative group">
-              <GraduationCap
-                className="absolute left-3 top-3 text-gray-400 group-hover:text-indigo-600 transition-all"
-                size={20}
-              />
-              <select
-                className="w-full pl-10 border border-gray-300 py-2 rounded-lg bg-white transition-all
-                focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer group-hover:ring group-hover:ring-indigo-200"
-                onChange={(e) =>
-                  setForm({ ...form, batch_name: e.target.value, batch_no: "" })
-                }
-              >
-                <option value="">Select Batch Name</option>
-                {batchLoading ? (
-                  <option disabled>Loading...</option>
-                ) : (
-                  batchNames.map((name, idx) => (
-                    <option key={idx} value={name}>
-                      {name}
-                    </option>
-                  ))
-                )}
-              </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Batch Name
+              </label>
+              <div className="relative">
+                <BookOpen
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={18}
+                />
+                <select
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all cursor-pointer text-gray-900 appearance-none"
+                  onChange={(e) =>
+                    setForm({ ...form, batch_name: e.target.value, batch_no: "" })
+                  }
+                  required
+                >
+                  <option value="">Select Batch Name</option>
+                  {batchLoading ? (
+                    <option disabled>Loading...</option>
+                  ) : (
+                    batchNames.map((name, idx) => (
+                      <option key={idx} value={name}>
+                        {name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
             </div>
 
             {/* Batch Number */}
-            <div className="relative group">
-              <Hash
-                className="absolute left-3 top-3 text-gray-400 group-hover:text-indigo-600 transition-all"
-                size={20}
-              />
-              <select
-                disabled={!form.batch_name}
-                className="w-full pl-10 border border-gray-300 py-2 rounded-lg bg-white transition-all
-                focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer disabled:cursor-not-allowed
-                group-hover:ring group-hover:ring-indigo-200"
-                value={form.batch_no}
-                onChange={(e) => setForm({ ...form, batch_no: e.target.value })}
-              >
-                <option value="">Select Batch Number</option>
-                {batchNumbers.map((num, idx) => (
-                  <option key={idx} value={num}>
-                    {num}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Batch Number
+              </label>
+              <div className="relative">
+                <Hash
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={18}
+                />
+                <select
+                  disabled={!form.batch_name}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all cursor-pointer disabled:bg-gray-50 disabled:cursor-not-allowed text-gray-900 appearance-none"
+                  value={form.batch_no}
+                  onChange={(e) => setForm({ ...form, batch_no: e.target.value })}
+                  required
+                >
+                  <option value="">
+                    {form.batch_name ? "Select Batch Number" : "Select Batch Name First"}
                   </option>
-                ))}
-              </select>
+                  {batchNumbers.map((num, idx) => (
+                    <option key={idx} value={num}>
+                      Batch #{num}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Submit Button */}
             <button
               disabled={loading}
               type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700
-              text-white py-2 rounded-lg font-medium transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-lg font-medium transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm mt-6"
             >
               {loading && <Loader2 className="animate-spin" size={20} />}
-              {loading ? "Creating Account..." : "Signup"}
+              {loading ? "Creating Account..." : "Create Account"}
             </button>
 
             {/* Redirect */}
-            <p className="text-center text-gray-500 text-sm">
+            <p className="text-center text-gray-600 text-sm mt-4">
               Already have an account?{" "}
               <Link
                 to="/student/login"
-                className="text-indigo-600 font-medium hover:underline cursor-pointer"
+                className="text-emerald-600 font-semibold hover:text-emerald-700 hover:underline"
               >
-                Login
+                Sign In
               </Link>
             </p>
           </form>

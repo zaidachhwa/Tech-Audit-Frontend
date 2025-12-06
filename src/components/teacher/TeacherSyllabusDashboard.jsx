@@ -49,6 +49,7 @@ export default function TeacherSyllabusDashboard() {
 
   useEffect(() => {
     fetchBatchesWithSyllabi();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -71,12 +72,14 @@ export default function TeacherSyllabusDashboard() {
       setSelectedBatchSyllabusId("");
       setTopics([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBatchId, batchesWithSyllabi]);
 
   useEffect(() => {
     if (selectedBatchId && selectedBatchSyllabusId) {
       fetchTopicsForBatchSyllabus(selectedBatchId, selectedBatchSyllabusId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBatchSyllabusId, selectedBatchId]);
 
   const fetchBatchesWithSyllabi = async () => {
@@ -240,8 +243,8 @@ export default function TeacherSyllabusDashboard() {
         <header className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="bg-indigo-100 p-3 rounded-lg">
-                <BookOpen size={28} className="text-indigo-600" />
+              <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                <BookOpen size={28} className="text-emerald-600" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -255,7 +258,7 @@ export default function TeacherSyllabusDashboard() {
 
             <div className="flex items-center gap-3 w-full md:w-auto">
               <Link to="/teacher/profile" className="flex-1 md:flex-none">
-                <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2">
+                <button className="w-full bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 text-gray-700 px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2">
                   <User size={18} />
                   Profile
                 </button>
@@ -273,7 +276,7 @@ export default function TeacherSyllabusDashboard() {
                   }
                 }}
                 disabled={loading || loadingTopics}
-                className="flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 md:flex-none bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 text-gray-700 px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <RefreshCw
                   size={18}
@@ -284,7 +287,7 @@ export default function TeacherSyllabusDashboard() {
 
               <button
                 onClick={logout}
-                className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2"
+                className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2"
               >
                 <LogOut size={18} />
                 Logout
@@ -297,15 +300,15 @@ export default function TeacherSyllabusDashboard() {
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="text-gray-700 font-semibold mb-2 block flex items-center gap-2">
-                <Users size={16} className="text-indigo-600" />
+              <label className="text-gray-700 font-medium mb-2 flex items-center gap-2">
+                <Users size={16} className="text-emerald-600" />
                 Select Batch
               </label>
               <div className="relative">
                 <select
                   value={selectedBatchId}
                   onChange={(e) => setSelectedBatchId(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none cursor-pointer appearance-none"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none cursor-pointer appearance-none"
                 >
                   <option value="">Select a batch...</option>
                   {batches.map((batch) => (
@@ -322,8 +325,8 @@ export default function TeacherSyllabusDashboard() {
             </div>
 
             <div>
-              <label className="text-gray-700 font-semibold mb-2 block flex items-center gap-2">
-                <BookOpen size={16} className="text-indigo-600" />
+              <label className="text-gray-700 font-medium mb-2 flex items-center gap-2">
+                <BookOpen size={16} className="text-emerald-600" />
                 Assigned Syllabus
               </label>
               <div className="relative">
@@ -333,7 +336,7 @@ export default function TeacherSyllabusDashboard() {
                   disabled={
                     !selectedBatchId || assignedSyllabiForBatch.length === 0
                   }
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">
                     {selectedBatchId
@@ -374,33 +377,37 @@ export default function TeacherSyllabusDashboard() {
             label="Total Topics"
             value={stats.total}
             icon={<BookOpen size={20} />}
-            bgColor="bg-blue-50"
-            iconColor="text-blue-600"
-            borderColor="border-blue-200"
+            bgColor="bg-white"
+            iconColor="text-emerald-600"
+            iconBgColor="bg-emerald-50"
+            borderColor="border-gray-200"
           />
           <StatCard
             label="Completed"
             value={stats.completed}
             icon={<CheckCircle2 size={20} />}
-            bgColor="bg-green-50"
+            bgColor="bg-white"
             iconColor="text-green-600"
-            borderColor="border-green-200"
+            iconBgColor="bg-green-50"
+            borderColor="border-gray-200"
           />
           <StatCard
             label="In Progress"
             value={stats.inProgress}
             icon={<Clock size={20} />}
-            bgColor="bg-orange-50"
-            iconColor="text-orange-600"
-            borderColor="border-orange-200"
+            bgColor="bg-white"
+            iconColor="text-blue-600"
+            iconBgColor="bg-blue-50"
+            borderColor="border-gray-200"
           />
           <StatCard
             label="Pending"
             value={stats.pending}
             icon={<AlertCircle size={20} />}
-            bgColor="bg-red-50"
-            iconColor="text-red-600"
-            borderColor="border-red-200"
+            bgColor="bg-white"
+            iconColor="text-orange-600"
+            iconBgColor="bg-orange-50"
+            borderColor="border-gray-200"
           />
         </div>
 
@@ -408,8 +415,8 @@ export default function TeacherSyllabusDashboard() {
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="bg-indigo-100 p-2.5 rounded-lg">
-                <TrendingUp size={24} className="text-indigo-600" />
+              <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+                <TrendingUp size={24} className="text-emerald-600" />
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">Overall Progress</h3>
@@ -417,7 +424,7 @@ export default function TeacherSyllabusDashboard() {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-4xl font-bold text-indigo-600">
+              <div className="text-4xl font-bold text-emerald-600">
                 {completionRate}%
               </div>
               <div className="text-xs text-gray-600 mt-1">
@@ -426,15 +433,15 @@ export default function TeacherSyllabusDashboard() {
             </div>
           </div>
 
-          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+              className="h-full bg-emerald-500 rounded-full transition-all duration-500"
               style={{ width: `${completionRate}%` }}
             />
           </div>
 
           {completionRate === 100 && stats.total > 0 && (
-            <div className="mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2 font-medium">
+            <div className="mt-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2 font-medium text-sm">
               <CheckCircle2 size={20} />
               Congratulations! All topics completed!
             </div>
@@ -448,7 +455,7 @@ export default function TeacherSyllabusDashboard() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h2 className="text-xl font-bold flex gap-2 items-center text-gray-900">
-                  <FileText className="text-indigo-600" size={24} />
+                  <FileText className="text-emerald-600" size={24} />
                   My Topics
                 </h2>
                 <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
@@ -466,7 +473,7 @@ export default function TeacherSyllabusDashboard() {
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
                   >
                     <option value="all">All Status</option>
                     <option value="Pending">Pending</option>
@@ -479,7 +486,7 @@ export default function TeacherSyllabusDashboard() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full pr-10 pl-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none appearance-none"
+                    className="w-full pr-10 pl-4 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none appearance-none"
                   >
                     <option value="dueDate">Sort by Due Date</option>
                     <option value="title">Sort by Title</option>
@@ -558,12 +565,14 @@ export default function TeacherSyllabusDashboard() {
 
 /* HELPER COMPONENTS */
 
-function StatCard({ label, value, icon, bgColor, iconColor, borderColor }) {
+function StatCard({ label, value, icon, bgColor, iconColor, iconBgColor, borderColor }) {
   return (
-    <div className={`${bgColor} border ${borderColor} rounded-lg p-4`}>
+    <div className={`${bgColor} border ${borderColor} rounded-lg p-5 shadow-sm`}>
       <div className="flex items-center justify-between mb-3">
-        <div className={`${iconColor}`}>{icon}</div>
-        <div className="text-3xl font-bold text-gray-900">{value}</div>
+        <div className={`${iconBgColor} p-2.5 rounded-lg border ${borderColor}`}>
+          <div className={iconColor}>{icon}</div>
+        </div>
+        <div className="text-2xl font-bold text-gray-900">{value}</div>
       </div>
       <div className="text-sm font-medium text-gray-700">{label}</div>
     </div>
@@ -573,7 +582,7 @@ function StatCard({ label, value, icon, bgColor, iconColor, borderColor }) {
 function LoadingBlock() {
   return (
     <div className="py-20 flex flex-col items-center justify-center">
-      <RefreshCw className="animate-spin text-indigo-600 mb-4" size={48} />
+      <RefreshCw className="animate-spin text-emerald-600 mb-4" size={48} />
       <p className="text-gray-600 font-medium">Loading topics...</p>
     </div>
   );
@@ -582,7 +591,7 @@ function LoadingBlock() {
 function EmptyState({ filterStatus, onRefresh }) {
   return (
     <div className="py-16 text-center">
-      <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+      <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6 border border-gray-200">
         <BookOpen size={48} className="text-gray-400" />
       </div>
 
@@ -591,7 +600,7 @@ function EmptyState({ filterStatus, onRefresh }) {
           ? "No Topics Assigned"
           : `No ${filterStatus} Topics`}
       </h3>
-      <p className="text-gray-600 mb-6">
+      <p className="text-gray-600 mb-6 text-sm">
         {filterStatus === "all"
           ? "You don't have any topics assigned for the selected batch & syllabus."
           : `No topics with "${filterStatus}" status.`}
@@ -599,7 +608,7 @@ function EmptyState({ filterStatus, onRefresh }) {
 
       <button
         onClick={onRefresh}
-        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 mx-auto transition"
+        className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 mx-auto transition shadow-sm"
       >
         <RefreshCw size={18} /> Refresh Topics
       </button>
@@ -609,27 +618,27 @@ function EmptyState({ filterStatus, onRefresh }) {
 
 function RemarkModal({ topic, remarkText, setRemarkText, onClose, onSubmit }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl">
-        <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center rounded-t-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+      <div className="bg-white rounded-lg w-full max-w-2xl shadow-lg border border-gray-200">
+        <div className="bg-emerald-500 px-6 py-4 flex justify-between items-center rounded-t-lg">
           <div>
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <MessageSquare size={20} />
               {remarkText ? "Edit Remark" : "Add Remark"}
             </h3>
-            <p className="text-sm text-indigo-100 mt-1">{topic.title}</p>
+            <p className="text-sm text-white/90 mt-1">{topic.title}</p>
           </div>
 
           <button
             onClick={onClose}
-            className="text-white hover:bg-indigo-700 p-2 rounded-lg transition"
+            className="text-white hover:bg-emerald-600 p-2 rounded-lg transition"
           >
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6">
-          <label className="block text-sm font-semibold mb-2 text-gray-700">
+          <label className="flex text-sm font-medium mb-2 text-gray-700">
             Your Remark
           </label>
 
@@ -637,7 +646,7 @@ function RemarkModal({ topic, remarkText, setRemarkText, onClose, onSubmit }) {
             rows={8}
             value={remarkText}
             onChange={(e) => setRemarkText(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 resize-none outline-none"
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 resize-none outline-none"
             placeholder="Write your remarks here..."
           />
 
@@ -650,7 +659,7 @@ function RemarkModal({ topic, remarkText, setRemarkText, onClose, onSubmit }) {
             </button>
 
             <button
-              className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               onClick={onSubmit}
               disabled={!remarkText.trim()}
             >
@@ -756,7 +765,7 @@ function TopicCard({
             {topic.completionStatus !== "Completed" && (
               <button
                 onClick={() => onMarkComplete(topic._id)}
-                className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition"
+                className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition shadow-sm"
               >
                 <CheckCheck size={16} />
                 <span>Mark Complete</span>
@@ -765,7 +774,7 @@ function TopicCard({
 
             <button
               onClick={onOpenRemark}
-              className="flex-1 md:flex-none bg-white hover:bg-gray-50 border border-indigo-300 text-indigo-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition"
+              className="flex-1 md:flex-none bg-white hover:bg-gray-50 border border-emerald-300 text-emerald-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition"
             >
               <Edit size={16} />
               <span>{topic.remarks ? "Edit Remark" : "Add Remark"}</span>
@@ -790,7 +799,7 @@ function TopicCard({
             <div className="flex items-start gap-2 mb-2">
               <MessageSquare
                 size={16}
-                className="text-indigo-600 mt-0.5 flex-shrink-0"
+                className="text-emerald-600 mt-0.5 flex-shrink-0"
               />
               <span className="text-sm font-semibold text-gray-700">
                 Your Remark:

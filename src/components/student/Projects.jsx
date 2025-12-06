@@ -211,7 +211,7 @@ export default function Projects() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <Toaster position="top-right" />
 
       <div className="max-w-7xl mx-auto space-y-6">
@@ -219,12 +219,12 @@ export default function Projects() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 text-white"
+          className="bg-white rounded-lg shadow-sm p-6 border border-gray-200"
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">My Projects</h1>
-              <p className="text-purple-100">
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">My Projects</h1>
+              <p className="text-gray-600 text-sm">
                 Track your progress and submit completed work
               </p>
             </div>
@@ -233,10 +233,10 @@ export default function Projects() {
               whileTap={{ scale: 0.95 }}
               onClick={fetchProjects}
               disabled={loading}
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-xl transition flex items-center gap-2 cursor-pointer"
+              className="bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer text-gray-700"
             >
               <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-              Refresh
+              <span className="text-sm font-medium">Refresh</span>
             </motion.button>
           </div>
         </motion.div>
@@ -247,50 +247,45 @@ export default function Projects() {
             icon={<Layers size={20} />}
             label="Total"
             value={stats.total}
-            color="bg-gradient-to-br from-blue-500 to-cyan-500"
           />
           <StatCard
             icon={<Clock size={20} />}
             label="In Progress"
             value={stats.inProgress}
-            color="bg-gradient-to-br from-orange-500 to-amber-500"
           />
           <StatCard
             icon={<CheckCircle2 size={20} />}
             label="Completed"
             value={stats.completed}
-            color="bg-gradient-to-br from-emerald-500 to-green-500"
           />
           <StatCard
             icon={<Send size={20} />}
             label="Submitted"
             value={stats.submitted}
-            color="bg-gradient-to-br from-purple-500 to-pink-500"
           />
           <StatCard
             icon={<Award size={20} />}
             label="Approved"
             value={stats.approved}
-            color="bg-gradient-to-br from-green-500 to-teal-500"
           />
         </div>
 
         {/* Projects List */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <RefreshCw className="animate-spin text-purple-600" size={40} />
+            <RefreshCw className="animate-spin text-emerald-600" size={40} />
           </div>
         ) : projects.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-12 text-center"
+            className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200"
           >
             <Layers size={64} className="mx-auto text-gray-300 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
               No Projects Yet
             </h3>
-            <p className="text-gray-500">
+            <p className="text-gray-600 text-sm">
               Projects assigned to you will appear here
             </p>
           </motion.div>
@@ -317,19 +312,21 @@ export default function Projects() {
 }
 
 // Stat Card Component
-function StatCard({ icon, label, value, color }) {
+function StatCard({ icon, label, value }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className={`${color} rounded-2xl shadow-lg p-4 text-white`}
+      whileHover={{ y: -2 }}
+      className="bg-white rounded-lg shadow-sm p-5 border border-gray-200"
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="bg-white/20 p-2 rounded-lg">{icon}</div>
-        <div className="text-3xl font-bold">{value}</div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+          <div className="text-emerald-600">{icon}</div>
+        </div>
+        <div className="text-2xl font-bold text-gray-900">{value}</div>
       </div>
-      <div className="text-sm font-medium opacity-90">{label}</div>
+      <div className="text-sm font-medium text-gray-700">{label}</div>
     </motion.div>
   );
 }
@@ -363,28 +360,23 @@ function ProjectCard({
     const configs = {
       Pending: {
         icon: <Clock size={16} />,
-        color: "bg-amber-100 text-amber-700 border-amber-200",
-        gradient: "from-amber-400 to-orange-400",
+        color: "bg-gray-100 text-gray-700 border-gray-200",
       },
       "In Progress": {
         icon: <TrendingUp size={16} />,
-        color: "bg-blue-100 text-blue-700 border-blue-200",
-        gradient: "from-blue-400 to-cyan-400",
+        color: "bg-blue-50 text-blue-700 border-blue-200",
       },
       Completed: {
         icon: <CheckCircle2 size={16} />,
-        color: "bg-emerald-100 text-emerald-700 border-emerald-200",
-        gradient: "from-emerald-400 to-green-400",
+        color: "bg-emerald-50 text-emerald-700 border-emerald-200",
       },
       Submitted: {
         icon: <Send size={16} />,
-        color: "bg-purple-100 text-purple-700 border-purple-200",
-        gradient: "from-purple-400 to-pink-400",
+        color: "bg-purple-50 text-purple-700 border-purple-200",
       },
       Approved: {
         icon: <Award size={16} />,
-        color: "bg-green-100 text-green-700 border-green-200",
-        gradient: "from-green-400 to-teal-400",
+        color: "bg-green-50 text-green-700 border-green-200",
       },
     };
     return configs[status] || configs.Pending;
@@ -397,19 +389,17 @@ function ProjectCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all"
+      className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all"
     >
       {/* Header */}
-      <div className="p-6 border-b border-gray-100">
+      <div className="p-6 border-b border-gray-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div
-                className={`bg-gradient-to-r ${statusConfig.gradient} p-2 rounded-xl shadow-md`}
-              >
-                <Layers size={20} className="text-white" />
+              <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+                <Layers size={20} className="text-emerald-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-lg font-bold text-gray-900">
                 {project.title}
               </h3>
             </div>
@@ -417,7 +407,7 @@ function ProjectCard({
           </div>
 
           <div
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 font-semibold ${statusConfig.color}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border font-semibold text-sm ${statusConfig.color}`}
           >
             {statusConfig.icon}
             {project.overallStatus}
@@ -430,22 +420,22 @@ function ProjectCard({
             <span className="text-sm font-medium text-gray-700">
               Overall Progress
             </span>
-            <span className="text-sm font-bold text-purple-600">
+            <span className="text-sm font-bold text-emerald-600">
               {progress}%
             </span>
           </div>
-          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 1, delay: 0.2 }}
-              className={`h-full bg-gradient-to-r ${statusConfig.gradient} rounded-full`}
+              className="h-full bg-emerald-500 rounded-full"
             />
           </div>
         </div>
 
         {/* Info Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <InfoBadge
             icon={<Layers size={14} />}
             label="Batch"
@@ -470,6 +460,15 @@ function ProjectCard({
                 : "-"
             }
           />
+          <InfoBadge
+            icon={<Clock size={14} />}
+            label="Due Date"
+            value={
+              project.dueDate
+                ? new Date(project.dueDate).toLocaleDateString()
+                : "-"
+            }
+          />
         </div>
 
         {/* Repository */}
@@ -478,7 +477,7 @@ function ProjectCard({
             href={project.repo}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 mt-4 text-purple-600 hover:text-purple-700 font-medium text-sm"
+            className="inline-flex items-center gap-2 mt-4 text-emerald-600 hover:text-emerald-700 font-medium text-sm"
           >
             <GitBranch size={16} />
             View Repository
@@ -496,12 +495,12 @@ function ProjectCard({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="p-6 space-y-6 bg-gradient-to-br from-gray-50 to-purple-50">
+            <div className="p-6 space-y-6 bg-gray-50">
               {/* Modules */}
               {project.modules && project.modules.length > 0 && (
                 <div>
-                  <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <Layers size={18} className="text-purple-600" />
+                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Layers size={18} className="text-emerald-600" />
                     Modules ({project.modules.length})
                   </h4>
                   <div className="space-y-2">
@@ -522,17 +521,17 @@ function ProjectCard({
               {/* Learning Outcomes */}
               {project.outcomes && project.outcomes.length > 0 && (
                 <div>
-                  <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <Target size={18} className="text-green-600" />
+                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Target size={18} className="text-emerald-600" />
                     Learning Outcomes
                   </h4>
                   <div className="space-y-2">
                     {project.outcomes.map((outcome, idx) => (
                       <div
                         key={idx}
-                        className="bg-white rounded-xl p-4 border border-green-100"
+                        className="bg-white rounded-lg p-4 border border-gray-200"
                       >
-                        <h5 className="font-semibold text-gray-800 mb-1">
+                        <h5 className="font-semibold text-gray-900 mb-1 text-sm">
                           {outcome.title}
                         </h5>
                         {outcome.description && (
@@ -549,20 +548,20 @@ function ProjectCard({
               {/* Skills */}
               {project.skills && project.skills.length > 0 && (
                 <div>
-                  <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <Award size={18} className="text-orange-600" />
+                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Award size={18} className="text-emerald-600" />
                     Required Skills
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {project.skills.map((skill, idx) => (
                       <div
                         key={idx}
-                        className="bg-gradient-to-r from-orange-100 to-amber-100 border border-orange-200 px-4 py-2 rounded-xl"
+                        className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-lg"
                       >
-                        <div className="font-semibold text-orange-800 text-sm">
+                        <div className="font-semibold text-emerald-700 text-sm">
                           {skill.name}
                         </div>
-                        <div className="text-xs text-orange-600">
+                        <div className="text-xs text-emerald-600">
                           {skill.level}
                         </div>
                       </div>
@@ -576,37 +575,37 @@ function ProjectCard({
       </AnimatePresence>
 
       {/* Footer */}
-      <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+      <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={onToggleExpand}
-          className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium cursor-pointer"
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium cursor-pointer"
         >
           {expanded ? (
             <>
               <ChevronUp size={18} />
-              Show Less
+              <span className="text-sm">Show Less</span>
             </>
           ) : (
             <>
               <ChevronDown size={18} />
-              Show Details
+              <span className="text-sm">Show Details</span>
             </>
           )}
         </motion.button>
 
         <div className="flex items-center gap-3">
           {/* Overall status quick control for student */}
-          <div className="flex items-center gap-2 bg-white border border-gray-200 p-2 rounded-xl">
-            <label className="text-xs text-gray-600 mr-2">Status</label>
+          <div className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-lg">
+            <label className="text-xs text-gray-600 font-medium">Status</label>
             <select
               value={project.overallStatus}
               onChange={(e) => onSetOverallStatus(project, e.target.value)}
               disabled={["Submitted", "Approved"].includes(
                 project.overallStatus
               )}
-              className="text-sm px-2 py-1 rounded-md outline-none"
+              className="text-sm px-2 py-1 rounded-md outline-none border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             >
               <option value="Pending">Pending</option>
               <option value="In Progress">In Progress</option>
@@ -620,21 +619,15 @@ function ProjectCard({
                 Approved
               </option>
             </select>
-            {/* hint */}
-            {!allModulesCompleted && project.overallStatus !== "Completed" && (
-              <div className="text-xs text-gray-400 ml-2">
-                Finish modules to set Completed
-              </div>
-            )}
           </div>
 
           {/* Submit button -> only when overallStatus is Completed & all modules completed */}
           {canSubmit && (
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => onSubmit(project)}
-              className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-6 py-2 rounded-xl font-semibold shadow-lg cursor-pointer"
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-semibold shadow-sm cursor-pointer"
             >
               <Send size={18} />
               Submit Project
@@ -660,8 +653,8 @@ function ModuleCard({ module, isLocked, onToggle }) {
   const getModuleConfig = (status) => {
     const configs = {
       Pending: {
-        color: "bg-amber-50 border-amber-200 text-amber-700",
-        buttonColor: "bg-amber-100 hover:bg-amber-200 text-amber-700",
+        color: "bg-gray-50 border-gray-200 text-gray-700",
+        buttonColor: "bg-gray-100 hover:bg-gray-200 text-gray-700",
       },
       "In Progress": {
         color: "bg-blue-50 border-blue-200 text-blue-700",
@@ -679,17 +672,17 @@ function ModuleCard({ module, isLocked, onToggle }) {
 
   return (
     <div
-      className={`flex items-center justify-between p-4 rounded-xl border-2 ${config.color}`}
+      className={`flex items-center justify-between p-4 rounded-lg border ${config.color}`}
     >
       <div className="flex-1">
-        <h5 className="font-semibold">{module.name}</h5>
+        <h5 className="font-semibold text-sm">{module.name}</h5>
         {module.notes && (
           <p className="text-xs mt-1 opacity-75">{module.notes}</p>
         )}
       </div>
       <motion.button
-        whileHover={{ scale: isLocked ? 1 : 1.05 }}
-        whileTap={{ scale: isLocked ? 1 : 0.95 }}
+        whileHover={{ scale: isLocked ? 1 : 1.02 }}
+        whileTap={{ scale: isLocked ? 1 : 0.98 }}
         onClick={onToggle}
         disabled={isLocked}
         className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
@@ -705,12 +698,12 @@ function ModuleCard({ module, isLocked, onToggle }) {
 // Info Badge Component
 function InfoBadge({ icon, label, value }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
-      <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+    <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-200">
+      <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
         {icon}
-        <span>{label}</span>
+        <span className="font-medium">{label}</span>
       </div>
-      <div className="text-sm font-semibold text-gray-800 truncate">
+      <div className="text-sm font-semibold text-gray-900 truncate">
         {value}
       </div>
     </div>
