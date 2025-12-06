@@ -50,8 +50,8 @@ export default function AddReport() {
   const [previewData, setPreviewData] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  const A4_WIDTH_PX = 794;
-  const A4_HEIGHT_PX = 1123;
+  const A4_WIDTH_PX = 800;
+  const A4_HEIGHT_PX = 1150;
   const HEADER_HEIGHT_PX = Math.round(A4_HEIGHT_PX * 0.2);
 
   const DEFAULTS_KEY = "report_param_defaults";
@@ -835,14 +835,16 @@ export default function AddReport() {
           position: "fixed",
           top: -99999,
           left: -99999,
-          width: `${A4_WIDTH_PX}px`,
+          width: `full`,
+          // width: `${A4_WIDTH_PX}px`,
+          // minHeight: `100%`, // ✅ FIXED
           minHeight: `${A4_HEIGHT_PX}px`, // ✅ FIXED
           background: "#ffffff",
           boxSizing: "border-box",
           fontFamily: "Inter, Arial, Helvetica, sans-serif",
           color: "#111827",
           overflow: "hidden",
-          padding: "20px",
+          // padding: "20px",
           display: "flex", // ✅ REQUIRED
           flexDirection: "column", // ✅ REQUIRED
         }}
@@ -852,13 +854,14 @@ export default function AddReport() {
         <div
           style={{
             width: "100%",
-            height: `${HEADER_HEIGHT_PX}px`,
+            height: `full`,
+            // height: `${HEADER_HEIGHT_PX}px`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingBottom: "16px",
+            // paddingBottom: "16px",
             boxSizing: "border-box",
-            borderBottom: "2px solid #e5e7eb",
+            // borderBottom: "2px solid #e5e7eb",
             background: "#ffffff",
             marginBottom: "20px",
           }}
@@ -875,14 +878,15 @@ export default function AddReport() {
               src={LOGO_URL || LOGO_DATA_URI}
               alt="logo"
               style={{
-                height: `${HEADER_HEIGHT_PX - 20}px`,
+                height: `${HEADER_HEIGHT_PX }px`,
                 objectFit: "contain",
                 display: "block",
               }}
             />
           </div>
+        </div>
 
-          <div
+        <div
             style={{
               flex: "0 0 auto",
               textAlign: "right",
@@ -907,7 +911,6 @@ export default function AddReport() {
               </span>
             </div>
           </div>
-        </div>
 
         <div style={{ boxSizing: "border-box" }}>
           <div
