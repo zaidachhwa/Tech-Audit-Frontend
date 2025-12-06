@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
-import  useAuth  from "../../../context/AuthContext";
+import { useAuth } from "../../../context/AuthContext";
 
 const navLinks = [
   {
@@ -183,69 +183,80 @@ export default function StudentSidebar({ currentPath, onNavigate, user }) {
             <div className="h-px flex-1 bg-gradient-to-r from-purple-200 to-transparent ml-3"></div>
           </div>
 
-          {navLinks.map(({ name, path, icon: Icon, gradient, description }, index) => {
-            const isActive = currentPath === path;
-            return (
-              <motion.button
-                key={path}
-                onClick={() => handleNavigate(path)}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ scale: 1.03, x: 6 }}
-                whileTap={{ scale: 0.97 }}
-                className={clsx(
-                  "w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl font-medium transition-all group relative overflow-hidden cursor-pointer",
-                  isActive
-                    ? "text-white shadow-xl"
-                    : "text-gray-700 hover:bg-white/60 hover:shadow-md"
-                )}
-              >
-                {/* Active Background with Animation */}
-                {isActive && (
-                  <motion.div
-                    layoutId="activeNav"
-                    className={`absolute inset-0 bg-gradient-to-r ${gradient} shadow-lg`}
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-
-                {/* Icon Container */}
-                <div
+          {navLinks.map(
+            ({ name, path, icon: Icon, gradient, description }, index) => {
+              const isActive = currentPath === path;
+              return (
+                <motion.button
+                  key={path}
+                  onClick={() => handleNavigate(path)}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ scale: 1.03, x: 6 }}
+                  whileTap={{ scale: 0.97 }}
                   className={clsx(
-                    "relative z-10 p-2.5 rounded-xl transition-all shadow-md",
+                    "w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl font-medium transition-all group relative overflow-hidden cursor-pointer",
                     isActive
-                      ? "bg-white/25 shadow-lg"
-                      : "bg-white group-hover:bg-purple-50"
+                      ? "text-white shadow-xl"
+                      : "text-gray-700 hover:bg-white/60 hover:shadow-md"
                   )}
                 >
-                  <Icon size={20} className={isActive ? "text-white" : "text-gray-700"} />
-                </div>
+                  {/* Active Background with Animation */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeNav"
+                      className={`absolute inset-0 bg-gradient-to-r ${gradient} shadow-lg`}
+                      transition={{
+                        type: "spring",
+                        bounce: 0.2,
+                        duration: 0.6,
+                      }}
+                    />
+                  )}
 
-                {/* Text Content */}
-                <div className="relative z-10 flex-1 text-left">
-                  <div className="text-sm font-semibold">{name}</div>
-                  <div className={clsx(
-                    "text-xs mt-0.5",
-                    isActive ? "text-white/80" : "text-gray-500"
-                  )}>
-                    {description}
-                  </div>
-                </div>
-
-                {/* Active Indicator */}
-                {isActive && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="relative z-10 bg-white/30 p-1.5 rounded-lg"
+                  {/* Icon Container */}
+                  <div
+                    className={clsx(
+                      "relative z-10 p-2.5 rounded-xl transition-all shadow-md",
+                      isActive
+                        ? "bg-white/25 shadow-lg"
+                        : "bg-white group-hover:bg-purple-50"
+                    )}
                   >
-                    <ChevronRight size={18} />
-                  </motion.div>
-                )}
-              </motion.button>
-            );
-          })}
+                    <Icon
+                      size={20}
+                      className={isActive ? "text-white" : "text-gray-700"}
+                    />
+                  </div>
+
+                  {/* Text Content */}
+                  <div className="relative z-10 flex-1 text-left">
+                    <div className="text-sm font-semibold">{name}</div>
+                    <div
+                      className={clsx(
+                        "text-xs mt-0.5",
+                        isActive ? "text-white/80" : "text-gray-500"
+                      )}
+                    >
+                      {description}
+                    </div>
+                  </div>
+
+                  {/* Active Indicator */}
+                  {isActive && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="relative z-10 bg-white/30 p-1.5 rounded-lg"
+                    >
+                      <ChevronRight size={18} />
+                    </motion.div>
+                  )}
+                </motion.button>
+              );
+            }
+          )}
         </nav>
 
         {/* Logout Section */}

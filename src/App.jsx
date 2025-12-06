@@ -23,6 +23,7 @@ import AdminStudents from "./pages/AdminStudents";
 import AdminBatches from "./pages/AdminBatches";
 import AdminTeachers from "./pages/AdminTeachers";
 import TeacherProfile from "./components/teacher/TeacherProfile";
+import AdminLayout from "./components/admin/AdminLayout";
 
 export default function App() {
   function PrivateRoute({ children, role }) {
@@ -54,83 +55,93 @@ export default function App() {
 
         {/* ADMIN ROUTES */}
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route
-          path="/admin/dashboard"
-          element={
-            <PrivateRoute role="admin">
-              <AdminDashboard />
-            </PrivateRoute>
-          }
-        />
-
-        {/* Management Routes */}
 
         <Route
-          path="/admin/student-management"
+          path="/admin"
           element={
             <PrivateRoute role="admin">
-              <AdminStudents />
+              <AdminLayout />
             </PrivateRoute>
           }
-        />
-        <Route
-          path="/admin/teacher-management"
-          element={
-            <PrivateRoute role="admin">
-              <AdminTeachers />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/admin/batch-management"
-          element={
-            <PrivateRoute role="admin">
-              <AdminBatches />
-            </PrivateRoute>
-          }
-        />
+        >
+          <Route
+            path="dashboard"
+            element={
+              <PrivateRoute role="admin">
+                <AdminDashboard />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="/admin/project-tracking"
-          element={
-            <PrivateRoute role="admin">
-              <ProjectTracking />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/admin/project-tracking/batch/:batchId"
-          element={
-            <PrivateRoute role="admin">
-              <BatchStudentsView />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/admin/project-tracking/student/:studentId"
-          element={
-            <PrivateRoute role="admin">
-              <StudentProjectsView />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/admin/add-reports"
-          element={
-            <PrivateRoute role="admin">
-              <AddReport />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="student-management"
+            element={
+              <PrivateRoute role="admin">
+                <AdminStudents />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="/admin/syllabus"
-          element={
-            <PrivateRoute role="admin">
-              <AdminSyllabusManagement />
-            </PrivateRoute>
-          }
-        />
+          <Route
+            path="teacher-management"
+            element={
+              <PrivateRoute role="admin">
+                <AdminTeachers />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="batch-management"
+            element={
+              <PrivateRoute role="admin">
+                <AdminBatches />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="project-tracking"
+            element={
+              <PrivateRoute role="admin">
+                <ProjectTracking />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="project-tracking/batch/:batchId"
+            element={
+              <PrivateRoute role="admin">
+                <BatchStudentsView />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="project-tracking/student/:studentId"
+            element={
+              <PrivateRoute role="admin">
+                <StudentProjectsView />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="add-reports"
+            element={
+              <PrivateRoute role="admin">
+                <AddReport />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="syllabus"
+            element={
+              <PrivateRoute role="admin">
+                <AdminSyllabusManagement />
+              </PrivateRoute>
+            }
+          />
+        </Route>
 
         <Route path="/teacher/login" element={<TeacherLogin />} />
         <Route path="/teacher/register" element={<TeacherRegister />} />
