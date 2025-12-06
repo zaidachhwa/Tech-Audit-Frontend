@@ -29,8 +29,6 @@ export default function StudentDashboard() {
           meRes.data?.id
         }`
       );
-      // but your backend /projects/student/:studentId expects admin - you can call with id:
-      // fallback: if the API returns count wrapper
       const projectsList = projectRes.data?.projects || projectRes.data || [];
       setProjects(projectsList);
 
@@ -62,12 +60,6 @@ export default function StudentDashboard() {
   const completed = projects.filter(
     (p) => p.overallStatus === "Completed" || p.overallStatus === "Approved"
   ).length;
-  const dueSoon = projects.filter((p) => {
-    // if you store a due date in project (e.g., p.dueDate). fallback false
-    if (!p.dueDate) return false;
-    const diff = (new Date(p.dueDate) - new Date()) / (1000 * 3600 * 24);
-    return diff <= 7 && diff >= 0;
-  }).length;
 
   const upcomingDeadlines = projects
     .filter((p) => p.dueDate)
@@ -75,20 +67,21 @@ export default function StudentDashboard() {
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl shadow-xl p-8 text-white"
+          className="bg-white rounded-lg shadow-sm p-6 border border-gray-200"
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">
                 Hello, {me?.name || authUser?.name || "Student"}
               </h1>
-              <p className="text-purple-100">
-                Here's your project & report overview.
+              <p className="text-gray-600 text-sm">
+                Here's your project & report overview
               </p>
             </div>
             <motion.button
@@ -96,14 +89,15 @@ export default function StudentDashboard() {
               whileTap={{ scale: 0.95 }}
               onClick={fetchAll}
               disabled={loading}
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-xl transition flex items-center gap-2 cursor-pointer"
+              className="bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer text-gray-700"
             >
               <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-              Refresh
+              <span className="text-sm font-medium">Refresh</span>
             </motion.button>
           </div>
         </motion.div>
 
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatCard
             icon={<Layers size={20} />}
@@ -127,29 +121,31 @@ export default function StudentDashboard() {
           />
         </div>
 
+        {/* Content Grid */}
         <div className="grid lg:grid-cols-2 gap-6">
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
+          {/* Upcoming Deadlines */}
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
               Upcoming Deadlines
             </h3>
             {upcomingDeadlines.length === 0 ? (
-              <p className="text-gray-500">No upcoming deadlines.</p>
+              <p className="text-gray-500 text-sm">No upcoming deadlines.</p>
             ) : (
               <div className="space-y-3">
                 {upcomingDeadlines.map((p) => (
                   <div
                     key={p._id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-purple-50 border border-purple-100"
+                    className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 transition"
                   >
-                    <div>
-                      <div className="font-semibold text-gray-800">
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 text-sm">
                         {p.title}
                       </div>
-                      <div className="text-sm text-gray-500 mt-1">
+                      <div className="text-xs text-gray-600 mt-1">
                         {p.description?.slice(0, 80) || ""}
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-xs font-medium text-gray-700 ml-4 whitespace-nowrap">
                       {p.dueDate
                         ? new Date(p.dueDate).toLocaleDateString()
                         : "—"}
@@ -160,28 +156,31 @@ export default function StudentDashboard() {
             )}
           </div>
 
-          {/* Recent Activity (reports/submissions) */}
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-6 border border-white/30">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
+          {/* Recent Activity */}
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
               Recent Activity
             </h3>
-            {projects.slice(0, 6).map((p) => (
-              <div
-                key={p._id}
-                className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition"
-              >
-                <div className="w-2 h-2 rounded-full mt-2 bg-purple-600" />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-800">{p.title}</div>
-                  <div className="text-sm text-gray-500">
-                    {p.overallStatus} •{" "}
-                    {p.updatedAt ? new Date(p.updatedAt).toLocaleString() : ""}
+            {projects.length === 0 ? (
+              <p className="text-gray-500 text-sm">No activity yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {projects.slice(0, 6).map((p) => (
+                  <div
+                    key={p._id}
+                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full mt-1.5 bg-emerald-500" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 text-sm">{p.title}</div>
+                      <div className="text-xs text-gray-600">
+                        {p.overallStatus} •{" "}
+                        {p.updatedAt ? new Date(p.updatedAt).toLocaleString() : ""}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-            {projects.length === 0 && (
-              <p className="text-gray-500">No activity yet.</p>
             )}
           </div>
         </div>
@@ -195,16 +194,18 @@ function StatCard({ icon, label, value }) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-white/30"
+      whileHover={{ y: -2 }}
+      className="bg-white rounded-lg shadow-sm p-5 border border-gray-200"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-3 rounded-xl text-white shadow-md">
-          {icon}
+      <div className="flex items-start justify-between mb-3">
+        <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+          <div className="text-emerald-600">
+            {icon}
+          </div>
         </div>
-        <div className="text-3xl font-bold text-gray-800">{value}</div>
+        <div className="text-2xl font-bold text-gray-900">{value}</div>
       </div>
-      <div className="font-semibold text-gray-700">{label}</div>
+      <div className="font-medium text-gray-700 text-sm">{label}</div>
     </motion.div>
   );
 }

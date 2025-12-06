@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Mail, Lock, User, Check, RefreshCw } from "lucide-react";
+import { BookOpen, Mail, Lock, User, Check, RefreshCw, CheckCircle2 } from "lucide-react";
 import { registerTeacher } from "../../api/syllabus.api";
 
 export default function TeacherRegister() {
@@ -16,6 +16,7 @@ export default function TeacherRegister() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [successModal, setSuccessModal] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,9 +35,9 @@ export default function TeacherRegister() {
 
       const res = await registerTeacher(payload);
 
-      toast.success("Registration successful! Await admin approval.");
+      setSuccessModal(true);
 
-      setTimeout(() => navigate("/teacher/login"), 1500);
+      setTimeout(() => navigate("/teacher/login"), 5000);
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Registration failed");
@@ -46,142 +47,191 @@ export default function TeacherRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 flex items-center justify-center p-6">
-      <Toaster position="top-right" />
+    <>
+      <Toaster position="top-center" />
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl p-8 w-full max-w-md border border-white/30"
-      >
-        <div className="text-center mb-8">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <BookOpen size={32} className="text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Teacher Registration
-          </h1>
-          <p className="text-gray-600">Create your teacher account</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Full Name
-            </label>
-            <div className="relative">
-              <User
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="John Doe"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="email"
-                placeholder="teacher@example.com"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                required
-                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <Lock
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                required
-                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Subjects */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Subjects (comma separated)
-            </label>
-            <div className="relative">
-              <Check
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Math, Physics, Chemistry"
-                value={formData.subjects}
-                onChange={(e) =>
-                  setFormData({ ...formData, subjects: e.target.value })
-                }
-                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none"
-              />
-            </div>
-          </div>
-
-          <p className="text-center text-gray-500 text-sm mt-2">
-            Already have an account?{" "}
-            <Link
-              to="/teacher/login"
-              className="text-indigo-600 font-medium hover:underline"
-            >
-              Login
-            </Link>
-          </p>
-
-          {/* Submit */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+      {/* Success Modal */}
+      <AnimatePresence>
+        {successModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           >
-            {loading ? (
-              <RefreshCw className="animate-spin" size={20} />
-            ) : (
-              <>Register</>
-            )}
-          </motion.button>
-        </form>
-      </motion.div>
-    </div>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white p-8 rounded-xl shadow-lg text-center max-w-md w-full border border-gray-200"
+            >
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="text-emerald-600" size={32} />
+              </div>
+
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Registration Successful!
+              </h2>
+
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Your teacher account has been created.
+                <br />
+                You can login once an <span className="font-semibold">admin approves your account.</span>
+              </p>
+
+              <p className="text-xs text-gray-500 mt-4">
+                Redirecting to login page...
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MAIN REGISTRATION UI */}
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-md bg-white p-8 rounded-xl shadow-sm border border-gray-200"
+        >
+          {/* Header */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-14 h-14 bg-emerald-500 rounded-lg flex items-center justify-center mb-4 shadow-sm">
+              <BookOpen className="text-white" size={28} />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Create Account
+            </h2>
+            <p className="text-gray-600 text-sm mt-1">
+              Join our teacher portal
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name
+              </label>
+              <div className="relative">
+                <User
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <input
+                  type="email"
+                  placeholder="teacher@example.com"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <input
+                  type="password"
+                  placeholder="Min. 6 characters"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400"
+                />
+              </div>
+            </div>
+
+            {/* Subjects */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Subjects (comma separated)
+              </label>
+              <div className="relative">
+                <Check
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  placeholder="Math, Physics, Chemistry"
+                  value={formData.subjects}
+                  onChange={(e) =>
+                    setFormData({ ...formData, subjects: e.target.value })
+                  }
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Optional: Enter subjects you teach, separated by commas
+              </p>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-lg font-medium transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm mt-6"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="animate-spin" size={20} />
+                  Creating Account...
+                </>
+              ) : (
+                <>Create Account</>
+              )}
+            </button>
+
+            {/* Redirect */}
+            <p className="text-center text-gray-600 text-sm mt-4">
+              Already have an account?{" "}
+              <Link
+                to="/teacher/login"
+                className="text-emerald-600 font-semibold hover:text-emerald-700 hover:underline"
+              >
+                Sign In
+              </Link>
+            </p>
+          </form>
+        </motion.div>
+      </div>
+    </>
   );
 }
