@@ -75,6 +75,7 @@ export default function TeacherProfile() {
   useEffect(() => {
     fetchProfileData();
     fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ------------------------------------------------------------------
@@ -141,7 +142,7 @@ export default function TeacherProfile() {
         title: "First Steps",
         description: "Completed your first topic",
         icon: <Star size={20} />,
-        color: "bg-yellow-50 border-yellow-200 text-yellow-700",
+        color: "bg-emerald-50 border-emerald-200 text-emerald-700",
       });
 
     if (data.completedTopics >= 10)
@@ -177,7 +178,7 @@ export default function TeacherProfile() {
         title: "Multi-Batch Hero",
         description: "Teaching 3+ batches",
         icon: <Users size={20} />,
-        color: "bg-indigo-50 border-indigo-200 text-indigo-700",
+        color: "bg-orange-50 border-orange-200 text-orange-700",
       });
 
     if (data.completionRate >= 80 && data.totalTopics >= 5)
@@ -186,7 +187,7 @@ export default function TeacherProfile() {
         title: "Consistent Teacher",
         description: "Maintained 80%+ completion",
         icon: <Zap size={20} />,
-        color: "bg-orange-50 border-orange-200 text-orange-700",
+        color: "bg-yellow-50 border-yellow-200 text-yellow-700",
       });
 
     setAchievements(newAchievements);
@@ -251,7 +252,7 @@ export default function TeacherProfile() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-indigo-600 mb-4"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-emerald-600 mb-4"></div>
           <p className="text-gray-600">Loading profile...</p>
         </div>
       </div>
@@ -296,7 +297,7 @@ export default function TeacherProfile() {
                       {profileData?.name}
                     </h1>
                     <p className="text-gray-600 font-medium flex items-center gap-2">
-                      <GraduationCap size={18} className="text-indigo-600" />
+                      <GraduationCap size={18} className="text-emerald-600" />
                       Teacher • {profileData?.role || "Educator"}
                     </p>
                   </div>
@@ -305,7 +306,7 @@ export default function TeacherProfile() {
                     {!isEditing ? (
                       <button
                         onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium transition"
+                        className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg font-medium transition shadow-sm"
                       >
                         <Edit size={18} />
                         Edit Profile
@@ -322,7 +323,7 @@ export default function TeacherProfile() {
                               bio: profileData?.bio || "",
                             });
                           }}
-                          className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2 rounded-lg font-medium transition"
+                          className="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 px-5 py-2 rounded-lg font-medium transition"
                         >
                           <X size={18} />
                           Cancel
@@ -330,7 +331,7 @@ export default function TeacherProfile() {
 
                         <button
                           onClick={handleUpdateProfile}
-                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-medium transition"
+                          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg font-medium transition shadow-sm"
                         >
                           <Save size={18} />
                           Save
@@ -395,8 +396,8 @@ export default function TeacherProfile() {
 
             {/* BIO */}
             <div className="mb-6">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                <MessageSquare size={16} className="text-indigo-600" />
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <MessageSquare size={16} className="text-emerald-600" />
                 Bio
               </label>
 
@@ -421,7 +422,7 @@ export default function TeacherProfile() {
             {/* SECURITY */}
             <button
               onClick={() => setShowPasswordModal(true)}
-              className="w-full bg-gray-100 hover:bg-gray-200 border border-gray-300 px-6 py-4 rounded-lg flex items-center justify-between font-medium text-gray-700 transition"
+              className="w-full bg-white hover:bg-gray-50 border border-gray-300 px-6 py-4 rounded-lg flex items-center justify-between font-medium text-gray-700 transition"
             >
               <div className="flex items-center gap-3">
                 <Shield size={20} className="text-gray-600" />
@@ -438,37 +439,49 @@ export default function TeacherProfile() {
             icon={<BookOpen size={20} />}
             label="Total Topics"
             value={stats.totalTopics}
-            color="bg-blue-50 text-blue-700 border-blue-200"
+            iconColor="text-emerald-600"
+            iconBgColor="bg-emerald-50"
+            borderColor="border-gray-200"
           />
           <StatBox
             icon={<CheckCircle2 size={20} />}
             label="Completed"
             value={stats.completedTopics}
-            color="bg-green-50 text-green-700 border-green-200"
+            iconColor="text-green-600"
+            iconBgColor="bg-green-50"
+            borderColor="border-gray-200"
           />
           <StatBox
             icon={<Clock size={20} />}
             label="In Progress"
             value={stats.inProgressTopics}
-            color="bg-orange-50 text-orange-700 border-orange-200"
+            iconColor="text-orange-600"
+            iconBgColor="bg-orange-50"
+            borderColor="border-gray-200"
           />
           <StatBox
             icon={<Users size={20} />}
             label="Batches"
             value={stats.totalBatches}
-            color="bg-purple-50 text-purple-700 border-purple-200"
+            iconColor="text-purple-600"
+            iconBgColor="bg-purple-50"
+            borderColor="border-gray-200"
           />
           <StatBox
             icon={<GraduationCap size={20} />}
             label="Students"
             value={stats.totalStudents}
-            color="bg-indigo-50 text-indigo-700 border-indigo-200"
+            iconColor="text-blue-600"
+            iconBgColor="bg-blue-50"
+            borderColor="border-gray-200"
           />
           <StatBox
             icon={<TrendingUp size={20} />}
             label="Completion"
             value={`${stats.completionRate}%`}
-            color="bg-rose-50 text-rose-700 border-rose-200"
+            iconColor="text-emerald-600"
+            iconBgColor="bg-emerald-50"
+            borderColor="border-gray-200"
           />
         </div>
 
@@ -476,7 +489,7 @@ export default function TeacherProfile() {
         {achievements.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 md:p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <Trophy size={24} className="text-yellow-600" />
+              <Trophy size={24} className="text-emerald-600" />
               Achievements
             </h2>
 
@@ -491,7 +504,7 @@ export default function TeacherProfile() {
         {/* ACTIVITY SECTION (STATIC DATA) */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 md:p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-            <TrendingUp size={24} className="text-indigo-600" />
+            <TrendingUp size={24} className="text-emerald-600" />
             Recent Activity
           </h2>
 
@@ -547,8 +560,8 @@ export default function TeacherProfile() {
 function InfoCard({ icon, label, value, isEditing, onChange, type = "text" }) {
   return (
     <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-      <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-        <div className="text-indigo-600">{icon}</div>
+      <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+        <div className="text-emerald-600">{icon}</div>
         {label}
       </div>
 
@@ -557,7 +570,7 @@ function InfoCard({ icon, label, value, isEditing, onChange, type = "text" }) {
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
         />
       ) : (
         <p className="text-gray-900 font-medium">{value}</p>
@@ -566,7 +579,7 @@ function InfoCard({ icon, label, value, isEditing, onChange, type = "text" }) {
   );
 }
 
-function StatBox({ icon, label, value, color }) {
+function StatBox({ icon, label, value, iconColor, iconBgColor, borderColor }) {
   return (
     <div className={`${color} border rounded-lg p-4`}>
       <div className="mb-3">{icon}</div>
@@ -609,9 +622,9 @@ function PasswordModal({
   onSubmit,
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg w-full max-w-md shadow-xl">
-        <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center rounded-t-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+      <div className="bg-white rounded-lg w-full max-w-md shadow-lg border border-gray-200">
+        <div className="bg-emerald-500 px-6 py-4 flex justify-between items-center rounded-t-lg">
           <div className="flex items-center gap-3">
             <Shield size={24} className="text-white" />
             <h3 className="text-xl font-bold text-white">Change Password</h3>
@@ -619,7 +632,7 @@ function PasswordModal({
 
           <button
             onClick={onClose}
-            className="text-white hover:bg-indigo-700 p-2 rounded-lg transition"
+            className="text-white hover:bg-emerald-600 p-2 rounded-lg transition"
           >
             <X size={20} />
           </button>
@@ -671,7 +684,7 @@ function PasswordModal({
 
             <button
               onClick={onSubmit}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition shadow-sm"
             >
               Change Password
             </button>

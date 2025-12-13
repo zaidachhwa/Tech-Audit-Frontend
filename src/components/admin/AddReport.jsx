@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * AddReport (Save / Save & Download PDF / Preview)
- * Enhanced with Admin Dashboard theme and improved UI
+ * Formal minimal theme with emerald accents
  */
 
 const COMPANY_NAME = "Nexcore Alliance ";
@@ -50,8 +50,8 @@ export default function AddReport() {
   const [previewData, setPreviewData] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  const A4_WIDTH_PX = 794;
-  const A4_HEIGHT_PX = 1123;
+  const A4_WIDTH_PX = 800;
+  const A4_HEIGHT_PX = 1150;
   const HEADER_HEIGHT_PX = Math.round(A4_HEIGHT_PX * 0.2);
 
   const DEFAULTS_KEY = "report_param_defaults";
@@ -301,52 +301,50 @@ export default function AddReport() {
         wrapper.style.display = "flex";
         wrapper.style.justifyContent = "space-between";
         wrapper.style.alignItems = "center";
-        wrapper.style.padding = "10px 14px";
-        wrapper.style.borderBottom = "1px solid #eef2f7";
-        wrapper.style.fontSize = "12px";
+        wrapper.style.padding = "12px 16px";
+        wrapper.style.borderBottom = "1px solid #e5e7eb";
+        wrapper.style.fontSize = "13px";
         wrapper.style.boxSizing = "border-box";
 
         const nameDiv = document.createElement("div");
         nameDiv.textContent = p.name || "-";
         nameDiv.style.flex = "1";
-        nameDiv.style.color = "#0f172a";
-        nameDiv.style.marginRight = "12px";
+        nameDiv.style.color = "#111827";
+        nameDiv.style.fontWeight = "500";
+        nameDiv.style.marginRight = "16px";
         nameDiv.style.wordBreak = "break-word";
 
         const badge = document.createElement("div");
         const score = Number(p.score) || 0;
         badge.textContent = `${score} / 10`;
 
-        badge.style.display = "flex";
+        badge.style.display = "inline-flex";
         badge.style.alignItems = "center";
         badge.style.justifyContent = "center";
-        badge.style.minWidth = "70px";
-        badge.style.height = "30px";
-        badge.style.borderRadius = "8px";
+        badge.style.minWidth = "75px";
+        badge.style.height = "32px";
+        badge.style.borderRadius = "6px";
         badge.style.fontWeight = "700";
         badge.style.fontSize = "13px";
         badge.style.textAlign = "center";
         badge.style.boxSizing = "border-box";
-        badge.style.padding = "0 10px 8px 10px";
+        badge.style.padding = "0 12px";
         badge.style.whiteSpace = "nowrap";
-        badge.style.lineHeight = "1";
-        badge.style.verticalAlign = "middle";
-        badge.style.margin = "0 auto";
-        badge.style.transform = "translateY(0)";
+        badge.style.lineHeight = "32px";
         badge.style.fontFamily = "Inter, Arial, Helvetica, sans-serif";
 
         if (score >= 8) {
-          badge.style.background = "#f0fdf4";
-          badge.style.color = "#065f46";
-          badge.style.border = "2px solid #86efac";
+          badge.style.background = "#ecfdf5";
+          badge.style.color = "#047857";
+          badge.style.border = "1.5px solid #6ee7b7";
         } else if (score >= 5) {
           badge.style.background = "#fffbeb";
-          badge.style.color = "#92400e";
-          badge.style.border = "2px solid #fde68a";
+          badge.style.color = "#b45309";
+          badge.style.border = "1.5px solid #fcd34d";
         } else {
           badge.style.background = "#fef2f2";
-          badge.style.color = "#991b1b";
-          badge.style.border = "2px solid #fecaca";
+          badge.style.color = "#b91c1c";
+          badge.style.border = "1.5px solid #fca5a5";
         }
 
         wrapper.appendChild(nameDiv);
@@ -359,13 +357,30 @@ export default function AddReport() {
     if (fbContainer) {
       fbContainer.innerHTML = "";
       const fb = data.feedbackSchema || {};
-      ["point1", "point2", "point3"].forEach((k) => {
-        const pEl = document.createElement("p");
+      ["point1", "point2", "point3"].forEach((k, idx) => {
+        const itemWrapper = document.createElement("div");
+        itemWrapper.style.display = "flex";
+        itemWrapper.style.gap = "10px";
+        itemWrapper.style.alignItems = "flex-start";
+        itemWrapper.style.marginBottom = "10px";
+
+        const bullet = document.createElement("div");
+        bullet.textContent = `${idx + 1}.`;
+        bullet.style.fontWeight = "700";
+        bullet.style.color = "#059669";
+        bullet.style.fontSize = "13px";
+        bullet.style.minWidth = "20px";
+
+        const pEl = document.createElement("div");
         pEl.textContent = fb[k] || "-";
-        pEl.style.marginBottom = "8px";
-        pEl.style.fontSize = "12px";
-        pEl.style.color = "#0f172a";
-        fbContainer.appendChild(pEl);
+        pEl.style.fontSize = "13px";
+        pEl.style.color = "#111827";
+        pEl.style.lineHeight = "1.6";
+        pEl.style.flex = "1";
+
+        itemWrapper.appendChild(bullet);
+        itemWrapper.appendChild(pEl);
+        fbContainer.appendChild(itemWrapper);
       });
     }
   };
@@ -491,7 +506,7 @@ export default function AddReport() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
 
       {/* Main Container */}
@@ -499,19 +514,19 @@ export default function AddReport() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl overflow-hidden"
+          className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6">
+          <div className="bg-white border-b border-gray-200 p-6">
             <div className="flex items-center gap-4">
-              <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
-                <FileText size={28} className="text-white" />
+              <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                <FileText size={28} className="text-emerald-600" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className="text-2xl font-bold text-gray-900">
                   Add Student Report
                 </h2>
-                <p className="text-purple-100 text-sm">
+                <p className="text-gray-600 text-sm mt-1">
                   Create detailed performance reports with ease
                 </p>
               </div>
@@ -521,9 +536,9 @@ export default function AddReport() {
           {/* Form */}
           <form className="p-8 space-y-6" onSubmit={handleSubmit}>
             {/* Batch Info Section */}
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-100">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <Hash size={20} className="text-purple-600" />
+            <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Hash size={20} className="text-emerald-600" />
                 Batch Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -531,7 +546,7 @@ export default function AddReport() {
                 <div className="relative">
                   <BookOpen
                     size={18}
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400 z-10"
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"
                   />
                   <select
                     value={form.batch_name}
@@ -539,11 +554,11 @@ export default function AddReport() {
                       setForm({
                         ...form,
                         batch_name: e.target.value,
-                        batch_no: "", // Reset batch number when batch name changes
-                        studentId: "", // Reset student when batch changes
+                        batch_no: "",
+                        studentId: "",
                       });
                     }}
-                    className="w-full border-0 outline-0 bg-white/80 backdrop-blur-sm rounded-xl pl-12 pr-10 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm appearance-none cursor-pointer"
+                    className="w-full border border-gray-300 outline-none bg-white rounded-lg pl-12 pr-10 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition appearance-none cursor-pointer"
                   >
                     <option value="">Select Batch Name</option>
                     {getUniqueBatchNames().map((batchName) => (
@@ -554,7 +569,7 @@ export default function AddReport() {
                   </select>
                   <ChevronDown
                     size={18}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-400 pointer-events-none"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
                   />
                 </div>
 
@@ -562,7 +577,7 @@ export default function AddReport() {
                 <div className="relative">
                   <Hash
                     size={18}
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400 z-10"
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"
                   />
                   <select
                     value={form.batch_no}
@@ -570,11 +585,11 @@ export default function AddReport() {
                       setForm({
                         ...form,
                         batch_no: e.target.value,
-                        studentId: "", // Reset student when batch changes
+                        studentId: "",
                       });
                     }}
                     disabled={!form.batch_name}
-                    className="w-full border-0 outline-0 bg-white/80 backdrop-blur-sm rounded-xl pl-12 pr-10 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full border border-gray-300 outline-none bg-white rounded-lg pl-12 pr-10 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">
                       {form.batch_name
@@ -589,7 +604,7 @@ export default function AddReport() {
                   </select>
                   <ChevronDown
                     size={18}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-400 pointer-events-none"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
                   />
                 </div>
               </div>
@@ -600,7 +615,7 @@ export default function AddReport() {
               <div className="relative">
                 <Calendar
                   size={18}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2  text-purple-400"
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
                 />
                 <input
                   type="date"
@@ -608,14 +623,14 @@ export default function AddReport() {
                   onChange={(e) =>
                     setForm({ ...form, auditDate: e.target.value })
                   }
-                  className="w-full border-0 outline-0 bg-white/80 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm"
+                  className="w-full border border-gray-300 outline-none bg-white rounded-lg pl-12 pr-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                 />
               </div>
 
               <div className="relative">
                 <Users
                   size={18}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-400"
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
                 />
                 <select
                   value={form.studentId}
@@ -623,7 +638,7 @@ export default function AddReport() {
                     setForm({ ...form, studentId: e.target.value })
                   }
                   disabled={!form.batch_name || !form.batch_no}
-                  className="w-full border-0 outline-0 bg-white/80 rounded-xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-purple-400 transition shadow-sm appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full border border-gray-300 outline-none bg-white rounded-lg pl-12 pr-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">
                     {form.batch_name && form.batch_no
@@ -640,42 +655,42 @@ export default function AddReport() {
             </div>
 
             {/* Parameters Section */}
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100">
+            <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Plus size={20} className="text-indigo-600" />
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Plus size={20} className="text-emerald-600" />
                   Performance Parameters
                 </h3>
 
                 <div className="flex items-center gap-2">
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     type="button"
                     onClick={saveDefaultsToLocal}
-                    className="cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:shadow-md transition"
+                    className="cursor-pointer bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm transition shadow-sm"
                     title="Save parameter names as defaults"
                   >
                     Save Defaults
                   </motion.button>
 
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     type="button"
                     onClick={loadDefaultsFromLocal}
-                    className="cursor-pointer bg-white border-2 border-purple-600 text-purple-700 px-3 py-1.5 rounded-lg text-sm hover:bg-purple-50 transition"
+                    className="cursor-pointer bg-white border border-emerald-600 text-emerald-700 px-3 py-1.5 rounded-lg text-sm hover:bg-emerald-50 transition"
                     title="Load default parameter names"
                   >
                     Load Defaults
                   </motion.button>
 
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     type="button"
                     onClick={clearDefaultsFromLocal}
-                    className="cursor-pointer bg-white border-2 border-red-400 text-red-600 px-3 py-1.5 rounded-lg text-sm hover:bg-red-50 transition"
+                    className="cursor-pointer bg-white border border-red-400 text-red-600 px-3 py-1.5 rounded-lg text-sm hover:bg-red-50 transition"
                     title="Clear saved defaults"
                   >
                     Clear
@@ -689,7 +704,7 @@ export default function AddReport() {
                     key={i}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex flex-col sm:flex-row items-center gap-3 bg-white/80 backdrop-blur-sm rounded-xl p-3 shadow-sm"
+                    className="flex flex-col sm:flex-row items-center gap-3 bg-white rounded-lg p-3 border border-gray-200"
                   >
                     <input
                       type="text"
@@ -698,7 +713,7 @@ export default function AddReport() {
                       onChange={(e) =>
                         handleParamChange(i, "name", e.target.value)
                       }
-                      className="flex-1 outline-0 px-4 py-2.5 rounded-lg border-0 bg-white focus:ring-2 focus:ring-purple-400 transition"
+                      className="flex-1 outline-none px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                     />
                     <input
                       type="number"
@@ -707,7 +722,7 @@ export default function AddReport() {
                       onChange={(e) =>
                         handleParamChange(i, "score", e.target.value)
                       }
-                      className="w-full sm:w-24 outline-0 px-4 py-2.5 rounded-lg border-0 bg-white focus:ring-2 focus:ring-purple-400 transition"
+                      className="w-full sm:w-24 outline-none px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                     />
                     <motion.button
                       whileHover={{ scale: 1.1 }}
@@ -724,21 +739,21 @@ export default function AddReport() {
 
               <div className="flex items-center gap-4 mt-4">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={addParameter}
-                  className="flex items-center cursor-pointer gap-2 text-indigo-600 font-medium hover:text-indigo-700 transition"
+                  className="flex items-center cursor-pointer gap-2 text-emerald-600 font-medium hover:text-emerald-700 transition"
                 >
                   <Plus size={18} /> Add Parameter
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={handlePreview}
-                  className="ml-auto cursor-pointer inline-flex items-center gap-2 bg-white border-2 border-purple-600 text-purple-700 px-4 py-2 rounded-xl hover:bg-purple-50 transition shadow-sm"
+                  className="ml-auto cursor-pointer inline-flex items-center gap-2 bg-white border border-emerald-600 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-50 transition"
                 >
                   <Eye size={18} /> Preview Report
                 </motion.button>
@@ -746,9 +761,9 @@ export default function AddReport() {
             </div>
 
             {/* Feedback Section */}
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <FileText size={20} className="text-purple-600" />
+            <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <FileText size={20} className="text-emerald-600" />
                 Feedback Points
               </h3>
               <div className="space-y-3">
@@ -766,7 +781,7 @@ export default function AddReport() {
                         },
                       })
                     }
-                    className="w-full outline-0 px-4 py-3 rounded-xl border-0 bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-purple-400 transition shadow-sm h-20 resize-none"
+                    className="w-full outline-none px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition h-20 resize-none"
                   />
                 ))}
               </div>
@@ -780,7 +795,7 @@ export default function AddReport() {
                 onChange={(e) =>
                   setForm({ ...form, overallRemarks: e.target.value })
                 }
-                className="w-full outline-0 px-4 py-3 rounded-xl border-0 bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-purple-400 transition shadow-sm h-28 resize-none"
+                className="w-full outline-none px-4 py-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition h-28 resize-none"
               />
             </div>
 
@@ -790,7 +805,7 @@ export default function AddReport() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                className="flex-1 cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3.5 rounded-2xl shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2"
+                className="flex-1 cursor-pointer bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2"
               >
                 <Save size={20} />
                 Save Report
@@ -801,7 +816,7 @@ export default function AddReport() {
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={handleSaveAndDownload}
-                className="flex-1 cursor-pointer bg-white border-2 border-purple-600 text-purple-700 font-semibold py-3.5 rounded-2xl shadow-sm hover:shadow-lg transition flex items-center justify-center gap-2"
+                className="flex-1 cursor-pointer bg-white border border-emerald-600 text-emerald-700 font-semibold py-3.5 rounded-lg hover:bg-emerald-50 transition flex items-center justify-center gap-2"
               >
                 <Download size={20} />
                 Save & Download PDF
@@ -818,67 +833,80 @@ export default function AddReport() {
           position: "fixed",
           top: -99999,
           left: -99999,
-          width: `${A4_WIDTH_PX}px`,
-          height: `${A4_HEIGHT_PX}px`,
+          width: `full`,
+          // width: `${A4_WIDTH_PX}px`,
+          // minHeight: `100%`, // ✅ FIXED
+          minHeight: `${A4_HEIGHT_PX}px`, // ✅ FIXED
           background: "#ffffff",
           boxSizing: "border-box",
-          fontFamily: "Arial, Helvetica, sans-serif",
-          color: "#0f172a",
+          fontFamily: "Inter, Arial, Helvetica, sans-serif",
+          color: "#111827",
           overflow: "hidden",
+          // padding: "20px",
+          display: "flex", // ✅ REQUIRED
+          flexDirection: "column", // ✅ REQUIRED
         }}
         className="print-page"
         aria-hidden="true"
       >
         <div
           style={{
-            width: `${A4_WIDTH_PX}px`,
-            height: `${HEADER_HEIGHT_PX}px`,
+            width: "100%",
+            height: `full`,
+            // height: `${HEADER_HEIGHT_PX}px`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "12px 20px",
+            // paddingBottom: "16px",
             boxSizing: "border-box",
-            borderBottom: "1px solid #e6e6e6",
+            // borderBottom: "2px solid #e5e7eb",
             background: "#ffffff",
+            marginBottom: "20px",
           }}
         >
           <div
             style={{
-              flex: "0 0 auto",
+              flex: "1",
               display: "flex",
               alignItems: "center",
               gap: 12,
-              width: "100vh",
-              marginBottom: 20,
             }}
           >
             <img
               src={LOGO_URL || LOGO_DATA_URI}
               alt="logo"
               style={{
-                height: `${HEADER_HEIGHT_PX}`,
+                height: `${HEADER_HEIGHT_PX}px`,
                 objectFit: "contain",
                 display: "block",
-                width: "100%",
               }}
             />
           </div>
+        </div>
 
-          <div
-            style={{
-              flex: "0 0 180px",
-              textAlign: "right",
-              fontSize: 12,
-              color: "#0f172a",
-            }}
-          >
-            <div>
-              <strong>Batch:</strong> <span className="print-batch">—</span>
-            </div>
-            <div style={{ marginTop: 4 }}>
-              <strong>Batch No:</strong>{" "}
-              <span className="print-batch-no">—</span>
-            </div>
+        <div
+          style={{
+            flex: "0 0 auto",
+            textAlign: "right",
+            fontSize: "13px",
+            color: "#111827",
+            lineHeight: "1.8",
+            fontFamily: "Arial, sans-serif",
+            minWidth: "120px",
+          }}
+        >
+          <div style={{ marginBottom: "4px" }}>
+            <strong>Batch :</strong>{" "}
+            <span className="print-batch" style={{ fontWeight: "500" }}>
+              FSD
+            </span>
+          </div>
+
+          <div>
+            <strong>Batch No :</strong>{" "}
+            <span className="print-batch-no" style={{ fontWeight: "500" }}>
+              4
+            </span>
           </div>
         </div>
 
@@ -888,24 +916,39 @@ export default function AddReport() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-start",
-              marginBottom: 12,
-              marginTop: 12,
+              marginBottom: "20px",
+              paddingBottom: "16px",
+              borderBottom: "1px solid #e5e7eb",
             }}
           >
             <div>
-              <div style={{ fontSize: 18, color: "#065f46", marginBottom: 4 }}>
-                <strong className="print-student-name">Student Name</strong>
+              <div
+                style={{
+                  fontSize: "20px",
+                  color: "#059669",
+                  marginBottom: "6px",
+                  fontWeight: "700",
+                }}
+              >
+                <span className="print-student-name">Student Name</span>
               </div>
               <div
-                style={{ fontSize: 11, color: "#475569" }}
+                style={{ fontSize: "13px", color: "#6b7280" }}
                 className="print-student-email"
               >
                 student@example.com
               </div>
             </div>
 
-            <div style={{ textAlign: "right", fontSize: 12, color: "#0f172a" }}>
-              <div style={{ marginBottom: 10 }}>
+            <div
+              style={{
+                textAlign: "right",
+                fontSize: "13px",
+                color: "#111827",
+                lineHeight: "1.8",
+              }}
+            >
+              <div>
                 <strong>Audit Date:</strong>{" "}
                 <span className="print-audit-date">—</span>
               </div>
@@ -915,43 +958,79 @@ export default function AddReport() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 14, color: "#065f46" }}>
-              Parameters
+          <div style={{ marginBottom: "16px" }}>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "16px",
+                color: "#059669",
+                fontWeight: "700",
+                marginBottom: "12px",
+              }}
+            >
+              Performance Parameters
             </h3>
           </div>
 
           <div
             className="print-parameters"
             style={{
-              borderRadius: 8,
+              borderRadius: "8px",
               overflow: "hidden",
-              marginBottom: 24,
-              maxHeight: `${A4_HEIGHT_PX - HEADER_HEIGHT_PX - 300}px`,
-              overflowY: "auto",
+              marginBottom: "24px",
+              border: "1px solid #e5e7eb",
               background: "#fff",
             }}
           />
 
-          <div style={{ marginTop: 20, marginBottom: 12 }}>
-            <h3 style={{ margin: "0 0 6px 0", fontSize: 14, color: "#065f46" }}>
+          <div style={{ marginTop: "24px", marginBottom: "16px" }}>
+            <h3
+              style={{
+                margin: "0 0 10px 0",
+                fontSize: "16px",
+                color: "#059669",
+                fontWeight: "700",
+              }}
+            >
               Overall Remarks
             </h3>
             <div
               className="print-overall-remarks"
-              style={{ fontSize: 12, color: "#0f172a" }}
+              style={{
+                fontSize: "13px",
+                color: "#111827",
+                lineHeight: "1.6",
+                padding: "12px",
+                background: "#f9fafb",
+                borderRadius: "6px",
+                border: "1px solid #e5e7eb",
+              }}
             >
               —
             </div>
           </div>
 
-          <div style={{ marginTop: 10 }}>
-            <h3 style={{ margin: "0 0 6px 0", fontSize: 14, color: "#065f46" }}>
-              Feedback
+          <div style={{ marginTop: "24px", marginBottom: "24px" }}>
+            <h3
+              style={{
+                margin: "0 0 10px 0",
+                fontSize: "16px",
+                color: "#059669",
+                fontWeight: "700",
+              }}
+            >
+              Feedback Points
             </h3>
             <div
               className="print-feedback"
-              style={{ fontSize: 12, color: "#0f172a" }}
+              style={{
+                fontSize: "13px",
+                color: "#111827",
+                padding: "12px",
+                background: "#f9fafb",
+                borderRadius: "6px",
+                border: "1px solid #e5e7eb",
+              }}
             />
           </div>
 
@@ -960,18 +1039,21 @@ export default function AddReport() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-end",
+              marginTop: "40px",
+              paddingTop: "20px",
+              borderTop: "1px solid #e5e7eb",
             }}
           >
             <div style={{ textAlign: "center" }}>
               <div
                 style={{
-                  height: 60,
-                  width: 220,
-                  borderBottom: "1px solid #cbd5e1",
-                  marginBottom: 6,
+                  height: "60px",
+                  width: "200px",
+                  borderBottom: "2px solid #d1d5db",
+                  marginBottom: "8px",
                 }}
               />
-              <div style={{ fontSize: 12, color: "#334155" }}>
+              <div style={{ fontSize: "12px", color: "#6b7280" }}>
                 Evaluator's Signature and Stamp
               </div>
             </div>
@@ -979,13 +1061,13 @@ export default function AddReport() {
             <div style={{ textAlign: "center" }}>
               <div
                 style={{
-                  height: 60,
-                  width: 220,
-                  borderBottom: "1px solid #cbd5e1",
-                  marginBottom: 6,
+                  height: "60px",
+                  width: "200px",
+                  borderBottom: "2px solid #d1d5db",
+                  marginBottom: "8px",
                 }}
               />
-              <div style={{ fontSize: 12, color: "#334155" }}>
+              <div style={{ fontSize: "12px", color: "#6b7280" }}>
                 Student's Signature
               </div>
             </div>
@@ -1024,7 +1106,7 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
       onClick={onClose}
     >
       <motion.div
@@ -1032,12 +1114,12 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[90vh] flex flex-col"
+        className="bg-white rounded-lg shadow-lg w-full max-w-4xl overflow-hidden max-h-[90vh] flex flex-col border border-gray-200"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5 flex items-center justify-between">
+        <div className="bg-white border-b border-gray-200 px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+            <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200">
               <img
                 src={logoSrc}
                 alt="logo"
@@ -1045,10 +1127,10 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
               />
             </div>
             <div>
-              <div className="text-xl font-bold text-white">
+              <div className="text-xl font-bold text-gray-900">
                 Nexcore Alliance
               </div>
-              <div className="text-sm text-purple-100">
+              <div className="text-sm text-gray-600">
                 Technical Audit Report — Preview
               </div>
             </div>
@@ -1056,19 +1138,19 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
 
           <div className="flex items-center gap-3">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={onDownload}
-              className="inline-flex cursor-pointer items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-xl transition"
+              className="inline-flex cursor-pointer items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition shadow-sm"
             >
               <Download size={18} />
               Download PDF
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={onClose}
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-3 py-2 rounded-xl cursor-pointer text-white transition"
+              className="bg-white hover:bg-gray-50 border border-gray-300 px-3 py-2 rounded-lg cursor-pointer text-gray-700 transition"
             >
               Close
             </motion.button>
@@ -1078,11 +1160,11 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
         {/* Content */}
         <div className="p-6 space-y-6 overflow-y-auto">
           {/* Student Info */}
-          <div className="flex items-start justify-between bg-gradient-to-br from-purple-50 to-indigo-50 p-5 rounded-2xl border border-purple-100">
+          <div className="flex items-start justify-between bg-gray-50 p-5 rounded-lg border border-gray-200">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Users size={18} className="text-purple-600" />
-                <div className="text-lg font-semibold text-gray-800">
+                <Users size={18} className="text-emerald-600" />
+                <div className="text-lg font-semibold text-gray-900">
                   {student.name || "Unnamed Student"}
                 </div>
               </div>
@@ -1092,13 +1174,13 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
               </div>
             </div>
             <div className="text-right text-sm text-gray-700 space-y-2">
-              <div className="bg-white px-3 py-1.5 rounded-lg shadow-sm">
+              <div className="bg-white px-3 py-1.5 rounded-lg border border-gray-200">
                 <strong>Batch:</strong> {data?.batch_name || "-"}
               </div>
-              <div className="bg-white px-3 py-1.5 rounded-lg shadow-sm">
+              <div className="bg-white px-3 py-1.5 rounded-lg border border-gray-200">
                 <strong>Batch No:</strong> {data?.batch_no ?? "-"}
               </div>
-              <div className="bg-white px-3 py-1.5 rounded-lg shadow-sm">
+              <div className="bg-white px-3 py-1.5 rounded-lg border border-gray-200">
                 <strong>Audit Date:</strong>{" "}
                 {data?.auditDate
                   ? new Date(data.auditDate).toLocaleDateString()
@@ -1108,9 +1190,9 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
           </div>
 
           {/* Parameters */}
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-100">
-            <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <FileText size={18} className="text-indigo-600" />
+          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <FileText size={18} className="text-emerald-600" />
               Performance Parameters
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1132,9 +1214,9 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="flex items-center justify-between p-4 rounded-xl bg-white shadow-sm"
+                      className="flex items-center justify-between p-4 rounded-lg bg-white border border-gray-200"
                     >
-                      <div className="text-sm font-medium text-gray-800">
+                      <div className="text-sm font-medium text-gray-900">
                         {p.name || "-"}
                       </div>
                       <div
@@ -1160,29 +1242,29 @@ function PreviewModal({ data, onClose, onDownload, logoSrc }) {
           </div>
 
           {/* Overall Remarks */}
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 border border-purple-100">
-            <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <FileText size={18} className="text-purple-600" />
+          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+            <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <FileText size={18} className="text-emerald-600" />
               Overall Remarks
             </h4>
-            <div className="text-sm text-gray-700 bg-white p-4 rounded-xl shadow-sm">
+            <div className="text-sm text-gray-700 bg-white p-4 rounded-lg border border-gray-200">
               {data?.overallRemarks || "-"}
             </div>
           </div>
 
           {/* Feedback */}
-          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-5 border border-indigo-100">
-            <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <FileText size={18} className="text-indigo-600" />
+          <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+            <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <FileText size={18} className="text-emerald-600" />
               Feedback Points
             </h4>
             <div className="space-y-2">
               {["point1", "point2", "point3"].map((key, idx) => (
                 <div
                   key={key}
-                  className="flex gap-3 items-start bg-white p-3 rounded-xl shadow-sm"
+                  className="flex gap-3 items-start bg-white p-3 rounded-lg border border-gray-200"
                 >
-                  <div className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  <div className="flex-shrink-0 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
                     {idx + 1}
                   </div>
                   <div className="text-sm text-gray-700 flex-1">

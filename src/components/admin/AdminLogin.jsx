@@ -35,7 +35,7 @@ export default function AdminLogin() {
       <Toaster position="top-center" />
       
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 h-screen bg-black items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 h-screen bg-emerald-500 items-center justify-center p-12">
         <div className="max-w-md">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -43,12 +43,12 @@ export default function AdminLogin() {
             transition={{ duration: 0.6 }}
           >
             <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-8">
-              <Shield size={40} className="text-black" />
+              <Shield size={40} className="text-emerald-500" />
             </div>
             <h1 className="text-5xl font-bold text-white mb-4 leading-tight">
               Admin Portal
             </h1>
-            <p className="text-xl text-white/80 leading-relaxed">
+            <p className="text-xl text-white/90 leading-relaxed">
               Secure access to your administrative dashboard. Manage users, monitor systems, and control operations.
             </p>
           </motion.div>
@@ -65,17 +65,17 @@ export default function AdminLogin() {
         >
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <div className="w-16 h-16 bg-black rounded-xl flex items-center justify-center">
+            <div className="w-16 h-16 bg-emerald-500 rounded-xl flex items-center justify-center">
               <Shield size={32} className="text-white" />
             </div>
           </div>
 
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-black mb-2">
+            <h2 className="text-3xl font-bold text-emerald-500 mb-2">
               Sign In
             </h2>
-            <p className="text-black/60">
+            <p className="text-gray-600">
               Enter your credentials to access the admin panel
             </p>
           </div>
@@ -84,12 +84,12 @@ export default function AdminLogin() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
               <div className="relative">
                 <Mail
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   size={20}
                 />
                 <input
@@ -97,7 +97,7 @@ export default function AdminLogin() {
                   type="email"
                   placeholder="admin@example.com"
                   value={form.email}
-                  className="w-full pl-11 pr-4 py-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-black/10 transition-all text-black placeholder:text-black/40 bg-white"
+                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400 bg-white"
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   required
                 />
@@ -106,12 +106,12 @@ export default function AdminLogin() {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-black mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
               <div className="relative">
                 <Lock
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   size={20}
                 />
                 <input
@@ -119,7 +119,7 @@ export default function AdminLogin() {
                   type="password"
                   placeholder="Enter your password"
                   value={form.password}
-                  className="w-full pl-11 pr-4 py-3 border-2 border-black rounded-lg focus:outline-none focus:ring-4 focus:ring-black/10 transition-all text-black placeholder:text-black/40 bg-white"
+                  className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400 bg-white"
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   required
                 />
@@ -130,7 +130,7 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-black hover:bg-black/90 text-white py-3 rounded-lg font-medium transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-medium transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20"
             >
               {loading ? (
                 <>
@@ -148,7 +148,7 @@ export default function AdminLogin() {
 
           {/* Footer */}
           <div className="mt-8 text-center">
-            <p className="text-sm text-black/50">
+            <p className="text-sm text-gray-500">
               Protected by enterprise-grade security
             </p>
           </div>
