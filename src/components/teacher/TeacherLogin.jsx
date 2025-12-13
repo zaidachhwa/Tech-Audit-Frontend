@@ -9,9 +9,9 @@ import { useAuth } from "../../context/AuthContext";
 export default function TeacherLogin() {
   const navigate = useNavigate();
   // const { setUser, setToken } = useAuth();
-  const [user, setUser] = useState(null);
-const [token, setToken] = useState(null);
-
+  // const [user, setUser] = useState(null);
+  // const [token, setToken] = useState(null);
+  const { login } = useAuth();
 
   // const { setUser, setToken } = useAuth?.() || {};
   const [formData, setFormData] = useState({
@@ -19,30 +19,29 @@ const [token, setToken] = useState(null);
     password: "",
   });
   const [loading, setLoading] = useState(false);
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    setLoading(true);
-    const res = await loginTeacher(formData);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const res = await loginTeacher(formData);
 
-    console.log("LOGIN RESPONSE:", res);
+      console.log("LOGIN RESPONSE:", res);
 
-    localStorage.setItem("token", res.token);
-    localStorage.setItem("user", JSON.stringify(res.teacher));
+      // localStorage.setItem("token", res.token);
+      // localStorage.setItem("user", JSON.stringify(res.teacher));
 
-    toast.success("Login successful!");
-    navigate("/teacher/dashboard");
+      login(res.token, { teacher: res.teacher });
 
-  } catch (err) {
-    console.error(err);
-    const msg = err.response?.data?.message || "Login failed";
-    toast.error(msg);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
+      toast.success("Login successful!");
+      navigate("/teacher/dashboard");
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || "Login failed";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -63,7 +62,8 @@ const handleSubmit = async (e) => {
               Teacher Portal
             </h1>
             <p className="text-lg text-gray-600 leading-relaxed">
-              Access your syllabus dashboard, manage courses, and track student progress all in one place.
+              Access your syllabus dashboard, manage courses, and track student
+              progress all in one place.
             </p>
           </motion.div>
         </div>
@@ -86,9 +86,7 @@ const handleSubmit = async (e) => {
 
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Sign In
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign In</h2>
             <p className="text-sm text-gray-600">
               Enter your credentials to access your teacher portal
             </p>
@@ -98,7 +96,10 @@ const handleSubmit = async (e) => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email Address
               </label>
               <div className="relative">
@@ -122,7 +123,10 @@ const handleSubmit = async (e) => {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Password
               </label>
               <div className="relative">

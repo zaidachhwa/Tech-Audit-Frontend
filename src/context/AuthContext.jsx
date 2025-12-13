@@ -9,8 +9,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = (token, data) => {
     localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(data.student || data.admin));
-    setUser(data.student || data.admin);
+    localStorage.setItem(
+      "user",
+      JSON.stringify(data.student || data.admin || data.teacher)
+    );
+    setUser(data.student || data.admin || data.teacher);
   };
 
   const logout = () => {

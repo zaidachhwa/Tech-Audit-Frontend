@@ -20,8 +20,7 @@ import {
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import image from "../../assets/letter_head.jpg";
-import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 /**
  * AddReport (Save / Save & Download PDF / Preview)
