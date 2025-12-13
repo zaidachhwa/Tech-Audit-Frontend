@@ -1,6 +1,6 @@
 // src/components/teacher/TeacherSyllabusDashboard.jsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { API } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
@@ -47,48 +47,90 @@ export default function TeacherSyllabusDashboard() {
   const [sortBy, setSortBy] = useState("dueDate");
   const [expandedTopic, setExpandedTopic] = useState(null);
 
+  // keep a ref to prevent stale closures on repeated calls
+  const latestSelectedRefs = useRef({ batchId: null, syllabusId: null });
+
   useEffect(() => {
     fetchBatchesWithSyllabi();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // When selectedBatchId changes, set assigned syllabi list + auto-select if exactly 1
   useEffect(() => {
     if (!selectedBatchId) {
       setAssignedSyllabiForBatch([]);
       setSelectedBatchSyllabusId("");
       setTopics([]);
+      latestSelectedRefs.current = { batchId: null, syllabusId: null };
       return;
     }
 
-    const batchObj = batchesWithSyllabi.find((b) => b._id === selectedBatchId);
-    const assigned = batchObj?.assignedSyllabi || [];
+    const batchObj = batchesWithSyllabi.find(
+      (b) => String(b._id) === String(selectedBatchId)
+    );
+    const assigned =
+      batchObj && batchObj.assignedSyllabi ? batchObj.assignedSyllabi : [];
     setAssignedSyllabiForBatch(assigned);
 
+    // If only one assigned syllabus, auto-select it and fetch its topics.
     if (assigned.length === 1) {
-      const id = assigned[0]._id;
-      setSelectedBatchSyllabusId(id);
-      fetchTopicsForBatchSyllabus(selectedBatchId, id);
+      const only = assigned[0];
+      setSelectedBatchSyllabusId(String(only._id));
+      // compute the template syllabus id (could be an object or string)
+      const syllabusTemplateId =
+        typeof only.syllabus === "object"
+          ? only.syllabus._id || only.syllabus
+          : only.syllabus;
+      latestSelectedRefs.current = {
+        batchId: selectedBatchId,
+        syllabusId: syllabusTemplateId,
+      };
+      // fetch topics for that template id
+      fetchTopicsForBatchSyllabus(selectedBatchId, syllabusTemplateId);
     } else {
+      // multiple assigned syllabi — reset selected syllabus and topics until user picks
       setSelectedBatchSyllabusId("");
       setTopics([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBatchId, batchesWithSyllabi]);
 
+  // When syllabus selection changes (from UI), fetch topics
   useEffect(() => {
-    if (selectedBatchId && selectedBatchSyllabusId) {
-      fetchTopicsForBatchSyllabus(selectedBatchId, selectedBatchSyllabusId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBatchSyllabusId, selectedBatchId]);
+    if (!selectedBatchId || !selectedBatchSyllabusId) return;
+    // find the selected assignment object to derive template syllabus id
+    const batchObj = batchesWithSyllabi.find(
+      (b) => String(b._id) === String(selectedBatchId)
+    );
+    const bsObj =
+      batchObj?.assignedSyllabi?.find(
+        (bs) => String(bs._id) === String(selectedBatchSyllabusId)
+      ) || null;
 
-  const fetchBatchesWithSyllabi = async () => {
+    // if bsObj exists, derive template id; else the selectedBatchSyllabusId might already be template id (defensive)
+    const syllabusTemplateId = bsObj
+      ? typeof bsObj.syllabus === "object"
+        ? bsObj.syllabus._id || bsObj.syllabus
+        : bsObj.syllabus
+      : selectedBatchSyllabusId;
+
+    latestSelectedRefs.current = {
+      batchId: selectedBatchId,
+      syllabusId: syllabusTemplateId,
+    };
+    fetchTopicsForBatchSyllabus(selectedBatchId, syllabusTemplateId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBatchSyllabusId]);
+
+  async function fetchBatchesWithSyllabi() {
     try {
       setLoading(true);
+      // NOTE: using same route name as your server: /syllabus/assigned-syllabi
       const res = await API.get("/syllabus/assigned-syllabi");
       const fetched = res.data?.batches || [];
       setBatchesWithSyllabi(fetched);
 
+      // Create lightweight list for the batch select
       const simple = fetched.map((b) => ({
         _id: b._id,
         batch_name: b.batch_name,
@@ -97,6 +139,7 @@ export default function TeacherSyllabusDashboard() {
       }));
       setBatches(simple);
 
+      // If only one batch available, select it (same behavior as original)
       if (simple.length === 1) {
         setSelectedBatchId(simple[0]._id);
       }
@@ -106,39 +149,24 @@ export default function TeacherSyllabusDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const fetchTopicsForBatchSyllabus = async (batchId, batchSyllabusId) => {
+  async function fetchTopicsForBatchSyllabus(batchId, syllabusTemplateId) {
+    // defensive checks
+    if (!batchId || !syllabusTemplateId) {
+      setTopics([]);
+      return;
+    }
+
     try {
       setLoadingTopics(true);
 
-      const batchObj = batchesWithSyllabi.find((b) => b._id === batchId);
-      if (!batchObj) {
-        throw new Error("Selected batch not found");
-      }
-
-      const bsObj =
-        batchObj.assignedSyllabi?.find((bs) => {
-          return String(bs._id) === String(batchSyllabusId);
-        }) || null;
-
-      if (!bsObj) {
-        throw new Error(
-          "Assignment info not found for selected batch. Please refresh."
-        );
-      }
-
-      const syllabusTemplateId =
-        typeof bsObj.syllabus === "object"
-          ? bsObj.syllabus._id
-          : bsObj.syllabus;
-
-      if (!syllabusTemplateId) {
-        throw new Error("Syllabus template id missing for this assignment");
-      }
-
+      // Use the teacher-friendly endpoint (the router exposes /batch-topics-teacher)
+      // and the backend's getBatchTopics expects query params: batchId & syllabusId
       const res = await API.get(
-        `/syllabus/batch-topics-teacher?batchId=${batchId}&syllabusId=${syllabusTemplateId}`
+        `/syllabus/batch-topics-teacher?batchId=${encodeURIComponent(
+          batchId
+        )}&syllabusId=${encodeURIComponent(syllabusTemplateId)}`
       );
 
       const fetchedTopics = res.data?.topics || [];
@@ -154,15 +182,16 @@ export default function TeacherSyllabusDashboard() {
     } finally {
       setLoadingTopics(false);
     }
-  };
+  }
 
   const markComplete = async (topicId) => {
     try {
       await API.patch(`/syllabus/topic/${topicId}/complete`);
       toast.success("Topic marked as completed!");
-      if (selectedBatchId && selectedBatchSyllabusId) {
-        fetchTopicsForBatchSyllabus(selectedBatchId, selectedBatchSyllabusId);
-      }
+      // re-fetch current topics
+      const { batchId, syllabusId } = latestSelectedRefs.current;
+      if (batchId && syllabusId)
+        await fetchTopicsForBatchSyllabus(batchId, syllabusId);
     } catch (err) {
       console.error("Failed to mark complete:", err);
       toast.error("Failed to mark complete");
@@ -184,15 +213,16 @@ export default function TeacherSyllabusDashboard() {
       setRemarkText("");
       setSelectedTopic(null);
 
-      if (selectedBatchId && selectedBatchSyllabusId) {
-        fetchTopicsForBatchSyllabus(selectedBatchId, selectedBatchSyllabusId);
-      }
+      const { batchId, syllabusId } = latestSelectedRefs.current;
+      if (batchId && syllabusId)
+        await fetchTopicsForBatchSyllabus(batchId, syllabusId);
     } catch (err) {
       console.error("Failed to save remark:", err);
       toast.error("Failed to save remark");
     }
   };
 
+  // Filtering + sorting
   const getFilteredTopics = () => {
     let filtered = [...topics];
 
@@ -213,7 +243,9 @@ export default function TeacherSyllabusDashboard() {
         return (a.title || "").localeCompare(b.title || "");
       if (sortBy === "status") {
         const order = { Pending: 0, "In Progress": 1, Completed: 2 };
-        return order[a.completionStatus] - order[b.completionStatus];
+        return (
+          (order[a.completionStatus] ?? 3) - (order[b.completionStatus] ?? 3)
+        );
       }
       return 0;
     });
@@ -234,6 +266,7 @@ export default function TeacherSyllabusDashboard() {
   const completionRate =
     stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
+  // UI render (kept same as your original structure & styles)
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <Toaster position="top-right" />
@@ -251,7 +284,8 @@ export default function TeacherSyllabusDashboard() {
                   Teacher Dashboard
                 </h1>
                 <p className="text-sm text-gray-600 mt-1">
-                  Welcome back, <span className="font-medium">{user?.name}</span>
+                  Welcome back,{" "}
+                  <span className="font-medium">{user?.name}</span>
                 </p>
               </div>
             </div>
@@ -267,10 +301,21 @@ export default function TeacherSyllabusDashboard() {
               <button
                 onClick={() => {
                   if (selectedBatchId && selectedBatchSyllabusId) {
-                    fetchTopicsForBatchSyllabus(
-                      selectedBatchId,
-                      selectedBatchSyllabusId
+                    // derive template id
+                    const batchObj = batchesWithSyllabi.find(
+                      (b) => String(b._id) === String(selectedBatchId)
                     );
+                    const bsObj =
+                      batchObj?.assignedSyllabi?.find(
+                        (bs) =>
+                          String(bs._id) === String(selectedBatchSyllabusId)
+                      ) || null;
+                    const templateId = bsObj
+                      ? typeof bsObj.syllabus === "object"
+                        ? bsObj.syllabus._id || bsObj.syllabus
+                        : bsObj.syllabus
+                      : selectedBatchSyllabusId;
+                    fetchTopicsForBatchSyllabus(selectedBatchId, templateId);
                   } else {
                     fetchBatchesWithSyllabi();
                   }
@@ -313,7 +358,8 @@ export default function TeacherSyllabusDashboard() {
                   <option value="">Select a batch...</option>
                   {batches.map((batch) => (
                     <option key={batch._id} value={batch._id}>
-                      {batch.batch_name} (#{batch.batch_no}) — {batch.studentsCount} students
+                      {batch.batch_name} (#{batch.batch_no}) —{" "}
+                      {batch.studentsCount} students
                     </option>
                   ))}
                 </select>
@@ -349,7 +395,7 @@ export default function TeacherSyllabusDashboard() {
                   {assignedSyllabiForBatch.map((bs) => {
                     const subject =
                       typeof bs.syllabus === "object"
-                        ? bs.syllabus.subject
+                        ? bs.syllabus.subject || bs.syllabus._id
                         : bs.syllabus;
                     const topicsCount =
                       typeof bs.syllabus === "object"
@@ -510,10 +556,22 @@ export default function TeacherSyllabusDashboard() {
                 filterStatus={filterStatus}
                 onRefresh={() => {
                   if (selectedBatchId && selectedBatchSyllabusId) {
-                    fetchTopicsForBatchSyllabus(
-                      selectedBatchId,
-                      selectedBatchSyllabusId
+                    // derive template id:
+                    const batchObj = batchesWithSyllabi.find(
+                      (b) => String(b._id) === String(selectedBatchId)
                     );
+                    const bsObj =
+                      batchObj?.assignedSyllabi?.find(
+                        (bs) =>
+                          String(bs._id) === String(selectedBatchSyllabusId)
+                      ) || null;
+                    const templateId = bsObj
+                      ? typeof bsObj.syllabus === "object"
+                        ? bsObj.syllabus._id || bsObj.syllabus
+                        : bsObj.syllabus
+                      : selectedBatchSyllabusId;
+                    if (selectedBatchId && templateId)
+                      fetchTopicsForBatchSyllabus(selectedBatchId, templateId);
                   } else {
                     fetchBatchesWithSyllabi();
                   }
@@ -563,13 +621,25 @@ export default function TeacherSyllabusDashboard() {
   );
 }
 
-/* HELPER COMPONENTS */
+/* HELPER COMPONENTS (unchanged structure/styling, extracted from your original) */
 
-function StatCard({ label, value, icon, bgColor, iconColor, iconBgColor, borderColor }) {
+function StatCard({
+  label,
+  value,
+  icon,
+  bgColor,
+  iconColor,
+  iconBgColor,
+  borderColor,
+}) {
   return (
-    <div className={`${bgColor} border ${borderColor} rounded-lg p-5 shadow-sm`}>
+    <div
+      className={`${bgColor} border ${borderColor} rounded-lg p-5 shadow-sm`}
+    >
       <div className="flex items-center justify-between mb-3">
-        <div className={`${iconBgColor} p-2.5 rounded-lg border ${borderColor}`}>
+        <div
+          className={`${iconBgColor} p-2.5 rounded-lg border ${borderColor}`}
+        >
           <div className={iconColor}>{icon}</div>
         </div>
         <div className="text-2xl font-bold text-gray-900">{value}</div>

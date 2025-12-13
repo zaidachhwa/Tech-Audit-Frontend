@@ -491,22 +491,11 @@ export default function AddReport() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-100">
+    <div className="min-h-screen">
       <Toaster position="top-right" />
 
-      {/* Back Button */}
-      <Link to="/admin/dashboard" className="fixed top-6 left-6 z-50">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="bg-white/70 backdrop-blur-xl p-3 rounded-2xl shadow-lg hover:shadow-xl transition cursor-pointer"
-        >
-          <MoveLeft className="text-purple-600" size={24} />
-        </motion.div>
-      </Link>
-
       {/* Main Container */}
-      <div className="max-w-5xl mx-auto p-6 pt-20">
+      <div className="max-w-5xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
