@@ -269,7 +269,7 @@ export default function TeacherProfile() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* BACK BUTTON */}
         <div className="flex items-center justify-between">
-          <Link to="/teachers/dashboard">
+          <Link to="/teacher/dashboard">
             <button className="flex items-center gap-2 bg-white hover:bg-gray-50 px-4 py-2 rounded-lg shadow-sm border border-gray-200 font-medium text-gray-700 transition">
               <ArrowLeft size={18} />
               Back to Dashboard
@@ -581,7 +581,9 @@ function InfoCard({ icon, label, value, isEditing, onChange, type = "text" }) {
 
 function StatBox({ icon, label, value, iconColor, iconBgColor, borderColor }) {
   return (
-    <div className={`${color} border rounded-lg p-4`}>
+    <div
+      className={`${iconColor} ${iconBgColor} ${iconBgColor} ${borderColor} border rounded-lg p-4`}
+    >
       <div className="mb-3">{icon}</div>
       <div className="text-3xl font-bold mb-1">{value}</div>
       <div className="text-sm font-medium">{label}</div>
