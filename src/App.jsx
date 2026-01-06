@@ -24,6 +24,7 @@ import AdminBatches from "./pages/AdminBatches";
 import AdminTeachers from "./pages/AdminTeachers";
 import TeacherProfile from "./components/teacher/TeacherProfile";
 import AdminLayout from "./components/admin/AdminLayout";
+import AllReports from "./components/admin/AllReports";
 
 export default function App() {
   function PrivateRoute({ children, role }) {
@@ -141,6 +142,18 @@ export default function App() {
               </PrivateRoute>
             }
           />
+
+
+          {/* All reports  */}
+           <Route
+            path="all-reports"
+            element={
+              <PrivateRoute role="admin">
+                <AllReports />
+              </PrivateRoute>
+            }
+          />
+
         </Route>
 
         <Route path="/teacher/login" element={<TeacherLogin />} />

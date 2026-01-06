@@ -292,6 +292,14 @@ export default function AddReport() {
     if (overallEl) overallEl.textContent = data.overallRemarks || "-";
 
     const paramsContainer = container.querySelector(".print-parameters");
+    paramsContainer.style.display = "grid";
+    paramsContainer.style.gridTemplateColumns = "repeat(3, minmax(0, 1fr))";
+    paramsContainer.style.gap = "12px";
+    paramsContainer.style.padding = "12px";
+    paramsContainer.style.border = "1px solid #e5e7eb";
+    paramsContainer.style.borderRadius = "8px";
+    paramsContainer.style.background = "#ffffff";
+
     if (paramsContainer) {
       paramsContainer.innerHTML = "";
 
@@ -300,10 +308,13 @@ export default function AddReport() {
         wrapper.style.display = "flex";
         wrapper.style.justifyContent = "space-between";
         wrapper.style.alignItems = "center";
-        wrapper.style.padding = "12px 16px";
-        wrapper.style.borderBottom = "1px solid #e5e7eb";
+        wrapper.style.padding = "14px";
+        wrapper.style.border = "1px solid #e5e7eb";
+        wrapper.style.borderRadius = "8px";
+        wrapper.style.background = "#f9fafb";
         wrapper.style.fontSize = "13px";
         wrapper.style.boxSizing = "border-box";
+
 
         const nameDiv = document.createElement("div");
         nameDiv.textContent = p.name || "-";
@@ -435,7 +446,7 @@ export default function AddReport() {
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 5;
+      const margin = 10;
       const imgWidth = pdfWidth - margin * 2;
 
       const canvasWidth = canvas.width;

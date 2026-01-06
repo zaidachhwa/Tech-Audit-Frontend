@@ -44,4 +44,9 @@ export const adminSidebarItems = [
     path: "/admin/add-reports",
     icon: Notebook,
   },
+  {
+    name: "All Reports",
+    path: "/admin/all-reports",
+    icon: Notebook,
+  },
 ];
