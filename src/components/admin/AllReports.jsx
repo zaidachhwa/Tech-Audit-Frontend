@@ -37,11 +37,15 @@ export default function ReportsList() {
 
     const handleDelete = async () => {
         try {
-            await API.delete(`/reports/${deleteTarget._id}`);
+            const res = await API.delete(`/reports/${deleteTarget._id}`);
+            console.log(res);
+            
             toast.success("Report deleted");
             setDeleteTarget(null);
             fetchReports();
-        } catch {
+        } catch (err){
+            console.log(err);
+            
             toast.error("Delete failed");
         }
     };

@@ -7,7 +7,6 @@ import Dashboard from "./components/student/Dashboard";
 import Projects from "./components/student/Projects";
 import Reports from "./components/student/Reports";
 import AdminDashboard from "./components/admin/AdminDashboard";
-import AddReport from "./components/admin/AddReport";
 import ProjectTracking from "./components/admin/ProjectTracking";
 import BatchStudentsView from "./components/admin/BatchStudentsView";
 // import StudentProjectsView from "./components/admin/StudentProjectsView";
@@ -25,6 +24,7 @@ import AdminTeachers from "./pages/AdminTeachers";
 import TeacherProfile from "./components/teacher/TeacherProfile";
 import AdminLayout from "./components/admin/AdminLayout";
 import AllReports from "./components/admin/AllReports";
+import AddReport2 from "./components/admin/AddReport2";
 
 export default function App() {
   function PrivateRoute({ children, role }) {
@@ -129,7 +129,7 @@ export default function App() {
             path="add-reports"
             element={
               <PrivateRoute role="admin">
-                <AddReport />
+                <AddReport2 />
               </PrivateRoute>
             }
           />
