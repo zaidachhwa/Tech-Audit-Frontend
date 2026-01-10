@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import {
   BookOpen,
   Calendar,
@@ -15,31 +14,20 @@ import {
 // Stat Card Component
 export function StatCard({ icon, label, value, color }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className={`bg-gradient-to-br ${color} rounded-2xl shadow-lg p-6 text-white`}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-          {icon}
-        </div>
-        <div className="text-3xl font-bold">{value}</div>
+    <div className={`${color} rounded-lg shadow-sm p-5 border`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="bg-white/80 p-2.5 rounded-lg shadow-sm">{icon}</div>
+        <div className="text-2xl font-semibold text-gray-800">{value}</div>
       </div>
-      <div className="text-sm font-medium opacity-90">{label}</div>
-    </motion.div>
+      <div className="text-sm font-medium text-gray-700">{label}</div>
+    </div>
   );
 }
 
 // Empty State Component
 export function EmptyState({ onCreateClick }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg p-12 text-center"
-    >
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
       <BookOpen size={64} className="mx-auto text-gray-300 mb-4" />
       <h3 className="text-xl font-semibold text-gray-700 mb-2">
         No Syllabi Yet
@@ -49,12 +37,12 @@ export function EmptyState({ onCreateClick }) {
       </p>
       <button
         onClick={onCreateClick}
-        className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 cursor-pointer inline-flex items-center gap-2"
+        className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors cursor-pointer inline-flex items-center gap-2"
       >
         <BookOpen size={18} />
         Create Syllabus
       </button>
-    </motion.div>
+    </div>
   );
 }
 
@@ -75,22 +63,17 @@ export function SyllabusCard({
     0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="bg-white/80 backdrop-blur-md rounded-3xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all"
-    >
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
       {/* Header */}
-      <div className="p-6 border-b border-gray-100">
+      <div className="p-6 border-b border-gray-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-3 rounded-xl shadow-md">
-                <BookOpen size={24} className="text-white" />
+              <div className="bg-indigo-50 p-3 rounded-lg">
+                <BookOpen size={24} className="text-indigo-600" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-800">
+                <h3 className="text-xl font-semibold text-gray-800">
                   {syllabus.subject}
                 </h3>
                 {syllabus.description && (
@@ -104,7 +87,7 @@ export function SyllabusCard({
 
           <button
             onClick={onAddTopic}
-            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-4 py-2 rounded-xl font-medium text-sm flex items-center gap-2 cursor-pointer"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 cursor-pointer transition-colors"
           >
             <UserPlus size={16} />
             Add Topic
@@ -114,19 +97,17 @@ export function SyllabusCard({
         {/* Progress Bar */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700">
+            <span className="text-sm font-medium text-gray-700">
               Overall Progress
             </span>
-            <span className="text-sm font-bold text-purple-600">
+            <span className="text-sm font-semibold text-indigo-600">
               {completedTopics}/{totalTopics} Topics ({progress}%)
             </span>
           </div>
-          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 1 }}
-              className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
+          <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              style={{ width: `${progress}%` }}
+              className="h-full bg-indigo-600 rounded-full transition-all duration-500"
             />
           </div>
         </div>
@@ -142,7 +123,7 @@ export function SyllabusCard({
 
       {/* Topics List */}
       {expanded && syllabus.topics && syllabus.topics.length > 0 && (
-        <div className="p-6 bg-gradient-to-br from-gray-50 to-purple-50 space-y-3">
+        <div className="p-6 bg-gray-50 space-y-3">
           {syllabus.topics.map((topic) => (
             <TopicCard
               key={topic._id}
@@ -154,10 +135,10 @@ export function SyllabusCard({
       )}
 
       {/* Footer */}
-      <div className="p-4 bg-gray-50 border-t border-gray-100">
+      <div className="p-4 bg-gray-50 border-t border-gray-200">
         <button
           onClick={onToggleExpand}
-          className="w-full flex items-center justify-center gap-2 text-purple-600 hover:text-purple-700 font-medium cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer transition-colors"
         >
           {expanded ? (
             <>
@@ -172,7 +153,7 @@ export function SyllabusCard({
           )}
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -183,7 +164,6 @@ export function TopicCard({ topic, onAssign }) {
       case "Completed":
         return {
           icon: <CheckCircle2 size={16} />,
-          color: "from-green-500 to-emerald-500",
           bg: "bg-green-50",
           text: "text-green-700",
           border: "border-green-200",
@@ -191,7 +171,6 @@ export function TopicCard({ topic, onAssign }) {
       case "In Progress":
         return {
           icon: <Clock size={16} />,
-          color: "from-blue-500 to-cyan-500",
           bg: "bg-blue-50",
           text: "text-blue-700",
           border: "border-blue-200",
@@ -199,7 +178,6 @@ export function TopicCard({ topic, onAssign }) {
       default:
         return {
           icon: <AlertCircle size={16} />,
-          color: "from-amber-500 to-orange-500",
           bg: "bg-amber-50",
           text: "text-amber-700",
           border: "border-amber-200",
@@ -213,7 +191,7 @@ export function TopicCard({ topic, onAssign }) {
     : "N/A";
 
   return (
-    <div className={`${config.bg} border-2 ${config.border} rounded-xl p-4`}>
+    <div className={`${config.bg} border ${config.border} rounded-lg p-4`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h4 className="font-semibold text-gray-800 mb-1">{topic.title}</h4>
@@ -222,7 +200,7 @@ export function TopicCard({ topic, onAssign }) {
           )}
         </div>
         <div
-          className={`px-3 py-1 rounded-lg ${config.bg} ${config.text} border-2 ${config.border} flex items-center gap-2 font-medium text-sm`}
+          className={`px-3 py-1 rounded-lg ${config.bg} ${config.text} border ${config.border} flex items-center gap-2 font-medium text-sm`}
         >
           {config.icon}
           {topic.completionStatus}
@@ -246,7 +224,7 @@ export function TopicCard({ topic, onAssign }) {
         {!topic.assignedTo && (
           <button
             onClick={onAssign}
-            className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-medium cursor-pointer"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-colors"
           >
             Assign Teacher
           </button>
@@ -265,31 +243,25 @@ export function TopicCard({ topic, onAssign }) {
 // Modal Component
 export function Modal({ title, children, onClose }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       onClick={onClose}
     >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+      <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
+        className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden"
       >
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-xl font-bold text-white">{title}</h3>
+        <div className="bg-indigo-600 px-6 py-4 flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-white">{title}</h3>
           <button
             onClick={onClose}
-            className="text-white hover:bg-white/20 p-2 rounded-xl transition cursor-pointer"
+            className="text-white hover:bg-indigo-700 p-2 rounded-lg transition-colors cursor-pointer"
           >
             <X size={24} />
           </button>
         </div>
         <div className="p-6">{children}</div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
