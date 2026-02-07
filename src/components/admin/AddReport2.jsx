@@ -45,6 +45,7 @@ export default function AddReport2() {
     API.get("/students/list")
       .then((res) => {
         const data = res.data?.students || res.data?.data?.students || [];
+        // console.log(data)
         setStudents(data);
       })
       .catch((err) => {
