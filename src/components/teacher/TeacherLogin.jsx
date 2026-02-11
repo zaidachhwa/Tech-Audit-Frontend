@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import toast, { Toaster } from "react-hot-toast";
-import { BookOpen, Mail, Lock, LogIn, RefreshCw } from "lucide-react";
-import { loginTeacher } from "../../api/syllabus.api";
-import { useAuth } from "../../context/AuthContext";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import toast, { Toaster } from 'react-hot-toast';
+import { BookOpen, Mail, Lock, LogIn, RefreshCw } from 'lucide-react';
+import { loginTeacher } from '../../api/syllabus.api';
+import { useAuth } from '../../context/AuthContext';
 
 export default function TeacherLogin() {
   const navigate = useNavigate();
@@ -15,8 +15,8 @@ export default function TeacherLogin() {
 
   // const { setUser, setToken } = useAuth?.() || {};
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    email: '',
+    password: '',
   });
   const [loading, setLoading] = useState(false);
   const handleSubmit = async (e) => {
@@ -25,18 +25,18 @@ export default function TeacherLogin() {
       setLoading(true);
       const res = await loginTeacher(formData);
 
-      console.log("LOGIN RESPONSE:", res);
+      console.log('LOGIN RESPONSE:', res);
 
       // localStorage.setItem("token", res.token);
       // localStorage.setItem("user", JSON.stringify(res.teacher));
 
       login(res.token, { teacher: res.teacher });
 
-      toast.success("Login successful!");
-      navigate("/teacher/dashboard");
+      toast.success('Login successful!');
+      navigate('/teacher/dashboard');
     } catch (err) {
       console.error(err);
-      const msg = err.response?.data?.message || "Login failed";
+      const msg = err.response?.data?.message || 'Login failed';
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -145,6 +145,10 @@ export default function TeacherLogin() {
                   required
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400 bg-white"
                 />
+
+               
+
+                
               </div>
             </div>
 
@@ -171,7 +175,7 @@ export default function TeacherLogin() {
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
+              Don't have an account?{' '}
               <Link
                 to="/teacher/register"
                 className="text-emerald-600 font-semibold hover:text-emerald-700 hover:underline"

@@ -1,44 +1,57 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import StudentLogin from "./components/student/StudentLogin";
-import AdminLogin from "./components/admin/AdminLogin";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import StudentLayout from "./components/student/StudentLayout";
-import Dashboard from "./components/student/Dashboard";
-import Projects from "./components/student/Projects";
-import Reports from "./components/student/Reports";
-import AdminDashboard from "./components/admin/AdminDashboard";
-import ProjectTracking from "./components/admin/ProjectTracking";
-import BatchStudentsView from "./components/admin/BatchStudentsView";
-// import StudentProjectsView from "./components/admin/StudentProjectsView";
-import StudentSignup from "./components/student/StudentSignup";
-import StudentProjectsView from "./components/admin/StudentProjectsView";
-import AdminSyllabusManagement from "./components/admin/AdminSyllabusManagement";
-import TeacherLogin from "./components/teacher/TeacherLogin";
-import TeacherSyllabusDashboard from "./components/teacher/TeacherSyllabusDashboard";
-import TeacherRegister from "./components/teacher/TeacherRegister";
-import StudentProfile from "./components/student/StudentProfile";
-import StudentManagement from "./components/management/StudentManagement";
-import AdminStudents from "./pages/AdminStudents";
-import AdminBatches from "./pages/AdminBatches";
-import AdminTeachers from "./pages/AdminTeachers";
-import TeacherProfile from "./components/teacher/TeacherProfile";
-import AdminLayout from "./components/admin/AdminLayout";
-import AllReports from "./components/admin/AllReports";
-import AddReport2 from "./components/admin/AddReport2";
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+
+/* FORGOT PASSWORD */
+import ForgotPassword from './components/auth/ForgotPassword';
+
+/* STUDENT */
+import StudentLogin from './components/student/StudentLogin';
+import StudentSignup from './components/student/StudentSignup';
+import StudentLayout from './components/student/StudentLayout';
+import Dashboard from './components/student/Dashboard';
+import Projects from './components/student/Projects';
+import Reports from './components/student/Reports';
+import StudentProfile from './components/student/StudentProfile';
+
+/* ADMIN */
+import AdminLogin from './components/admin/AdminLogin';
+import AdminLayout from './components/admin/AdminLayout';
+import AdminDashboard from './components/admin/AdminDashboard';
+import ProjectTracking from './components/admin/ProjectTracking';
+import BatchStudentsView from './components/admin/BatchStudentsView';
+import StudentProjectsView from './components/admin/StudentProjectsView';
+import AdminSyllabusManagement from './components/admin/AdminSyllabusManagement';
+import AllReports from './components/admin/AllReports';
+import AddReport2 from './components/admin/AddReport2';
+import AdminStudents from './pages/AdminStudents';
+import AdminBatches from './pages/AdminBatches';
+import AdminTeachers from './pages/AdminTeachers';
+
+/* TEACHER */
+import TeacherLogin from './components/teacher/TeacherLogin';
+import TeacherRegister from './components/teacher/TeacherRegister';
+import TeacherSyllabusDashboard from './components/teacher/TeacherSyllabusDashboard';
+import TeacherProfile from './components/teacher/TeacherProfile';
+
+/* PRIVATE ROUTE */
+function PrivateRoute({ children, role }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to={`/${role}/login`} replace />;
+  return children;
+}
 
 export default function App() {
-  function PrivateRoute({ children, role }) {
-    const { user } = useAuth();
-    if (!user) return <Navigate to={`/${role}/login`} replace />;
-    return children;
-  }
-
   return (
     <AuthProvider>
       <Routes>
-        {/* STUDENT ROUTES */}
+
+        {/* ================= FORGOT PASSWORD (PUBLIC) ================= */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* ================= STUDENT ROUTES ================= */}
         <Route path="/student/login" element={<StudentLogin />} />
         <Route path="/student/signup" element={<StudentSignup />} />
+
         <Route
           path="/student"
           element={
@@ -54,7 +67,7 @@ export default function App() {
           <Route path="profile" element={<StudentProfile />} />
         </Route>
 
-        {/* ADMIN ROUTES */}
+        {/* ================= ADMIN ROUTES ================= */}
         <Route path="/admin/login" element={<AdminLogin />} />
 
         <Route
@@ -65,99 +78,28 @@ export default function App() {
             </PrivateRoute>
           }
         >
-          <Route
-            path="dashboard"
-            element={
-              <PrivateRoute role="admin">
-                <AdminDashboard />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="student-management"
-            element={
-              <PrivateRoute role="admin">
-                <AdminStudents />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="teacher-management"
-            element={
-              <PrivateRoute role="admin">
-                <AdminTeachers />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="batch-management"
-            element={
-              <PrivateRoute role="admin">
-                <AdminBatches />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="project-tracking"
-            element={
-              <PrivateRoute role="admin">
-                <ProjectTracking />
-              </PrivateRoute>
-            }
-          />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="student-management" element={<AdminStudents />} />
+          <Route path="teacher-management" element={<AdminTeachers />} />
+          <Route path="batch-management" element={<AdminBatches />} />
+          <Route path="project-tracking" element={<ProjectTracking />} />
           <Route
             path="project-tracking/batch/:batchId"
-            element={
-              <PrivateRoute role="admin">
-                <BatchStudentsView />
-              </PrivateRoute>
-            }
+            element={<BatchStudentsView />}
           />
           <Route
             path="project-tracking/student/:studentId"
-            element={
-              <PrivateRoute role="admin">
-                <StudentProjectsView />
-              </PrivateRoute>
-            }
+            element={<StudentProjectsView />}
           />
-          <Route
-            path="add-reports"
-            element={
-              <PrivateRoute role="admin">
-                <AddReport2 />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="syllabus"
-            element={
-              <PrivateRoute role="admin">
-                <AdminSyllabusManagement />
-              </PrivateRoute>
-            }
-          />
-
-
-          {/* All reports  */}
-           <Route
-            path="all-reports"
-            element={
-              <PrivateRoute role="admin">
-                <AllReports />
-              </PrivateRoute>
-            }
-          />
-
+          <Route path="add-reports" element={<AddReport2 />} />
+          <Route path="syllabus" element={<AdminSyllabusManagement />} />
+          <Route path="all-reports" element={<AllReports />} />
         </Route>
 
+        {/* ================= TEACHER ROUTES ================= */}
         <Route path="/teacher/login" element={<TeacherLogin />} />
         <Route path="/teacher/register" element={<TeacherRegister />} />
+
         <Route
           path="/teacher/dashboard"
           element={
@@ -175,8 +117,9 @@ export default function App() {
           }
         />
 
-        {/* DEFAULT REDIRECT */}
+        {/* ================= DEFAULT ================= */}
         <Route path="*" element={<Navigate to="/student/login" replace />} />
+
       </Routes>
     </AuthProvider>
   );

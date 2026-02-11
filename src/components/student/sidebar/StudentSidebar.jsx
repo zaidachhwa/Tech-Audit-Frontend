@@ -22,21 +22,25 @@ const navLinks = [
     name: "Dashboard",
     path: "/student/dashboard",
     icon: LayoutDashboard,
+    gradient: "from-emerald-500 to-teal-500",
   },
   {
     name: "Projects",
     path: "/student/projects",
     icon: Layers,
+    gradient: "from-emerald-500 to-teal-500",
   },
   {
     name: "Reports",
     path: "/student/reports",
     icon: BarChart2,
+    gradient: "from-emerald-500 to-teal-500",
   },
   {
     name: "Profile",
     path: "/student/profile",
     icon: User,
+    gradient: "from-emerald-500 to-teal-500",
   },
 ];
 
@@ -161,6 +165,8 @@ export default function StudentSidebar({ currentPath, onNavigate, user }) {
           {navLinks.map(
             ({ name, path, icon: Icon, gradient, description }, index) => {
               const isActive = currentPath === path;
+              const safeGradient = gradient || "from-gray-200 to-gray-300";
+
               return (
                 <motion.button
                   key={path}

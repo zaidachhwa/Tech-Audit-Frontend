@@ -47,7 +47,7 @@ export default function ReportsList() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border shadow-sm overflow-x-auto">
+      <div className="bg-white rounded-2xl  shadow-md overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
@@ -73,7 +73,7 @@ export default function ReportsList() {
               </tr>
             ) : (
               reports.map((r) => (
-                <tr key={r._id} className="border-t hover:bg-emerald-50/40">
+                <tr key={r._id} className="shadow-sm hover:bg-emerald-50/40">
                   <td className="px-4 py-3">
                     <div className="font-medium">{r.student?.name}</div>
                     <div className="text-xs text-gray-500">
@@ -139,6 +139,11 @@ export default function ReportsList() {
                 <button
                   onClick={async () => {
                     try {
+                      if (!selectedReport) {
+                        toast.error('Report data not available');
+                        return;
+                      }
+
                       const res = await fetch(
                         `${import.meta.env.VITE_API_URL}/reports/${selectedReport._id}/pdf`,
                       );
@@ -146,9 +151,23 @@ export default function ReportsList() {
                       const blob = await res.blob();
                       const url = window.URL.createObjectURL(blob);
 
+                      // 🔥 Build meaningful filename
+                      const studentName =
+                        selectedReport.student?.name?.replace(/\s+/g, '_') ||
+                        'Student';
+
+                      const batchName =
+                        selectedReport.student?.batch_name || 'Batch';
+                      const batchNo = selectedReport.student?.batch_no || '';
+                      const date = new Date(selectedReport.auditDate)
+                        .toISOString()
+                        .split('T')[0];
+
+                      const fileName = `${studentName}-${batchName}-${batchNo}-${date}.pdf`;
+
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = `report-${selectedReport._id}.pdf`;
+                      a.download = fileName;
                       document.body.appendChild(a);
                       a.click();
 
@@ -156,6 +175,7 @@ export default function ReportsList() {
                       window.URL.revokeObjectURL(url);
                     } catch (err) {
                       console.error('Download failed', err);
+                      toast.error('Download failed');
                     }
                   }}
                   className="px-4 py-1.5 text-sm border border-gray-300 rounded-lg 
