@@ -6,6 +6,7 @@ import {
   BookOpen,
   FolderGit2,
   Notebook,
+  FileText,
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -43,6 +44,11 @@ export const adminSidebarItems = [
     name: "Add Reports",
     path: "/admin/add-reports",
     icon: Notebook,
+  },
+  {
+    name:"Drafts",
+    path: "/admin/drafts",
+    icon: FileText,
   },
   {
     name: "All Reports",

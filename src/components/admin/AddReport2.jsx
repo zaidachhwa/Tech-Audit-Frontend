@@ -41,6 +41,8 @@ export default function AddReport2() {
 
   const DEFAULTS_KEY = "report_param_defaults";
 
+  
+
   useEffect(() => {
     API.get("/students/list")
       .then((res) => {
@@ -69,8 +71,46 @@ export default function AddReport2() {
         s.batch_name === form.batch_name &&
         s.batch_no?.toString() === form.batch_no?.toString()
     );
+
     setFilteredStudents(filtered);
   }, [form.batch_name, form.batch_no, students]);
+
+  useEffect(() => {
+    // only check draft when select student and date
+    if(!form.studentId || !form.auditDate) return;
+
+    //call backend and fetch the draft
+    API.get("/reports/draft" , {
+      params: {
+        studentId : form.studentId,
+        auditDate: form.auditDate,
+      },
+    })
+    .then((res) => {
+      //if draft get auto fill
+      if(res.data){
+        setForm((prev) => ({
+          ...prev,
+
+          //parameters load
+          parameters: res.data.parameters?.length
+          ? res.data.parameters
+          :prev.parameters,
+
+          //feedabck schema
+          feedbackSchema:
+          res.data.feedbackSchema?.[0] || prev.feedbackSchema,
+
+          //remarks load
+          overallRemarks: res.data.overallRemarks || "",
+        }));
+        toast("Draft loaded")
+      }
+    })
+    .catch(() => {
+      //silent failed it dont disturb the user
+    });
+  }, [form.studentId, form.auditDate]);
 
   // Cleanup preview URL on unmount
   useEffect(() => {
@@ -304,6 +344,22 @@ export default function AddReport2() {
       toast.error("Failed to generate preview");
     } finally {
       setIsLoadingPreview(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    try{
+      await API.post("/reports/draft", {
+        studentId: form.studentId,
+        parameters: form.parameters,
+        feedbackSchema: form.feedbackSchema,
+        overallRemarks: form.overallRemarks,
+        auditDate: form.auditDate,
+      });
+
+      toast.success("Draft saved");
+    } catch (err){
+      toast.error("Draft saved failed");
     }
   };
 
@@ -605,6 +661,18 @@ export default function AddReport2() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              
+              {/* Save Draft Button */}
+              <motion.button
+                whileHover = {{ scale: 1.02 }}
+                whileTap = {{ scale: 0.98 }}
+                type = "button"
+                onClick={handleSaveDraft}
+                className="flex-1 cursor-pointer bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2" >
+                  Save Draft
+                </motion.button>
+                
+
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
