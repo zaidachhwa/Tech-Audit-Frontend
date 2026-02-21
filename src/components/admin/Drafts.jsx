@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { API } from "../../api/axios";
-import { Eye, Trash2 } from "lucide-react";
+import { Calendar, Eye, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export default function Drafts() {
@@ -55,7 +55,7 @@ export default function Drafts() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 shadow-lg rounded-lg bg-white">
       <h2 className="text-xl font-semibold mb-4">
         Drafts Reports ({drafts.length})
       </h2>
@@ -63,36 +63,50 @@ export default function Drafts() {
       {!drafts.length && (
         <div className="text-gray-500 text-sm">No Drafts Found</div>
       )}
+      <div className="">
+        <table className="w-full text-left mb-4">
+          <thead>
+            <tr className="border-b-[1px] border-gray-300">
+              <th className="p-2 ">Student Name</th>
+              <th className="p-2 ">Batch Name</th>
+              <th className="p-2 ">Batch No.</th>
+              <th className="p-2">Date</th>
+              <th className="p-2 ">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {drafts.map((d) => (
+              <tr key={d._id} className="border-b-[1px] border-gray-300 hover:bg-gray-50 transition  ">
+                <td className="px-4 py-5  text-gray-600">{d.student?.name}</td>
+                <td className="px-4 py-5  text-gray-600">{d.student?.batch_name}</td>
+                <td className="px-4 py-5  text-gray-600">{d.student?.batch_no}</td>
+                <td className="px-4 py-5  text-gray-600">
+                  <div className="flex items-center text-gray-600">
+                    <Calendar size={18} className="inline mr-1 text-gray-600" />
+                    {d.createdAt?.substring(0, 10)}
+                  </div>
+                </td>
+                <td className="p-2 ">
+                  <div className="flex items-center justify-start gap-2">
+                    <Eye
+                      size={30}
+                      className="text-emerald-600 cursor-pointer hover:bg-green-100 hover:scale-110 p-[2px] rounded transition"
+                      onClick={() => handleViewDraft(d)}
+                    />
+                    <Trash2
+                      size={30}
+                      className="text-red-500 cursor-pointer hover:bg-red-50 hover:scale-110 p-1 rounded "
+                      onClick={() => handleDelete(d._id)}
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      <div className="space-y-3">
-        {drafts.map((d) => (
-          <div
-            key={d._id}
-            className="border rounded-lg p-4 flex justify-between items-center"
-          >
-            <div>
-              <div className="font-semibold">{d.student?.name}</div>
-              <div className="text-sm text-gray-500">
-                {d.student?.batch_name} #{d.student?.batch_no}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Eye
-                size={20}
-                className="text-emerald-600 cursor-pointer hover:scale-110 transition"
-                onClick={() => handleViewDraft(d)}
-              />
-
-              <Trash2
-                size={18}
-                className="text-red-500 cursor-pointer hover:bg-red-50 p-1 rounded"
-                onClick={() => handleDelete(d._id)}
-              />
-            </div>
-          </div>
-        ))}
-
+      <div className="space-y-3 bg-green-500">
         {/* ⭐ Preview Modal */}
         {showPreview && previewPdfUrl && (
           <PreviewModal
