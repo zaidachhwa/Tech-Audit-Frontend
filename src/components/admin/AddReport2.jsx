@@ -138,12 +138,16 @@ export default function AddReport2() {
   };
 
   // Parameter helpers
-  const handleParamChange = (index, field, value) => {
-    const updated = [...form.parameters];
+const handleParamChange = (index, field, value) => {
+  const updated = [...form.parameters];
+  if (field === "score") {
+    const clamped = Math.min(Number(value), 10);
+    updated[index][field] = clamped === 0 && value === "" ? "" : clamped;
+  } else {
     updated[index][field] = value;
-    setForm({ ...form, parameters: updated });
-  };
-
+  }
+  setForm({ ...form, parameters: updated });
+};
   const addParameter = () =>
     setForm({
       ...form,
@@ -577,6 +581,8 @@ export default function AddReport2() {
                       type="number"
                       placeholder="Score"
                       value={p.score}
+                      min={0}
+                      max={10}
                       onChange={(e) =>
                         handleParamChange(i, "score", e.target.value)
                       }
