@@ -20,7 +20,19 @@ export default function ProjectTracking() {
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showMultiBatchModal, setShowMultiBatchModal] = useState(false);
+  const [openCourses, setOpenCourses] = useState({});
   const navigate = useNavigate();
+
+  const grouped = batches.reduce((acc, batch) => {
+  const key = batch.batch_name; // e.g. "FSD", "BVOC"
+  if (!acc[key]) acc[key] = [];
+  acc[key].push(batch);
+  return acc;
+}, {});
+
+const toggleCourse = (name) =>
+  setOpenCourses(prev => ({ ...prev, [name]: !prev[name] }));
+  
 
   const fetchBatches = async () => {
     try {
@@ -41,6 +53,7 @@ export default function ProjectTracking() {
   }, []);
 
   return (
+    
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-100 text-gray-800">
       <Toaster position="top-right" />
 
@@ -57,7 +70,7 @@ export default function ProjectTracking() {
                 <ArrowLeft className="text-purple-600" size={20} />
               </motion.div>
             </Link>
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-3 shadow-md">
+            <div className="bg-gradient-to-r from-blue-400 to-indigo-600 text-white rounded-2xl p-3 shadow-md">
               <FolderGit2 size={24} />
             </div>
             <div>
@@ -87,7 +100,7 @@ export default function ProjectTracking() {
               whileTap={{ scale: 0.95 }}
               onClick={fetchBatches}
               disabled={loading}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-lg transition cursor-pointer"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl shadow-lg transition cursor-pointer"
             >
               <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
               Refresh
@@ -95,6 +108,7 @@ export default function ProjectTracking() {
           </div>
         </div>
       </header>
+
 
       <main className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Batch List */}
@@ -104,7 +118,7 @@ export default function ProjectTracking() {
           className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-3xl shadow-xl p-6"
         >
           <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-            <Layers size={20} className="text-purple-600" />
+            <Layers size={20} className="text-blue-500" />
             Available Batches
           </h2>
 
@@ -116,47 +130,80 @@ export default function ProjectTracking() {
               />
               <p className="text-gray-600 mt-4">Loading batches...</p>
             </div>
-          ) : batches.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {batches.map((batch) => (
-                <motion.div
-                  key={batch._id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02, y: -4 }}
-                  className="bg-gradient-to-br from-white to-purple-50 border border-purple-100 rounded-2xl shadow-lg p-5 hover:shadow-xl transition cursor-pointer"
-                  onClick={() =>
-                    navigate(`/admin/project-tracking/batch/${batch._id}`)
-                  }
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl p-2 shadow-md">
-                      <Layers size={20} />
-                    </div>
-                    <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold">
-                      {batch.students?.length || 0} Students
-                    </div>
-                  </div>
+) : batches.length > 0 ? (
+  <div className="space-y-4">
+    {Object.entries(grouped).map(([courseName, courseBatches]) => (
+      <motion.div
+        key={courseName}
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-gradient-to-br from-white to-purple-50 border border-purple-100 rounded-2xl shadow-lg overflow-hidden"
+      >
+        {/* Course Header Row */}
+        <div
+          onClick={() => toggleCourse(courseName)}
+          className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-purple-50 transition"
+        >
+          {/* Icon */}
+          <div className="bg-gradient-to-r from-blue-400 to-indigo-600 text-white rounded-xl p-2 shadow-md">
+            <Layers size={20} />
+          </div>
 
-                  <h3 className="font-bold text-lg text-gray-800 mb-1">
-                    {batch.batch_name}
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                    <Hash size={14} />
-                    <span>Batch No: {batch.batch_no}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-purple-100">
-                    <div className="flex items-center gap-2 text-purple-700 font-medium text-sm">
-                      <Users size={16} />
-                      View Students
-                    </div>
-                    <ChevronRight size={20} className="text-purple-600" />
-                  </div>
-                </motion.div>
-              ))}
+          {/* Course name + batch count */}
+          <div className="flex-1">
+            <h3 className="font-bold text-lg text-gray-800">{courseName}</h3>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Hash size={13} />
+              <span>{courseBatches.length} batch{courseBatches.length > 1 ? "es" : ""}</span>
+              <span className="mx-1">·</span>
+              <Users size={13} />
+              <span>
+                {courseBatches.reduce((sum, b) => sum + (b.students?.length || 0), 0)} students
+              </span>
             </div>
-          ) : (
+          </div>
+
+          {/* Chevron */}
+          <ChevronRight
+            size={20}
+            className={`text-purple-500 transition-transform duration-300 ${
+              openCourses[courseName] ? "rotate-90" : ""
+            }`}
+          />
+        </div>
+
+        {/* Collapsible Batch Grid */}
+        {openCourses[courseName] && (
+          <div className="border-t border-purple-100 px-5 py-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {courseBatches.map((batch) => (
+              <motion.div
+                key={batch._id}
+                whileHover={{ scale: 1.03, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate(`/admin/project-tracking/batch/${batch._id}`)}
+                className="bg-white border border-purple-100 rounded-xl shadow-sm px-4 py-3 cursor-pointer hover:shadow-md hover:border-purple-300 transition flex items-center justify-between"
+              >
+                <div>
+                  <p className="font-semibold text-gray-800 text-sm">
+                    Batch No. {batch.batch_no}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Users size={12} className="text-purple-400" />
+                    <p className="text-xs text-gray-500">
+                      {batch.students?.length || 0} student{batch.students?.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-purple-400" />
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    ))}
+  </div>
+)
+           : (
             <div className="text-center py-12">
               <Layers size={48} className="mx-auto text-gray-300 mb-4" />
               <p className="text-gray-500 text-lg">No batches found.</p>
