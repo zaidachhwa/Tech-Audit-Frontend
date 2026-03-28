@@ -1,50 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { API } from '../../api/axios';
-import { FileText, Eye, Trash2, X, ChevronDown } from 'lucide-react';
+import { FileText, Eye, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
-// ── helper: group flat reports array into { courseName: { batchNo: [reports] } }
-function groupReports(reports) {
-  return reports.reduce((acc, r) => {
-    const course = r.student?.batch_name || 'Unknown';
-    const batch  = r.student?.batch_no   ?? 'Unknown';
-    if (!acc[course])        acc[course] = {};
-    if (!acc[course][batch]) acc[course][batch] = [];
-    acc[course][batch].push(r);
-    return acc;
-  }, {});
-}
-
 export default function ReportsList() {
-  const [reports, setReports]             = useState([]);
-  const [loading, setLoading]             = useState(false);
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [deleteTarget, setDeleteTarget]   = useState(null);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // track which courses / batches are open
-  const [openCourses, setOpenCourses] = useState({});
-  const [openBatches, setOpenBatches] = useState({});
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchReports = async () => {
     try {
       setLoading(true);
       const res = await API.get('/reports');
-      const data = res.data.reports || [];
-      setReports(data);
-
-      // open all courses and batches by default
-      const grouped = groupReports(data);
-      const courses = {};
-      const batches = {};
-      Object.keys(grouped).forEach(course => {
-        courses[course] = true;
-        Object.keys(grouped[course]).forEach(batch => {
-          batches[`${course}-${batch}`] = true;
-        });
-      });
-      setOpenCourses(courses);
-      setOpenBatches(batches);
+      setReports(res.data.reports || []);
     } catch {
       toast.error('Failed to load reports');
     } finally {
@@ -52,7 +23,9 @@ export default function ReportsList() {
     }
   };
 
-  useEffect(() => { fetchReports(); }, []);
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
   const handleDelete = async () => {
     try {
@@ -65,161 +38,281 @@ export default function ReportsList() {
     }
   };
 
-  const toggleCourse = (course) =>
-    setOpenCourses(prev => ({ ...prev, [course]: !prev[course] }));
-
-  const toggleBatch = (key) =>
-    setOpenBatches(prev => ({ ...prev, [key]: !prev[key] }));
-
-  const grouped = groupReports(reports);
-
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-
-      {/* Page header */}
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <FileText className="w-7 h-7 text-emerald-600" />
         <h1 className="text-2xl font-semibold text-gray-800">Audit Reports</h1>
       </div>
 
-      {loading && (
-        <p className="text-center text-gray-500 py-10">Loading...</p>
-      )}
+      {/* Table */}
+      <div className="bg-white rounded-2xl  shadow-md overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left">Student</th>
+              <th className="px-4 py-3 text-left">Batch</th>
+              <th className="px-4 py-3 text-left">Audit Date</th>
+              <th className="px-4 py-3 text-center">Actions</th>
+            </tr>
+          </thead>
 
-      {!loading && Object.keys(grouped).length === 0 && (
-        <p className="text-center text-gray-500 py-10">No reports found</p>
-      )}
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="4" className="py-6 text-center text-gray-500">
+                  Loading...
+                </td>
+              </tr>
+            ) : reports.length === 0 ? (
+              <tr>
+                <td colSpan="4" className="py-6 text-center text-gray-500">
+                  No reports found
+                </td>
+              </tr>
+            ) : (
+              reports.map((r) => (
+                <tr key={r._id} className="shadow-sm hover:bg-emerald-50/40">
+                  <td className="px-4 py-3">
+                    <div className="font-medium">{r.student?.name}</div>
+                    <div className="text-xs text-gray-500">
+                      {r.student?.email}
+                    </div>
+                  </td>
 
-      {/* Course accordion */}
-      {Object.entries(grouped).map(([course, batches]) => {
-        const totalReports = Object.values(batches).reduce((s, arr) => s + arr.length, 0);
-        const isCourseOpen = openCourses[course];
+                  <td className="px-4 py-3">
+                    {r.student?.batch_name} - {r.student?.batch_no}
+                  </td>
 
-        return (
-          <div key={course} className="mb-3 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                  <td className="px-4 py-3">
+                    {new Date(r.auditDate).toLocaleDateString()}
+                  </td>
 
-            {/* Course header */}
-            <button
-              type="button"
-              onClick={() => toggleCourse(course)}
-              className="w-full flex items-center justify-between px-5 py-4 bg-gray-50 hover:bg-gray-100 transition text-left"
-            >
-              <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-emerald-600" />
-                <span className="text-base font-semibold text-gray-900">{course}</span>
-                <span className="text-xs bg-emerald-100 text-emerald-700 font-medium px-2.5 py-0.5 rounded-full">
-                  {Object.keys(batches).length} {Object.keys(batches).length === 1 ? 'batch' : 'batches'}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-400">{totalReports} reports</span>
-                <ChevronDown
-                  className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isCourseOpen ? 'rotate-180' : ''}`}
-                />
-              </div>
-            </button>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => setSelectedReport(r)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs hover:bg-emerald-700"
+                      >
+                        <Eye className="w-4 h-4" /> View
+                      </button>
 
-            {/* Batches */}
-            <AnimatePresence initial={false}>
-              {isCourseOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  {Object.entries(batches)
-                    .sort(([a], [b]) => Number(a) - Number(b))
-                    .map(([batchNo, batchReports]) => {
-                      const batchKey  = `${course}-${batchNo}`;
-                      const isBatchOpen = openBatches[batchKey];
+                      <button
+                        onClick={() => setDeleteTarget(r)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs hover:bg-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-                      return (
-                        <div key={batchNo} className="border-t border-gray-200">
+      {/* ================= VIEW MODAL ================= */}
+      <AnimatePresence>
+        {selectedReport && (
+          <Modal onClose={() => setSelectedReport(null)}>
+            {/* HEADER */}
+            <div className="relative mb-6">
+              {/* Close button - absolute top-right */}
+              <button
+                onClick={() => setSelectedReport(null)}
+                className="absolute -top-1 -right-1 w-8 h-8 flex items-center justify-center
+                           text-gray-400 hover:text-gray-600 hover:bg-gray-100 
+                           rounded-full transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-                          {/* Batch sub-header */}
-                          <button
-                            type="button"
-                            onClick={() => toggleBatch(batchKey)}
-                            className="w-full flex items-center justify-between pl-10 pr-5 py-3 bg-white hover:bg-emerald-50/40 transition text-left"
-                          >
-                            <div className="flex items-center gap-2">
-                              <ChevronDown
-                                className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isBatchOpen ? 'rotate-180' : ''}`}
-                              />
-                              <span className="text-sm font-medium text-gray-700">
-                                Batch {batchNo}
-                              </span>
-                              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                {batchReports.length} {batchReports.length === 1 ? 'student' : 'students'}
-                              </span>
-                            </div>
-                          </button>
+              {/* Title and Download button */}
+              <div className="flex items-center justify-between pr-10">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Report Details
+                </h2>
 
-                          {/* Student rows */}
-                          <AnimatePresence initial={false}>
-                            {isBatchOpen && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.15 }}
-                                className="overflow-hidden"
-                              >
-                                <table className="w-full text-sm">
-                                  <thead className="bg-gray-50">
-                                    <tr>
-                                      <th className="pl-14 pr-4 py-2.5 text-left text-xs text-gray-500 font-medium uppercase tracking-wide">Student</th>
-                                      <th className="px-4 py-2.5 text-left text-xs text-gray-500 font-medium uppercase tracking-wide">Audit Date</th>
-                                      <th className="px-4 py-2.5 text-center text-xs text-gray-500 font-medium uppercase tracking-wide">Actions</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {batchReports.map(r => (
-                                      <tr key={r._id} className="border-t border-gray-100 hover:bg-emerald-50/30">
-                                        <td className="pl-14 pr-4 py-3">
-                                          <div className="font-medium text-gray-800">{r.student?.name}</div>
-                                          <div className="text-xs text-gray-400">{r.student?.email}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-600">
-                                          {new Date(r.auditDate).toLocaleDateString()}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                          <div className="flex justify-center gap-2">
-                                            <button
-                                              onClick={() => setSelectedReport(r)}
-                                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs hover:bg-emerald-700 transition"
-                                            >
-                                              <Eye className="w-3.5 h-3.5" /> View
-                                            </button>
-                                            <button
-                                              onClick={() => setDeleteTarget(r)}
-                                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs hover:bg-red-600 transition"
-                                            >
-                                              <Trash2 className="w-3.5 h-3.5" /> Delete
-                                            </button>
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      if (!selectedReport) {
+                        toast.error('Report data not available');
+                        return;
+                      }
+
+                      const res = await fetch(
+                        `${import.meta.env.VITE_API_URL}/reports/${selectedReport._id}/pdf`,
                       );
-                    })}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        );
-      })}
 
-      {/* View modal and Delete modal stay exactly the same as before */}
-      {/* ... paste your existing AnimatePresence modal blocks here unchanged ... */}
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+
+                      // 🔥 Build meaningful filename
+                      const studentName =
+                        selectedReport.student?.name?.replace(/\s+/g, '_') ||
+                        'Student';
+
+                      const batchName =
+                        selectedReport.student?.batch_name || 'Batch';
+                      const batchNo = selectedReport.student?.batch_no || '';
+                      const date = new Date(selectedReport.auditDate)
+                        .toISOString()
+                        .split('T')[0];
+
+                      const fileName = `${studentName}-${batchName}-${batchNo}-${date}.pdf`;
+
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = fileName;
+                      document.body.appendChild(a);
+                      a.click();
+
+                      a.remove();
+                      window.URL.revokeObjectURL(url);
+                    } catch (err) {
+                      console.error('Download failed', err);
+                      toast.error('Download failed');
+                    }
+                  }}
+                  className="px-4 py-1.5 text-sm border border-gray-300 rounded-lg 
+             text-gray-700 hover:bg-gray-100 transition"
+                >
+                  Download
+                </button>
+              </div>
+            </div>
+
+            {/* STUDENT INFO */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-sm">
+              <Info label="Student Name" value={selectedReport.student?.name} />
+              <Info label="Email" value={selectedReport.student?.email} />
+              <Info
+                label="Batch"
+                value={`${selectedReport.student?.batch_name} - ${selectedReport.student?.batch_no}`}
+              />
+              <Info
+                label="Audit Date"
+                value={new Date(selectedReport.auditDate).toLocaleDateString()}
+              />
+            </div>
+
+            {/* PARAMETERS */}
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                Parameters
+              </h3>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {selectedReport.parameters?.map((p) => (
+                  <div
+                    key={p._id}
+                    className="rounded-xl border bg-emerald-50/40 px-3 py-2"
+                  >
+                    <div className="text-xs text-gray-500">{p.name}</div>
+                    <div className="text-lg font-semibold text-emerald-700">
+                      {p.score} / 10
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* FEEDBACK */}
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                Feedback
+              </h3>
+
+              {selectedReport.feedbackSchema?.map((f, idx) => (
+                <ul
+                  key={idx}
+                  className="list-disc list-inside text-sm text-gray-700 space-y-1"
+                >
+                  {f.point1 && <li>{f.point1}</li>}
+                  {f.point2 && <li>{f.point2}</li>}
+                  {f.point3 && <li>{f.point3}</li>}
+                </ul>
+              ))}
+            </div>
+
+            {/* OVERALL REMARKS */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">
+                Overall Remarks
+              </h3>
+              <p className="text-sm text-gray-800 bg-gray-50 rounded-xl p-3 border">
+                {selectedReport.overallRemarks || '—'}
+              </p>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      {/* ================= DELETE MODAL ================= */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <Modal onClose={() => setDeleteTarget(null)}>
+            <h2 className="text-lg font-semibold mb-3 text-red-600">
+              Delete Report
+            </h2>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this report?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 rounded-lg border"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white"
+              >
+                Delete
+              </button>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ================= REUSABLE COMPONENTS ================= */
+
+function Modal({ children, onClose }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+    >
+      <motion.div
+        initial={{ scale: 0.95 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0.95 }}
+        className="bg-white rounded-2xl p-6 w-full max-w-lg relative shadow-xl"
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function Info({ label, value }) {
+  return (
+    <div>
+      <div className="text-xs text-gray-500">{label}</div>
+      <div className="font-medium text-gray-800">{value || '—'}</div>
     </div>
   );
 }
