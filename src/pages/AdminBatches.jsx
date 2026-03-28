@@ -193,43 +193,37 @@ const handleDelete = async (id) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-right" />
-
+    <div className="space-y-5">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Batches</h1>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Manage batch information and student assignments
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={fetchBatches}
-                disabled={loading}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <RefreshCw
-                  size={18}
-                  className={loading ? "animate-spin" : ""}
-                />
-              </button>
-              <button
-                onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                <Plus size={18} />
-                Create Batch
-              </button>
-            </div>
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Batches</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Manage batch information and student assignments
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchBatches}
+            disabled={loading}
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <RefreshCw
+              size={18}
+              className={loading ? "animate-spin" : ""}
+            />
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            <Plus size={18} />
+            Create Batch
+          </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div>
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white border border-gray-200 rounded-lg p-4">

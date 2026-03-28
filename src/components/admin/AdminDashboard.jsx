@@ -218,36 +218,24 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-white flex">
-      <Toaster position="top-right" />
-      {/* MAIN CONTENT */}
-      <div className="w-full">
-        {/* Top Bar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition lg:hidden"
-            >
-              <Menu size={20} className="text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
-              <p className="text-sm text-gray-500">Welcome back, Admin</p>
-            </div>
-          </div>
+    <div className="space-y-5">
+      {/* Top Bar / Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Welcome back, Admin</p>
+        </div>
+        <button
+          onClick={fetchBatches}
+          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Refresh"
+        >
+          <RefreshCw size={18} />
+        </button>
+      </div>
 
-          <button
-            onClick={fetchBatches}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
-            title="Refresh"
-          >
-            <RefreshCw size={18} className="text-gray-600" />
-          </button>
-        </header>
-
-        {/* Content */}
-        <main className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Content */}
+      <div className="space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {statsCards.map((stat, index) => (
@@ -323,7 +311,6 @@ export default function AdminDashboard() {
           {stats.pendingApprovals > 0 && (
             <PendingApprovalsAlert stats={stats} />
           )}
-        </main>
       </div>
 
       {/* Add Batch Modal */}

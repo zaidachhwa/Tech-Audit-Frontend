@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { API } from '../../api/axios';
-import { FileText, Eye, Trash2, X } from 'lucide-react';
+import { FileText, Eye, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -10,6 +10,18 @@ export default function ReportsList() {
 
   const [selectedReport, setSelectedReport] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const groupedReports = useMemo(() => {
+    const groups = {};
+    reports.forEach(r => {
+      const batchName = r.student?.batch_name;
+      const batchNo = r.student?.batch_no;
+      const key = (batchName && batchNo) ? `${batchName} - #${batchNo}` : "Unassigned";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(r);
+    });
+    return groups;
+  }, [reports]);
 
   const fetchReports = async () => {
     try {
@@ -39,78 +51,37 @@ export default function ReportsList() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div>
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <FileText className="w-7 h-7 text-emerald-600" />
-        <h1 className="text-2xl font-semibold text-gray-800">Audit Reports</h1>
+        <FileText className="w-6 h-6 text-emerald-600" />
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800">Audit Reports</h1>
+          <p className="text-sm text-gray-500">{reports.length} total reports</p>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl  shadow-md overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left">Student</th>
-              <th className="px-4 py-3 text-left">Batch</th>
-              <th className="px-4 py-3 text-left">Audit Date</th>
-              <th className="px-4 py-3 text-center">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan="4" className="py-6 text-center text-gray-500">
-                  Loading...
-                </td>
-              </tr>
-            ) : reports.length === 0 ? (
-              <tr>
-                <td colSpan="4" className="py-6 text-center text-gray-500">
-                  No reports found
-                </td>
-              </tr>
-            ) : (
-              reports.map((r) => (
-                <tr key={r._id} className="shadow-sm hover:bg-emerald-50/40">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{r.student?.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {r.student?.email}
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    {r.student?.batch_name} - {r.student?.batch_no}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    {new Date(r.auditDate).toLocaleDateString()}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <div className="flex justify-center gap-2">
-                      <button
-                        onClick={() => setSelectedReport(r)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs hover:bg-emerald-700"
-                      >
-                        <Eye className="w-4 h-4" /> View
-                      </button>
-
-                      <button
-                        onClick={() => setDeleteTarget(r)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs hover:bg-red-600"
-                      >
-                        <Trash2 className="w-4 h-4" /> Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Accordion List */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="py-12 text-center text-gray-500 bg-white rounded-2xl shadow-sm border border-gray-100">
+            Loading reports...
+          </div>
+        ) : Object.keys(groupedReports).length === 0 ? (
+          <div className="py-12 text-center text-gray-500 bg-white rounded-2xl shadow-sm border border-gray-100">
+            No reports found
+          </div>
+        ) : (
+          Object.entries(groupedReports).sort().map(([batchKey, batchReports]) => (
+            <BatchAccordion
+              key={batchKey}
+              batchName={batchKey}
+              reports={batchReports}
+              onSelectedReport={setSelectedReport}
+              onDeleteTarget={setDeleteTarget}
+            />
+          ))
+        )}
       </div>
 
       {/* ================= VIEW MODAL ================= */}
@@ -287,6 +258,82 @@ export default function ReportsList() {
 }
 
 /* ================= REUSABLE COMPONENTS ================= */
+
+function BatchAccordion({ batchName, reports, onSelectedReport, onDeleteTarget }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition border-b border-gray-100"
+      >
+        <div className="flex items-center gap-3">
+          {isOpen ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
+          <span className="font-semibold text-gray-800">{batchName}</span>
+          <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full font-medium">
+            {reports.length} report{reports.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: "auto" }}
+            exit={{ height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50/50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Student</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Audit Date</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.map((r) => (
+                    <tr key={r._id} className="border-b last:border-0 border-gray-50 hover:bg-emerald-50/40 transition">
+                      <td className="px-4 py-3 font-medium text-gray-800">
+                        {r.student?.name}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {r.student?.email}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {new Date(r.auditDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => onSelectedReport(r)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs hover:bg-emerald-700 transition shadow-sm"
+                          >
+                            <Eye className="w-4 h-4" /> View
+                          </button>
+                          <button
+                            onClick={() => onDeleteTarget(r)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs hover:bg-red-100 transition"
+                          >
+                            <Trash2 className="w-4 h-4" /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function Modal({ children, onClose }) {
   return (

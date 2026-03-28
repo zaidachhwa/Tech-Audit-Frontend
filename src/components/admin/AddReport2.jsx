@@ -368,11 +368,9 @@ const handleParamChange = (index, field, value) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-right" />
-
+    <div className="space-y-5">
       {/* Main Container */}
-      <div className="max-w-5xl mx-auto px-6">
+      <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

@@ -27,6 +27,7 @@ import Drafts from "./components/admin/Drafts";
 import AdminStudents from "./pages/AdminStudents";
 import AdminBatches from "./pages/AdminBatches";
 import AdminTeachers from "./pages/AdminTeachers";
+import TeacherProfileView from "./components/admin/TeacherProfileView";
 
 /* TEACHER */
 import TeacherLogin from "./components/teacher/TeacherLogin";
@@ -89,6 +90,7 @@ export default function App() {
           <Route path="syllabus" element={<AdminSyllabusManagement />} />
           <Route path="all-reports" element={<AllReports />} />
           <Route path="drafts" element={<Drafts />} />
+          <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
         </Route>
 
         {/* TEACHER */}

@@ -1,6 +1,7 @@
 // src/pages/AdminTeachers.jsx
 import React, { useEffect, useState } from "react";
 import { API } from "../api/axios";
+import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Plus,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 
 export default function AdminTeachers() {
+  const navigate = useNavigate();
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -193,44 +195,38 @@ export default function AdminTeachers() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-right" />
-
+    <div className="space-y-5">
       {/* HEADER */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Teachers</h1>
-              <p className="text-sm text-gray-500">
-                Manage teacher accounts and permissions
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={fetchTeachers}
-                disabled={loading}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
-                <RefreshCw
-                  size={18}
-                  className={loading ? "animate-spin" : ""}
-                />
-              </button>
-              <button
-                onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer"
-              >
-                <Plus size={18} />
-                Add Teacher
-              </button>
-            </div>
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Teachers</h1>
+          <p className="text-sm text-gray-500">
+            Manage teacher accounts and permissions
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchTeachers}
+            disabled={loading}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+          >
+            <RefreshCw
+              size={18}
+              className={loading ? "animate-spin" : ""}
+            />
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer"
+          >
+            <Plus size={18} />
+            Add Teacher
+          </button>
         </div>
       </div>
 
       {/* CONTENT */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div>
         {/* STATS */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           {/* Total */}
@@ -274,6 +270,7 @@ export default function AdminTeachers() {
           onReject={handleReject}
           onEdit={openEdit}
           onDelete={handleDelete}
+          onViewProfile={(id) => navigate(`/admin/teacher/${id}`)}
         />
       </div>
 
@@ -449,6 +446,7 @@ function TeacherTable({
   onReject,
   onEdit,
   onDelete,
+  onViewProfile,
 }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -501,16 +499,23 @@ function TeacherTable({
             teachers.map((teacher) => (
               <tr key={teacher._id} className="hover:bg-gray-50 transition">
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-purple-600">
-                        {teacher.name.charAt(0).toUpperCase()}
-                      </span>
+                  <button
+                    onClick={() => onViewProfile(teacher._id)}
+                    className="flex items-center gap-3 text-left group"
+                  >
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {teacher.profilePhoto ? (
+                        <img src={teacher.profilePhoto} alt={teacher.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-medium text-purple-600">
+                          {teacher.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 group-hover:underline transition">
                       {teacher.name}
                     </p>
-                  </div>
+                  </button>
                 </td>
 
                 <td className="px-6 py-4 text-sm text-gray-600">
