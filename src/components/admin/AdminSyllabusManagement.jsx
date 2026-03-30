@@ -218,52 +218,66 @@ const handleDeleteSyllabus = async (syllabusId) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="space-y-5">
       <Toaster position="top-right" />
-      <div className="max-w-6xl mx-auto space-y-4">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Syllabus Management</h1>
-              <p className="text-sm text-gray-500 mt-1">Create syllabi, manage topics, and track progress</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="bg-gray-100 rounded-lg p-1 flex items-center">
-                <button onClick={() => setActiveTab("templates")} className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${activeTab === "templates" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Templates</button>
-                <button onClick={() => setActiveTab("batch")} className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${activeTab === "batch" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Batch Assignments</button>
-              </div>
-              <button onClick={fetchData} disabled={loading} className="p-2 hover:bg-gray-100 rounded-lg transition">
-                <RefreshCw size={18} className={`text-gray-600 ${loading ? "animate-spin" : ""}`} />
-              </button>
-              {activeTab === "templates" && (
-                <button onClick={() => setShowCreateModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2">
-                  <Plus size={16} />Create Syllabus
-                </button>
-              )}
-            </div>
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Syllabus Management</h1>
+          <p className="text-sm text-gray-500 mt-1">Create syllabi, manage topics, and track progress</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="bg-white border border-gray-200 shadow-sm rounded-lg p-1 flex items-center h-[42px]">
+            <button onClick={() => setActiveTab("templates")} className={`px-4 py-1.5 h-full rounded-md text-sm font-medium transition ${activeTab === "templates" ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:text-gray-900"}`}>Templates</button>
+            <button onClick={() => setActiveTab("batch")} className={`px-4 py-1.5 h-full rounded-md text-sm font-medium transition ${activeTab === "batch" ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:text-gray-900"}`}>Batch Assignments</button>
           </div>
+          <button onClick={fetchData} disabled={loading} className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer" title="Refresh">
+            <RefreshCw size={18} className={`${loading ? "animate-spin" : ""}`} />
+          </button>
           {activeTab === "templates" && (
-            <div className="grid grid-cols-4 gap-3">
-              <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                <div className="flex items-center gap-2 text-blue-700 mb-1"><BookOpen size={16} /><span className="text-xs font-medium">Total Syllabi</span></div>
-                <div className="text-2xl font-bold text-blue-900">{stats.total}</div>
-              </div>
-              <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
-                <div className="flex items-center gap-2 text-purple-700 mb-1"><FileText size={16} /><span className="text-xs font-medium">Total Topics</span></div>
-                <div className="text-2xl font-bold text-purple-900">{stats.totalTopics}</div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-3 border border-green-100">
-                <div className="flex items-center gap-2 text-green-700 mb-1"><CheckCircle2 size={16} /><span className="text-xs font-medium">Completed Topics</span></div>
-                <div className="text-2xl font-bold text-green-900">{stats.completed}</div>
-              </div>
-              <div className="bg-orange-50 rounded-lg p-3 border border-orange-100">
-                <div className="flex items-center gap-2 text-orange-700 mb-1"><Users size={16} /><span className="text-xs font-medium">Teachers</span></div>
-                <div className="text-2xl font-bold text-orange-900">{stats.teachers}</div>
-              </div>
-            </div>
+            <button onClick={() => setShowCreateModal(true)} className="h-[42px] px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2 cursor-pointer shadow-sm">
+              <Plus size={18} />Create Syllabus
+            </button>
           )}
         </div>
+      </div>
+
+      {activeTab === "templates" && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
+          <div className="bg-white shadow-sm rounded-xl p-4 border border-gray-200 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Total Syllabi</p>
+              <div className="bg-blue-50 p-2 rounded-lg"><BookOpen size={18} className="text-blue-600" /></div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          </div>
+          
+          <div className="bg-white shadow-sm rounded-xl p-4 border border-gray-200 hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Total Topics</p>
+              <div className="bg-purple-50 p-2 rounded-lg"><FileText size={18} className="text-purple-600" /></div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{stats.totalTopics}</div>
+          </div>
+
+          <div className="bg-white shadow-sm rounded-xl p-4 border border-gray-200 hover:shadow-md transition">
+             <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Completed Topics</p>
+              <div className="bg-green-50 p-2 rounded-lg"><CheckCircle2 size={18} className="text-green-600" /></div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{stats.completed}</div>
+          </div>
+
+          <div className="bg-white shadow-sm rounded-xl p-4 border border-gray-200 hover:shadow-md transition">
+             <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Teachers</p>
+              <div className="bg-orange-50 p-2 rounded-lg"><Users size={18} className="text-orange-600" /></div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{stats.teachers}</div>
+          </div>
+        </div>
+      )}
 
         {activeTab === "templates" ? (
           <>
@@ -343,7 +357,6 @@ const handleDeleteSyllabus = async (syllabusId) => {
         ) : (
           <BatchAssignmentsPanel onActionComplete={() => { fetchData(); }} />
         )}
-      </div>
 
       {/* Modals */}
       <AnimatePresence>

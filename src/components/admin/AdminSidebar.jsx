@@ -15,12 +15,11 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
     >
       <div className="flex flex-col h-full">
         {/* HEADER */}
-        <div className="h-24 flex items-center justify-between px-4 border-b border-gray-200">
+        <div className="h-40 flex items-center justify-between px-4 border-b border-gray-400">
           {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              {}
-              <img src="/logo.png" alt="Logo" className="w-30 h-30 object-contain rounded-md" />
-              <span className="font-semibold text-gray-900">Admin</span>
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Logo" className="w-auto h-40 object-contain" />
+              <span className="font-bold text-gray-900 text-lg tracking-tight"></span>
             </div>
           )}
 
