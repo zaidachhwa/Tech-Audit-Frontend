@@ -4,6 +4,15 @@ import { getMe, updateMe } from "../../api/student.api";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { getReportsByStudent } from "../../api/report.api";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import {
   User,
   Mail,
@@ -14,12 +23,18 @@ import {
   Key,
   CheckCircle2,
   BookOpen,
+  BarChart2,
+  FileText,
+  Calendar,
+  Award,
 } from "lucide-react";
 
 export default function StudentProfile() {
   const { user, setUser } = useAuth();
   const [profile, setProfile] = useState(null);
+  const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [reportsLoading, setReportsLoading] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -35,6 +50,17 @@ export default function StudentProfile() {
       const s = res.student || res;
       setProfile(s);
       setForm((f) => ({ ...f, name: s.name || "", email: s.email || "" }));
+
+      // Fetch Reports
+      setReportsLoading(true);
+      try {
+        const reportRes = await getReportsByStudent(s._id);
+        setReports(reportRes?.reports || []);
+      } catch (rErr) {
+        console.error("Failed to fetch reports for profile", rErr);
+      } finally {
+        setReportsLoading(false);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to load profile");
@@ -83,6 +109,29 @@ export default function StudentProfile() {
       </div>
     );
   }
+
+  // Calculate average per parameter overall
+  const getPieData = () => {
+    if (!reports.length) return [];
+    const paramStats = {};
+    reports.forEach((r) => {
+      r.parameters?.forEach((p) => {
+        if (!paramStats[p.name]) {
+          paramStats[p.name] = { total: 0, count: 0 };
+        }
+        paramStats[p.name].total += Number(p.score) || 0;
+        paramStats[p.name].count += 1;
+      });
+    });
+
+    return Object.keys(paramStats).map((name) => ({
+      name,
+      value: Number((paramStats[name].total / paramStats[name].count).toFixed(2)),
+    }));
+  };
+
+  const pieData = getPieData();
+  const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#f43f5e", "#14b8a6"];
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -286,6 +335,111 @@ export default function StudentProfile() {
               </>
             )}
           </motion.button>
+        </motion.div>
+      </div>
+
+      <div className="max-w-4xl mx-auto mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+        {/* Performance Pie Chart */}
+        <motion.div
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.4 }}
+           className="bg-white rounded-lg p-6 shadow-sm border border-gray-200"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-200">
+               <BarChart2 size={20} className="text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Overall Performance</h3>
+              <p className="text-sm text-gray-600">Average Scores per Subject</p>
+            </div>
+          </div>
+
+          <div className="h-64 w-full">
+            {reportsLoading ? (
+               <div className="h-full flex items-center justify-center">
+                 <RefreshCw size={24} className="animate-spin text-gray-400" />
+               </div>
+            ) : pieData.length > 0 ? (
+               <ResponsiveContainer width="100%" height="100%">
+                 <PieChart>
+                   <Pie
+                     data={pieData}
+                     cx="50%"
+                     cy="50%"
+                     innerRadius={60}
+                     outerRadius={80}
+                     paddingAngle={5}
+                     dataKey="value"
+                   >
+                     {pieData.map((entry, index) => (
+                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                     ))}
+                   </Pie>
+                   <Tooltip formatter={(value) => [`${value}/10`, 'Avg Score']} />
+                   <Legend verticalAlign="bottom" height={36} />
+                 </PieChart>
+               </ResponsiveContainer>
+            ) : (
+               <div className="h-full flex flex-col items-center justify-center text-center">
+                  <BarChart2 size={40} className="text-gray-300 mb-2" />
+                  <p className="text-gray-500 text-sm">No report data yet.</p>
+               </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Latest Reports List */}
+        <motion.div
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.5 }}
+           className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 flex flex-col"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-orange-50 p-2.5 rounded-lg border border-orange-200">
+                <FileText size={20} className="text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Recent Reports</h3>
+                <p className="text-sm text-gray-600">Your latest evaluations</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar flex-1">
+             {reportsLoading ? (
+               <div className="py-8 flex justify-center">
+                 <RefreshCw size={24} className="animate-spin text-gray-400" />
+               </div>
+             ) : reports.length > 0 ? (
+               reports.map((r, idx) => {
+                 const avg = r.parameters?.reduce((s, p) => s + Number(p.score || 0), 0) / (r.parameters?.length || 1);
+                 return (
+                   <div key={r._id || idx} className="p-4 border border-gray-100 bg-gray-50 rounded-lg flex items-center justify-between hover:bg-white transition-colors">
+                     <div>
+                       <h4 className="font-semibold text-gray-900 text-sm">Report #{reports.length - idx}</h4>
+                       <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
+                          <Calendar size={12} />
+                          {r.auditDate ? new Date(r.auditDate).toLocaleDateString() : "N/A"}
+                       </div>
+                     </div>
+                     <div className="bg-white border border-gray-200 px-3 py-1.5 rounded-md text-center shadow-sm">
+                        <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-0.5">Score</div>
+                        <div className="text-sm font-bold text-gray-900">{avg.toFixed(1)}</div>
+                     </div>
+                   </div>
+                 )
+               })
+             ) : (
+                <div className="py-10 flex flex-col items-center justify-center text-center">
+                   <FileText size={40} className="text-gray-300 mb-2" />
+                   <p className="text-gray-500 text-sm">No recent reports found.</p>
+                </div>
+             )}
+          </div>
         </motion.div>
       </div>
     </div>

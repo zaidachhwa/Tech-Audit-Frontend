@@ -1,5 +1,6 @@
 // src/pages/AdminStudents.jsx
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { API } from "../api/axios";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -113,7 +114,7 @@ export default function AdminStudents() {
     try {
       await API.post("/students/register", {
         ...form,
-        batch_no: Number(form.batch_no),
+        batch_no: form.batch_no,
       });
       toast.success("Student created successfully");
       resetForm();
@@ -143,7 +144,7 @@ export default function AdminStudents() {
         name: form.name,
         email: form.email,
         batch_name: form.batch_name,
-        batch_no: Number(form.batch_no),
+        batch_no: form.batch_no,
       });
       toast.success("Student updated successfully");
       resetForm();
@@ -385,9 +386,12 @@ export default function AdminStudents() {
                           </span>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
+                          <Link
+                            to={`/admin/student/${student._id}`}
+                            className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                          >
                             {student.name}
-                          </p>
+                          </Link>
                         </div>
                       </div>
                     </td>

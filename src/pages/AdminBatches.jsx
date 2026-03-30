@@ -76,7 +76,7 @@ export default function AdminBatches() {
     try {
       await API.post("/batches/create", {
         batch_name: form.batch_name,
-        batch_no: Number(form.batch_no),
+        batch_no: form.batch_no,
       });
       toast.success("Batch created successfully");
       resetForm();
@@ -101,7 +101,7 @@ const handleUpdate = async (e) => {
   try {
     await API.put(`/batches/${selectedBatch._id}`, {
       batch_name: form.batch_name,
-      batch_no: Number(form.batch_no),
+      batch_no: form.batch_no,
     });
 
     toast.success("Batch updated successfully");
@@ -439,7 +439,7 @@ const handleDelete = async (id) => {
             />
             <FormField
               label="Batch Number"
-              type="number"
+              type="text"
               value={form.batch_no}
               onChange={(v) => setForm({ ...form, batch_no: v })}
               placeholder="101"
@@ -486,7 +486,7 @@ const handleDelete = async (id) => {
             />
             <FormField
               label="Batch Number"
-              type="number"
+              type="text"
               value={form.batch_no}
               onChange={(v) => setForm({ ...form, batch_no: v })}
               required

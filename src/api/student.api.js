@@ -18,8 +18,18 @@ export const getAllStudents = async () => {
   return res.data;
 };
 
+export const getStudent = async (id) => {
+  const res = await API.get(`/students/${id}`);
+  return res.data;
+};
+
 export const updateStudent = async (id, payload) => {
   const res = await API.patch(`/students/update/${id}`, payload);
+  return res.data;
+};
+
+export const uploadStudentPhoto = async (id, payload) => {
+  const res = await API.patch(`/students/${id}/photo`, payload);
   return res.data;
 };
 

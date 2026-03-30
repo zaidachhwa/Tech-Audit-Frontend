@@ -490,8 +490,8 @@ function AddBatchModal({
                   Batch Number
                 </label>
                 <input
-                  type="number"
-                  placeholder="e.g., 1"
+                  type="text"
+                  placeholder="e.g., 2025-2028"
                   value={newBatch.batch_no}
                   onChange={(e) =>
                     setNewBatch({ ...newBatch, batch_no: e.target.value })

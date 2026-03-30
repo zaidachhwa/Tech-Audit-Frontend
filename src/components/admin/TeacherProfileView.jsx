@@ -183,11 +183,9 @@ export default function TeacherProfileView() {
 
   /* ────────── MAIN UI ────────── */
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-right" />
-
-      {/* ─── BACK + REFRESH ─── */}
-      <div className="max-w-5xl mx-auto px-6 pt-6 pb-0 flex items-center justify-between">
+    <div className="space-y-6 max-w-5xl mx-auto w-full px-2 sm:px-4">
+      {/* HEADER ROW */}
+      <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-indigo-600 transition group"
@@ -199,15 +197,16 @@ export default function TeacherProfileView() {
           Back to Teachers
         </button>
         <button
-          onClick={fetchAll}
-          className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition text-gray-500 hover:text-indigo-600"
-          title="Refresh"
+           onClick={fetchAll}
+           disabled={loading}
+           className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+           title="Refresh"
         >
-          <RefreshCw size={18} />
+          <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-5">
+      <div className="space-y-5">
 
         {/* ─── HERO CARD ─── */}
         <motion.div
@@ -216,13 +215,13 @@ export default function TeacherProfileView() {
           className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden"
         >
           {/* gradient banner */}
-          <div className="h-28 bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 relative">
+          <div className="h-28 bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 relative z-0">
             <div className="absolute inset-0 opacity-20"
               style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }}
             />
           </div>
 
-          <div className="px-8 pb-8">
+          <div className="px-8 pb-8 relative z-10">
             <div className="flex flex-col sm:flex-row sm:items-end gap-5 -mt-14 mb-6">
 
               {/* AVATAR */}
@@ -267,10 +266,10 @@ export default function TeacherProfileView() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                    <h1 className="text-2xl font-bold text-gray-100 leading-tight">
                       {teacher.name}
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1.5">
+                    <p className="h=100 text-sm text-gray-100 mt-0.5 flex items-center gap-1.5">
                       <GraduationCap size={14} className="text-indigo-500" />
                       Teacher • Educator
                     </p>

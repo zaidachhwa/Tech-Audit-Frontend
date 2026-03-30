@@ -22,32 +22,18 @@ export default function AdminLayout() {
           sidebarOpen ? "lg:ml-64" : "lg:ml-16"
         }`}
       >
-        {/* TOP BAR */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
+        {/* TOP BAR - Mobile Only */}
+        <header className="lg:hidden h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
           <div className="flex items-center gap-4">
             {/* Mobile toggle */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition lg:hidden"
+              className="p-2 hover:bg-gray-100 rounded-lg transition"
             >
               <Menu size={20} className="text-gray-600" />
             </button>
-
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">
-                Admin Panel
-              </h1>
-              <p className="text-sm text-gray-500">Manage everything here</p>
-            </div>
+            <h1 className="text-lg font-semibold text-gray-900">Admin Panel</h1>
           </div>
-
-          {/* Dummy refresh icon to keep design same */}
-          <button
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
-            title="Refresh"
-          >
-            <RefreshCw size={18} className="text-gray-600" />
-          </button>
         </header>
 
         {/* ⭐ ALL ADMIN PAGES RENDER HERE */}

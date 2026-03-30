@@ -10,18 +10,17 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
   return (
     <aside
       className={`fixed left-0 top-0 h-screen bg-gray-50 border-r border-gray-200 transition-all duration-300 z-40 ${
-        sidebarOpen ? "w-64" : "w-0 -translate-x-full lg:translate-x-0 lg:w-16"
+        sidebarOpen ? "w-64 " : "w-0 -translate-x-full lg:translate-x-0 lg:w-16"
       }`}
     >
       <div className="flex flex-col h-full">
         {/* HEADER */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+        <div className="h-24 flex items-center justify-between px-4 border-b border-gray-200">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <GraduationCap size={18} className="text-white" />
-              </div>
-              <span className="font-semibold text-gray-900">Admin Panel</span>
+              {}
+              <img src="/logo.png" alt="Logo" className="w-30 h-30 object-contain rounded-md" />
+              <span className="font-semibold text-gray-900">Admin</span>
             </div>
           )}
 
