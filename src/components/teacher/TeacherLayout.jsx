@@ -7,36 +7,85 @@ export default function TeacherLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#F8FAFC",
+        fontFamily: "'DM Sans', sans-serif",
+        display: "flex",
+      }}
+    >
+      {/* Google Font import via style tag */}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
+
       <TeacherSidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />
 
-      {/* Main content — shifts right to make room for sidebar */}
       <div
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${
-          sidebarOpen ? "lg:ml-64" : "lg:ml-16"
-        }`}
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+          transition: "margin-left 0.3s",
+          marginLeft: sidebarOpen ? 256 : 64,
+        }}
+        className="teacher-main-content"
       >
-        {/* Mobile topbar — only shows hamburger on small screens */}
-        <div className="lg:hidden h-16 bg-white border-b border-gray-200 flex items-center px-4 sticky top-0 z-20">
+        {/* Mobile topbar */}
+        <div
+          style={{
+            background: "#fff",
+            borderBottom: "1.5px solid #E2E8F0",
+            height: 56,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 16px",
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+          }}
+          className="lg:hidden"
+        >
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            style={{
+              padding: 8,
+              borderRadius: 8,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+            }}
           >
-            <Menu size={20} className="text-gray-600" />
+            <Menu size={20} color="#1B2B4B" />
           </button>
-          <span className="ml-3 font-semibold text-gray-900">
-            Teacher Portal
+          <span
+            style={{
+              marginLeft: 12,
+              fontWeight: 700,
+              color: "#1B2B4B",
+              fontSize: 15,
+            }}
+          >
+            NexCore Teacher
           </span>
         </div>
 
-        {/* Page content rendered here */}
-        <main className="flex-1">
+        <main style={{ flex: 1 }}>
           <Outlet />
         </main>
       </div>
+
+      {/* Responsive override */}
+      <style>{`
+        @media (max-width: 1023px) {
+          .teacher-main-content {
+            margin-left: 0 !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

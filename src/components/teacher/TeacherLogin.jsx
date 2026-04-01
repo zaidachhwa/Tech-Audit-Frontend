@@ -1,189 +1,153 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import toast, { Toaster } from 'react-hot-toast';
-import { BookOpen, Mail, Lock, LogIn, RefreshCw } from 'lucide-react';
-import { loginTeacher } from '../../api/syllabus.api';
-import { useAuth } from '../../context/AuthContext';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import toast, { Toaster } from "react-hot-toast";
+import { GraduationCap, Mail, Lock, LogIn, RefreshCw, BookOpen, BarChart3, Users } from "lucide-react";
+import { loginTeacher } from "../../api/syllabus.api";
+import { useAuth } from "../../context/AuthContext";
 
 export default function TeacherLogin() {
   const navigate = useNavigate();
-  // const { setUser, setToken } = useAuth();
-  // const [user, setUser] = useState(null);
-  // const [token, setToken] = useState(null);
   const { login } = useAuth();
-
-  // const { setUser, setToken } = useAuth?.() || {};
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
       const res = await loginTeacher(formData);
-
-      console.log('LOGIN RESPONSE:', res);
-
-      // localStorage.setItem("token", res.token);
-      // localStorage.setItem("user", JSON.stringify(res.teacher));
-
       login(res.token, { teacher: res.teacher });
-
-      toast.success('Login successful!');
-      navigate('/teacher/dashboard');
+      toast.success("Login successful!");
+      navigate("/teacher/dashboard");
     } catch (err) {
-      console.error(err);
-      const msg = err.response?.data?.message || 'Login failed';
-      toast.error(msg);
+      toast.error(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Toaster position="top-center" />
+  const features = [
+    { icon: <BookOpen size={18} color="#2563EB" />, title: "Syllabus Management", desc: "Track topics and course progress" },
+    { icon: <BarChart3 size={18} color="#10B981" />, title: "Student Analytics", desc: "Monitor performance & completion" },
+    { icon: <Users size={18} color="#F59E0B" />, title: "Batch Oversight", desc: "Manage multiple student batches" },
+  ];
 
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 h-screen bg-white border-r border-gray-200 items-center justify-center p-12">
-        <div className="max-w-md">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="w-16 h-16 bg-emerald-500 rounded-lg flex items-center justify-center mb-8 shadow-sm">
-              <BookOpen size={32} className="text-white" />
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", fontFamily: "'DM Sans', sans-serif", background: "#F8FAFC" }}>
+      <Toaster position="top-center" />
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
+
+      {/* LEFT BRANDING PANEL */}
+      <div style={{ width: "50%", background: "#1B2B4B", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 56px", position: "relative", overflow: "hidden" }} className="hidden lg:flex">
+        {/* Decorative circles */}
+        <div style={{ position: "absolute", top: -80, right: -80, width: 280, height: 280, borderRadius: "50%", background: "rgba(37,99,235,0.12)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(37,99,235,0.08)", pointerEvents: "none" }} />
+
+        <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
+          {/* Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 48 }}>
+            <div style={{ width: 48, height: 48, background: "#2563EB", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <GraduationCap size={26} color="#fff" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-              Teacher Portal
-            </h1>
-            <p className="text-lg text-gray-600 leading-relaxed">
-              Access your syllabus dashboard, manage courses, and track student
-              progress all in one place.
-            </p>
-          </motion.div>
-        </div>
+            <div>
+              <p style={{ color: "#fff", fontWeight: 800, fontSize: 18, margin: 0, letterSpacing: "-0.02em" }}>NexCore</p>
+              <p style={{ color: "#94A3B8", fontSize: 12, margin: 0 }}>Institute of Technology</p>
+            </div>
+          </div>
+
+          <h1 style={{ color: "#fff", fontSize: 34, fontWeight: 800, margin: "0 0 12px", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
+            Teacher Portal
+          </h1>
+          <p style={{ color: "#94A3B8", fontSize: 15, margin: "0 0 48px", lineHeight: 1.6 }}>
+            Your command centre for managing courses, tracking student progress, and delivering excellence.
+          </p>
+
+          {/* Feature highlights */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {features.map((f) => (
+              <div key={f.title} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 16px", background: "rgba(255,255,255,0.06)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{f.icon}</div>
+                <div>
+                  <p style={{ color: "#E2E8F0", fontWeight: 600, fontSize: 13, margin: "0 0 2px" }}>{f.title}</p>
+                  <p style={{ color: "#64748B", fontSize: 12, margin: 0 }}>{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
-      {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-8"
-        >
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center mb-8">
-            <div className="w-14 h-14 bg-emerald-500 rounded-lg flex items-center justify-center shadow-sm">
-              <BookOpen size={28} className="text-white" />
+      {/* RIGHT FORM PANEL */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 32px" }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+          style={{ width: "100%", maxWidth: 440, background: "#fff", borderRadius: 16, border: "1.5px solid #E2E8F0", boxShadow: "0 4px 24px rgba(0,0,0,0.08)", padding: 36 }}>
+
+          {/* Mobile logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }} className="lg:hidden">
+            <div style={{ width: 40, height: 40, background: "#1B2B4B", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <GraduationCap size={20} color="#fff" />
             </div>
+            <span style={{ fontWeight: 800, color: "#1B2B4B", fontSize: 16 }}>NexCore</span>
           </div>
 
           {/* Header */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign In</h2>
-            <p className="text-sm text-gray-600">
-              Enter your credentials to access your teacher portal
-            </p>
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: "#1B2B4B", margin: "0 0 6px", letterSpacing: "-0.02em" }}>Sign in</h2>
+            <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Enter your credentials to access your teacher portal</p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email Field */}
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {/* Email */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={18}
-                />
+              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B", display: "block", marginBottom: 8 }}>Email Address</label>
+              <div style={{ position: "relative" }}>
+                <Mail size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
                 <input
-                  id="email"
                   type="email"
-                  placeholder="teacher@example.com"
+                  placeholder="teacher@nexcore.edu"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400 bg-white"
+                  style={{ width: "100%", padding: "11px 14px 11px 36px", border: "1.5px solid #E2E8F0", borderRadius: 8, fontSize: 13, color: "#1B2B4B", fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box", background: "#fff" }}
+                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
                 />
               </div>
             </div>
 
-            {/* Password Field */}
+            {/* Password */}
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <Lock
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={18}
-                />
+              <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B", display: "block", marginBottom: 8 }}>Password</label>
+              <div style={{ position: "relative" }}>
+                <Lock size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
                 <input
-                  id="password"
                   type="password"
                   placeholder="Enter your password"
                   value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder:text-gray-400 bg-white"
+                  style={{ width: "100%", padding: "11px 14px 11px 36px", border: "1.5px solid #E2E8F0", borderRadius: 8, fontSize: 13, color: "#1B2B4B", fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box", background: "#fff" }}
+                  onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")}
                 />
-
-               
-
-                
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-lg font-medium transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              style={{ width: "100%", background: loading ? "#93C5FD" : "#2563EB", color: "#fff", border: "none", borderRadius: 8, padding: "12px", fontWeight: 700, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'DM Sans', sans-serif", transition: "background 0.2s" }}
             >
-              {loading ? (
-                <>
-                  <RefreshCw className="animate-spin" size={20} />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  <LogIn size={20} />
-                  Sign In
-                </>
-              )}
+              {loading ? <><RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} /> Signing in...</> : <><LogIn size={16} /> Sign In</>}
             </button>
           </form>
 
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link
-                to="/teacher/register"
-                className="text-emerald-600 font-semibold hover:text-emerald-700 hover:underline"
-              >
-                Sign Up
-              </Link>
-            </p>
-          </div>
+          <p style={{ textAlign: "center", fontSize: 13, color: "#64748B", marginTop: 22 }}>
+            Don't have an account?{" "}
+            <Link to="/teacher/register" style={{ color: "#2563EB", fontWeight: 600, textDecoration: "none" }}>Sign Up</Link>
+          </p>
         </motion.div>
       </div>
     </div>
