@@ -24,7 +24,6 @@ export default function AdminBatches() {
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
 
-  // Modals
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showAddStudent, setShowAddStudent] = useState(false);
@@ -50,8 +49,7 @@ export default function AdminBatches() {
       const res = await API.get(`/batches?page=${page}&limit=${limit}`);
       setBatches(res.data?.batches || []);
       setTotal(res.data?.total || 0);
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Failed to load batches");
     } finally {
       setLoading(false);
@@ -62,9 +60,7 @@ export default function AdminBatches() {
     try {
       const res = await API.get("/students/list");
       setStudents(res.data?.students || []);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch {}
   };
 
   const handleCreate = async (e) => {
@@ -74,90 +70,64 @@ export default function AdminBatches() {
       return;
     }
     try {
-      await API.post("/batches/create", {
-        batch_name: form.batch_name,
-        batch_no: form.batch_no,
-      });
-      toast.success("Batch created successfully");
+      await API.post("/batches/create", form);
+      toast.success("Batch created");
       resetForm();
       setShowCreate(false);
       fetchBatches();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to create batch");
+      toast.error(err?.response?.data?.message || "Failed");
     }
   };
 
   const openEdit = (batch) => {
     setSelectedBatch(batch);
-    setForm({
-      batch_name: batch.batch_name,
-      batch_no: batch.batch_no,
-    });
+    setForm(batch);
     setShowEdit(true);
   };
 
-const handleUpdate = async (e) => {
-  e.preventDefault();
-  try {
-    await API.put(`/batches/${selectedBatch._id}`, {
-      batch_name: form.batch_name,
-      batch_no: form.batch_no,
-    });
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      await API.put(`/batches/${selectedBatch._id}`, form);
+      toast.success("Updated");
+      resetForm();
+      setShowEdit(false);
+      fetchBatches();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed");
+    }
+  };
 
-    toast.success("Batch updated successfully");
-    resetForm();
-    setShowEdit(false);
-    setSelectedBatch(null);
-    fetchBatches();
-  } catch (err) {
-    toast.error(
-      err?.response?.data?.message || "Failed to update batch"
-    );
-  }
-};
-
-
-
-const handleDelete = async (id) => {
-  if (!window.confirm("Delete this batch? This action cannot be undone."))
-    return;
-
-  try {
-    await API.delete(`/batches/${id}`);
-    toast.success("Batch deleted successfully");
-    fetchBatches();
-  } catch (err) {
-    toast.error(
-      err?.response?.data?.message || "Failed to delete batch"
-    );
-  }
-};
-
-
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete batch?")) return;
+    try {
+      await API.delete(`/batches/${id}`);
+      toast.success("Deleted");
+      fetchBatches();
+    } catch {
+      toast.error("Delete failed");
+    }
+  };
 
   const openAddStudent = (batch) => {
     setSelectedBatch(batch);
-    setAddStudentForm({ studentId: "" });
     setShowAddStudent(true);
   };
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
     if (!addStudentForm.studentId) {
-      toast.error("Please select a student");
+      toast.error("Select student");
       return;
     }
     try {
-      await API.put(`/batches/${selectedBatch._id}/add-student`, {
-        studentId: addStudentForm.studentId,
-      });
-      toast.success("Student added to batch");
+      await API.put(`/batches/${selectedBatch._id}/add-student`, addStudentForm);
+      toast.success("Added");
       setShowAddStudent(false);
-      setAddStudentForm({ studentId: "" });
-      setSelectedBatch(null);
       fetchBatches();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to add student");
+    } catch {
+      toast.error("Failed");
     }
   };
 
@@ -165,456 +135,112 @@ const handleDelete = async (id) => {
     setForm({ batch_name: "", batch_no: "" });
   };
 
-  const getFilteredBatches = () => {
-    if (!search) return batches;
-    return batches.filter(
-      (b) =>
-        b.batch_name.toLowerCase().includes(search.toLowerCase()) ||
-        String(b.batch_no).includes(search)
-    );
-  };
+  const filteredBatches = batches.filter(
+    (b) =>
+      b.batch_name.toLowerCase().includes(search.toLowerCase()) ||
+      String(b.batch_no).includes(search)
+  );
 
-  const filteredBatches = getFilteredBatches();
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const stats = {
     total: batches.length,
-    totalStudents: batches.reduce(
-      (sum, b) => sum + (b.students?.length || 0),
-      0
-    ),
+    totalStudents: batches.reduce((s, b) => s + (b.students?.length || 0), 0),
     avgStudents:
       batches.length > 0
         ? Math.round(
-            batches.reduce((sum, b) => sum + (b.students?.length || 0), 0) /
+            batches.reduce((s, b) => s + (b.students?.length || 0), 0) /
               batches.length
           )
         : 0,
   };
 
   return (
-    <div className="space-y-5">
+    <div className="bg-[#F8FAFC] min-h-screen p-6 font-[DM_Sans] space-y-6">
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Batches</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Manage batch information and student assignments
+          <h1 className="text-[20px] font-bold text-[#1B2B4B]">Batches</h1>
+          <p className="text-[13px] text-[#64748B]">
+            Manage batch information and students
           </p>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex gap-2">
           <button
             onClick={fetchBatches}
-            disabled={loading}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="bg-white border border-[#E2E8F0] px-3 py-2 rounded-lg hover:bg-[#F8FAFC]"
           >
-            <RefreshCw
-              size={18}
-              className={loading ? "animate-spin" : ""}
-            />
+            <RefreshCw size={14} />
           </button>
+
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="bg-[#2563EB] text-white px-4 py-2 rounded-lg text-sm font-medium"
           >
-            <Plus size={18} />
-            Create Batch
+            <Plus size={14} /> Create
           </button>
         </div>
       </div>
 
-      <div>
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Total Batches
-                </p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">
-                  {stats.total}
-                </p>
-              </div>
-              <div className="p-3 bg-indigo-50 rounded-lg">
-                <Layers className="text-indigo-600" size={20} />
-              </div>
-            </div>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Batches", value: stats.total },
+          { label: "Students", value: stats.totalStudents },
+          { label: "Avg/Batch", value: stats.avgStudents },
+        ].map((s, i) => (
+          <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+            <p className="text-[11px] uppercase text-[#64748B]">{s.label}</p>
+            <p className="text-[28px] font-extrabold text-[#1B2B4B]">{s.value}</p>
           </div>
+        ))}
+      </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Total Students
-                </p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">
-                  {stats.totalStudents}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <Users className="text-blue-600" size={20} />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Avg Students/Batch
-                </p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">
-                  {stats.avgStudents}
-                </p>
-              </div>
-              <div className="p-3 bg-green-50 rounded-lg">
-                <Users className="text-green-600" size={20} />
-              </div>
-            </div>
-          </div>
+      {/* Search */}
+      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search..."
+            className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+          />
         </div>
+      </div>
 
-        {/* Search */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-          <div className="relative">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by batch name or number..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
+      {/* Table */}
+      <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-[#F8FAFC] text-[#64748B] text-[11px] uppercase">
+            <tr>
+              <th className="px-6 py-3 text-left">Batch</th>
+              <th className="px-6 py-3 text-left">No</th>
+              <th className="px-6 py-3 text-left">Students</th>
+              <th className="px-6 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
 
-        {/* Table */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Batch Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Batch Number
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Students
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+          <tbody>
+            {filteredBatches.map((b, i) => (
+              <tr key={b._id} className={`${i % 2 === 0 ? "" : "bg-[#F8FAFC]"}`}>
+                <td className="px-6 py-4 text-[14px] text-[#1B2B4B]">{b.batch_name}</td>
+                <td className="px-6 py-4 text-[14px] text-[#64748B]">#{b.batch_no}</td>
+                <td className="px-6 py-4 text-[14px] text-[#64748B]">
+                  {b.students?.length || 0}
+                </td>
+                <td className="px-6 py-4 text-right flex justify-end gap-2">
+                  <button onClick={()=>openEdit(b)} className="text-[#2563EB]"> <Edit2 size={14}/> </button>
+                  <button onClick={()=>handleDelete(b._id)} className="text-[#EF4444]"> <Trash2 size={14}/> </button>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center">
-                    <RefreshCw
-                      className="animate-spin mx-auto text-gray-400 mb-2"
-                      size={24}
-                    />
-                    <p className="text-sm text-gray-500">Loading batches...</p>
-                  </td>
-                </tr>
-              ) : filteredBatches.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center">
-                    <Layers className="mx-auto text-gray-300 mb-2" size={32} />
-                    <p className="text-sm text-gray-500">No batches found</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredBatches.map((batch) => (
-                  <tr
-                    key={batch._id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                          <Layers size={16} className="text-indigo-600" />
-                        </div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {batch.batch_name}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                        #{batch.batch_no}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Users size={14} className="text-gray-400" />
-                        <span className="text-sm text-gray-600">
-                          {batch.students?.length || 0} students
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openAddStudent(batch)}
-                          className="p-1.5 text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                          title="Add Student"
-                        >
-                          <Plus size={16} />
-                        </button>
-                        <button
-                          onClick={() => openEdit(batch)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(batch._id)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          {/* Pagination */}
-          {!loading && filteredBatches.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-              <p className="text-sm text-gray-600">
-                Showing {(page - 1) * limit + 1} to{" "}
-                {Math.min(page * limit, total)} of {total} batches
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <span className="px-3 py-1 text-sm font-medium text-gray-700">
-                  Page {page} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Create Modal */}
-      {showCreate && (
-        <Modal
-          title="Create New Batch"
-          onClose={() => {
-            setShowCreate(false);
-            resetForm();
-          }}
-        >
-          <form onSubmit={handleCreate} className="space-y-4">
-            <FormField
-              label="Batch Name"
-              value={form.batch_name}
-              onChange={(v) => setForm({ ...form, batch_name: v })}
-              placeholder="Morning Batch"
-              required
-            />
-            <FormField
-              label="Batch Number"
-              type="text"
-              value={form.batch_no}
-              onChange={(v) => setForm({ ...form, batch_no: v })}
-              placeholder="101"
-              required
-            />
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreate(false);
-                  resetForm();
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Create Batch
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Edit Modal */}
-      {showEdit && selectedBatch && (
-        <Modal
-          title="Edit Batch"
-          onClose={() => {
-            setShowEdit(false);
-            setSelectedBatch(null);
-            resetForm();
-          }}
-        >
-          <form onSubmit={handleUpdate} className="space-y-4">
-            <FormField
-              label="Batch Name"
-              value={form.batch_name}
-              onChange={(v) => setForm({ ...form, batch_name: v })}
-              required
-            />
-            <FormField
-              label="Batch Number"
-              type="text"
-              value={form.batch_no}
-              onChange={(v) => setForm({ ...form, batch_no: v })}
-              required
-            />
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEdit(false);
-                  setSelectedBatch(null);
-                  resetForm();
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Update Batch
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Add Student Modal */}
-      {showAddStudent && selectedBatch && (
-        <Modal
-          title={`Add Student to ${selectedBatch.batch_name}`}
-          onClose={() => {
-            setShowAddStudent(false);
-            setSelectedBatch(null);
-            setAddStudentForm({ studentId: "" });
-          }}
-        >
-          <form onSubmit={handleAddStudent} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Select Student <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={addStudentForm.studentId}
-                onChange={(e) =>
-                  setAddStudentForm({ studentId: e.target.value })
-                }
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Choose a student...</option>
-                {students
-                  .filter((s) => !selectedBatch.students?.includes(s._id))
-                  .map((student) => (
-                    <option key={student._id} value={student._id}>
-                      {student.name} - {student.email}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAddStudent(false);
-                  setSelectedBatch(null);
-                  setAddStudentForm({ studentId: "" });
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Add Student
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-    </div>
-  );
-}
-
-// ============ UI Components ============
-
-function Modal({ title, onClose, children }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-function FormField({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  required,
-}) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        required={required}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-      />
     </div>
   );
 }

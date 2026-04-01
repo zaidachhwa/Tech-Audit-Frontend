@@ -22,10 +22,8 @@ export default function StudentProjectsPage() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // fetch student basic info
   const fetchStudent = async () => {
     try {
-      // fallback: fetch all students and find the one we need
       const { data } = await API.get("/students/list");
       const list = data?.students || data || [];
       const s = list.find((x) => x._id === studentId) || null;
@@ -38,7 +36,6 @@ export default function StudentProjectsPage() {
     }
   };
 
-  // fetch batches and find batch id by batch_name & batch_no when student has batch_name/no
   const findBatchIdForStudent = async (s) => {
     try {
       const { data } = await API.get("/batches");
@@ -50,7 +47,6 @@ export default function StudentProjectsPage() {
           Number(b.batch_no) === Number(s.batch_no)
       );
       if (found) return found._id;
-      // if not found, maybe API returns nested; attempt flexible match:
       return list[0]?._id ?? null;
     } catch (err) {
       console.error(err);
@@ -68,7 +64,6 @@ export default function StudentProjectsPage() {
       setLoading(true);
       const { data } = await API.get(`/projects/batch/${bId}`);
       const list = Array.isArray(data) ? data : data.projects || data;
-      // normalize assignedTo id when populated vs not
       const filtered = list.filter(
         (p) =>
           (p.assignedTo?._id || p.assignedTo || "").toString() ===
@@ -84,14 +79,12 @@ export default function StudentProjectsPage() {
   };
 
   useEffect(() => {
-    // main flow: attempt to use provided batchId; otherwise determine from student -> batches
     (async () => {
       let s = await fetchStudent();
       if (loc.state?.batchId) {
         setBatchId(loc.state.batchId);
         await fetchProjectsFor(loc.state.batchId, studentId);
       } else {
-        // find batch id
         const bId = await findBatchIdForStudent(s);
         setBatchId(bId);
         await fetchProjectsFor(bId, studentId);
@@ -103,23 +96,26 @@ export default function StudentProjectsPage() {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-6 max-w-6xl mx-auto"
+      className="p-6 max-w-6xl mx-auto bg-[#F8FAFC] min-h-screen font-[DM_Sans]"
     >
-      <div className="bg-white/90 rounded-3xl shadow-2xl p-6">
+      <div className="bg-white border-[1.5px] border-[#E2E8F0] rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
+        
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Link
               to="/admin/project-tracking"
-              className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800"
+              className="inline-flex items-center gap-2 text-[#1B2B4B] border border-[#E2E8F0] px-3 py-1 rounded-lg hover:bg-[#F8FAFC] text-sm font-medium"
             >
-              <ArrowLeft /> Back
+              <ArrowLeft size={16} />
+              Back
             </Link>
 
             <div>
-              <h3 className="text-lg font-semibold text-slate-800">
+              <h3 className="text-[20px] font-bold text-[#1B2B4B]">
                 {student?.name || "Student Projects"}
               </h3>
-              <div className="text-sm text-slate-500">
+              <div className="text-[13px] text-[#64748B]">
                 {student?.email ?? ""} •{" "}
                 <span className="font-medium">
                   {student?.batch_name} #{student?.batch_no}
@@ -131,18 +127,22 @@ export default function StudentProjectsPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => fetchProjectsFor(batchId, studentId)}
-              className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700"
+              className="inline-flex items-center gap-2 bg-white border border-[#E2E8F0] text-[#1B2B4B] px-3 py-1 rounded-lg hover:bg-[#F8FAFC] text-sm font-medium"
             >
-              <RefreshCcw /> Refresh
+              <RefreshCcw size={14} />
+              Refresh
             </button>
           </div>
         </div>
 
+        {/* Content */}
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center text-slate-500 py-8">Loading...</div>
+            <div className="text-center text-[#64748B] py-8 text-sm">
+              Loading...
+            </div>
           ) : projects.length === 0 ? (
-            <div className="text-center text-slate-500 py-8">
+            <div className="text-center text-[#64748B] py-8 text-sm">
               No projects found.
             </div>
           ) : (

@@ -1,4 +1,3 @@
-// src/components/admin/BatchProjects.jsx
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
 import { motion } from "framer-motion";
@@ -76,24 +75,44 @@ export default function BatchProjects({ batch, onClose }) {
     <motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-br from-white/90 to-slate-50 rounded-3xl p-6 shadow-2xl"
+      className="rounded-lg p-6"
+      style={{
+        backgroundColor: "#FFFFFF",
+        border: "1.5px solid #E2E8F0",
+        borderRadius: "12px",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        fontFamily: "'DM Sans', sans-serif",
+      }}
     >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="flex items-center gap-2 text-emerald-700 hover:text-emerald-800 transition"
+            className="flex items-center gap-2 transition"
+            style={{
+              color: "#2563EB",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#1E40AF";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "#2563EB";
+            }}
           >
             <ArrowLeft size={18} />
             Back to Batches
           </button>
 
           <div className="ml-3">
-            <h2 className="text-xl font-semibold text-slate-800">
+            <h2 className="font-bold" style={{ color: "#1B2B4B", fontSize: "20px", fontWeight: "700" }}>
               {batch.batch_name}{" "}
-              <span className="text-slate-400">#{batch.batch_no}</span>
+              <span style={{ color: "#94A3B8" }}>#{batch.batch_no}</span>
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm" style={{ color: "#94A3B8" }}>
               Students & assigned projects
             </p>
           </div>
@@ -103,14 +122,34 @@ export default function BatchProjects({ batch, onClose }) {
           <button
             onClick={fetchBatchProjects}
             title="Refresh projects"
-            className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700"
+            className="inline-flex items-center gap-2 p-2 rounded-lg transition"
+            style={{
+              color: "#2563EB",
+              backgroundColor: "transparent",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#EFF6FF";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
           >
-            <RefreshCcw />
+            <RefreshCcw size={20} />
           </button>
 
           <button
             onClick={() => setShowAssignModal(true)}
-            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-2xl shadow"
+            className="inline-flex items-center gap-2 text-white px-4 py-2 rounded-lg font-medium transition"
+            style={{
+              backgroundColor: "#2563EB",
+              borderRadius: "8px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#1E40AF";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#2563EB";
+            }}
           >
             <PlusCircle size={16} /> Assign Project
           </button>
@@ -118,7 +157,7 @@ export default function BatchProjects({ batch, onClose }) {
       </div>
 
       {loading ? (
-        <div className="py-8 text-center text-slate-500">
+        <div className="py-8 text-center" style={{ color: "#94A3B8" }}>
           Loading projects...
         </div>
       ) : (
@@ -131,19 +170,49 @@ export default function BatchProjects({ batch, onClose }) {
               return (
                 <div
                   key={s._id}
-                  className="bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-md"
+                  className="rounded-lg p-4"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    borderRadius: "12px",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                  }}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="font-medium text-slate-800">{s.name}</div>
-                      <div className="text-sm text-slate-500">{s.email}</div>
-                      <div className="text-xs text-slate-400 mt-1">
+                      <div className="font-medium" style={{ color: "#1B2B4B" }}>
+                        {s.name}
+                      </div>
+                      <div className="text-sm" style={{ color: "#94A3B8" }}>
+                        {s.email}
+                      </div>
+                      <div className="text-xs mt-1">
                         {s.isActive ? (
-                          <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                            Approved
+                          <span
+                            className="px-2 py-0.5 rounded-full font-medium inline-block"
+                            style={{
+                              backgroundColor: "#ECFDF5",
+                              color: "#065F46",
+                              borderRadius: "20px",
+                              padding: "3px 12px",
+                              fontSize: "12px",
+                              fontWeight: "600",
+                            }}
+                          >
+                            Active
                           </span>
                         ) : (
-                          <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                          <span
+                            className="px-2 py-0.5 rounded-full font-medium inline-block"
+                            style={{
+                              backgroundColor: "#EFF6FF",
+                              color: "#1E40AF",
+                              borderRadius: "20px",
+                              padding: "3px 12px",
+                              fontSize: "12px",
+                              fontWeight: "600",
+                            }}
+                          >
                             Pending
                           </span>
                         )}
@@ -153,7 +222,19 @@ export default function BatchProjects({ batch, onClose }) {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => handleToggleStudent(s._id)}
-                        className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl hover:bg-emerald-200 transition"
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition"
+                        style={{
+                          backgroundColor: "#EFF6FF",
+                          color: "#2563EB",
+                          border: "1px solid #BFDBFE",
+                          borderRadius: "8px",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#DBEAFE";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "#EFF6FF";
+                        }}
                       >
                         {open ? (
                           <ChevronUp size={16} />
@@ -166,7 +247,17 @@ export default function BatchProjects({ batch, onClose }) {
                       <Link
                         to={`/admin/project-tracking/student/${s._id}`}
                         state={{ batchId: batch._id }}
-                        className="inline-flex items-center gap-2 text-purple-700 hover:underline"
+                        className="inline-flex items-center gap-2 font-medium transition"
+                        style={{
+                          color: "#2563EB",
+                          textDecoration: "none",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.textDecoration = "underline";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.textDecoration = "none";
+                        }}
                         title="View all projects for this student"
                       >
                         View all
@@ -190,7 +281,14 @@ export default function BatchProjects({ batch, onClose }) {
                             />
                           ))
                       ) : (
-                        <div className="col-span-full text-center text-slate-500 py-4 rounded-xl bg-white/40">
+                        <div
+                          className="col-span-full text-center py-4 rounded-lg"
+                          style={{
+                            backgroundColor: "#F8FAFC",
+                            color: "#94A3B8",
+                            borderRadius: "8px",
+                          }}
+                        >
                           No projects assigned to this student.
                         </div>
                       )}
@@ -200,7 +298,7 @@ export default function BatchProjects({ batch, onClose }) {
               );
             })
           ) : (
-            <div className="py-8 text-center text-slate-500">
+            <div className="py-8 text-center" style={{ color: "#94A3B8" }}>
               No students in this batch.
             </div>
           )}

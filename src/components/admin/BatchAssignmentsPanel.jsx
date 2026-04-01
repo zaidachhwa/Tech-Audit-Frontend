@@ -117,7 +117,6 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
     setLoadingTopics(true);
 
     try {
-      // Fix: batch may be ID or populated object
       const batchId =
         typeof batchSyllabus.batch === "object"
           ? batchSyllabus.batch._id
@@ -160,7 +159,6 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
       setTeacherAssignForm({ batchTopicId: "", teacherId: "", dueDate: "" });
       setSelectedTopicForAssign(null);
 
-      // refresh topics
       if (activeBatchSyllabus) openTopicsModal(activeBatchSyllabus);
       onActionComplete?.();
     } catch (err) {
@@ -209,11 +207,11 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
   const getStatusColor = (status) => {
     switch (status) {
       case "Completed":
-        return "text-green-700 bg-green-50 border-green-200";
+        return { backgroundColor: "#ECFDF5", color: "#065F46", borderColor: "#D1FAE5" };
       case "In Progress":
-        return "text-amber-700 bg-amber-50 border-amber-200";
+        return { backgroundColor: "#FEF3C7", color: "#92400E", borderColor: "#FCD34D" };
       default:
-        return "text-gray-700 bg-gray-50 border-gray-200";
+        return { backgroundColor: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
     }
   };
 
@@ -234,16 +232,36 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
+
       {/* Header Card */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div
+        className="p-6 rounded-lg"
+        style={{
+          backgroundColor: "#FFFFFF",
+          border: "1.5px solid #E2E8F0",
+          borderRadius: "12px",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        }}
+      >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-              <Target size={22} className="text-indigo-600" />
+            <h3 className="font-bold flex items-center gap-2" style={{ color: "#1B2B4B", fontSize: "20px", fontWeight: "700" }}>
+              <div
+                style={{
+                  backgroundColor: "#EFF6FF",
+                  padding: "8px",
+                  borderRadius: "8px",
+                }}
+              >
+                <Target size={22} style={{ color: "#2563EB" }} />
+              </div>
               Batch Assignments
             </h3>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm mt-1" style={{ color: "#64748B" }}>
               Assign syllabus templates to specific batches and manage batch
               topics
             </p>
@@ -252,7 +270,17 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowAssignModal(true)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-indigo-700 transition-colors"
+              className="text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+              style={{
+                backgroundColor: "#2563EB",
+                borderRadius: "8px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#1E40AF";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#2563EB";
+              }}
             >
               <Plus size={18} />
               Assign to Batch
@@ -261,7 +289,19 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
             <button
               onClick={fetchBatchSyllabi}
               disabled={loading}
-              className="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors border border-gray-200"
+              className="px-3 py-2 rounded-lg transition-colors"
+              style={{
+                backgroundColor: "#F8FAFC",
+                border: "1.5px solid #E2E8F0",
+                borderRadius: "8px",
+                color: "#94A3B8",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#E2E8F0";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#F8FAFC";
+              }}
             >
               <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
             </button>
@@ -273,26 +313,26 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
           <StatCard
             label="Batches"
             value={batches.length}
-            icon={<Users size={18} className="text-blue-600" />}
-            color="bg-blue-50 border-blue-200"
+            icon={<Users size={18} style={{ color: "#2563EB" }} />}
+            color={{ backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }}
           />
           <StatCard
             label="Templates"
             value={templates.length}
-            icon={<FileText size={18} className="text-indigo-600" />}
-            color="bg-indigo-50 border-indigo-200"
+            icon={<FileText size={18} style={{ color: "#A78BFA" }} />}
+            color={{ backgroundColor: "#F3E8FF", borderColor: "#E9D5FF" }}
           />
           <StatCard
             label="Assignments"
             value={totalAssignedInstances}
-            icon={<Target size={18} className="text-emerald-600" />}
-            color="bg-emerald-50 border-emerald-200"
+            icon={<Target size={18} style={{ color: "#10B981" }} />}
+            color={{ backgroundColor: "#ECFDF5", borderColor: "#D1FAE5" }}
           />
           <StatCard
             label="Teachers"
             value={teachers.length}
-            icon={<Users size={18} className="text-amber-600" />}
-            color="bg-amber-50 border-amber-200"
+            icon={<Users size={18} style={{ color: "#F59E0B" }} />}
+            color={{ backgroundColor: "#FEF3C7", borderColor: "#FCD34D" }}
           />
         </div>
       </div>
@@ -300,31 +340,64 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
       {/* Batch list with assigned syllabi */}
       <div className="space-y-4">
         {loading ? (
-          <div className="py-12 text-center bg-white rounded-lg shadow-sm border border-gray-200">
+          <div
+            className="py-12 text-center rounded-lg"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}
+          >
             <RefreshCw
-              className="animate-spin mx-auto text-indigo-600 mb-3"
+              className="animate-spin mx-auto mb-3"
               size={40}
+              style={{ color: "#2563EB" }}
             />
-            <p className="text-gray-600">Loading batch assignments...</p>
+            <p style={{ color: "#64748B" }}>Loading batch assignments...</p>
           </div>
         ) : batchSyllabi.length === 0 ? (
-          <div className="bg-white rounded-lg p-12 text-center shadow-sm border border-gray-200">
+          <div
+            className="rounded-lg p-12 text-center"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}
+          >
             <div className="flex justify-center mb-6">
-              <div className="bg-indigo-50 p-6 rounded-full">
-                <Target size={48} className="text-indigo-600" />
+              <div
+                style={{
+                  backgroundColor: "#EFF6FF",
+                  padding: "24px",
+                  borderRadius: "50%",
+                }}
+              >
+                <Target size={48} style={{ color: "#2563EB" }} />
               </div>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-3">
+            <h3 className="font-bold mb-3" style={{ color: "#1B2B4B", fontSize: "20px", fontWeight: "700" }}>
               No Batch Assignments Yet
             </h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            <p className="mb-6 max-w-md mx-auto" style={{ color: "#64748B" }}>
               Start by assigning syllabus templates to specific batches. This
               creates batch-specific topic instances that can be tracked
               independently.
             </p>
             <button
               onClick={() => setShowAssignModal(true)}
-              className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 mx-auto"
+              className="text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors"
+              style={{
+                backgroundColor: "#2563EB",
+                borderRadius: "8px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#1E40AF";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#2563EB";
+              }}
             >
               <Plus size={20} />
               Assign First Syllabus
@@ -334,20 +407,32 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
           batchSyllabi.map((batch) => (
             <div
               key={batch._id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+              className="rounded-lg overflow-hidden"
+              style={{
+                backgroundColor: "#FFFFFF",
+                border: "1.5px solid #E2E8F0",
+                borderRadius: "12px",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              }}
             >
               {/* Batch Header */}
               <div className="p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="bg-indigo-50 p-3 rounded-lg">
-                      <Users size={24} className="text-indigo-600" />
+                    <div
+                      style={{
+                        backgroundColor: "#EFF6FF",
+                        padding: "12px",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <Users size={24} style={{ color: "#2563EB" }} />
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-800">
+                      <h4 className="font-bold" style={{ color: "#1B2B4B", fontSize: "18px", fontWeight: "700" }}>
                         {batch.batch_name}
                       </h4>
-                      <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+                      <div className="flex items-center gap-3 text-sm mt-1" style={{ color: "#64748B" }}>
                         <span>Batch #{batch.batch_no}</span>
                         <span>•</span>
                         <span>{batch.students?.length || 0} Students</span>
@@ -362,7 +447,18 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
 
                   <button
                     onClick={() => toggleBatchExpanded(batch._id)}
-                    className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    className="p-2 rounded-lg transition-colors"
+                    style={{
+                      backgroundColor: "#F8FAFC",
+                      color: "#94A3B8",
+                      borderRadius: "8px",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#E2E8F0";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#F8FAFC";
+                    }}
                   >
                     {expandedBatches.has(batch._id) ? (
                       <ChevronUp size={20} />
@@ -375,37 +471,48 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
 
               {/* Assigned Syllabi */}
               {expandedBatches.has(batch._id) && (
-                <div className="border-t border-gray-200 bg-gray-50">
+                <div
+                  style={{
+                    borderTop: "1px solid #F1F5F9",
+                    backgroundColor: "#F8FAFC",
+                  }}
+                >
                   <div className="p-5 space-y-3">
                     {batch.assignedSyllabi &&
                     batch.assignedSyllabi.length > 0 ? (
                       batch.assignedSyllabi.map((bs) => (
                         <div
                           key={bs._id}
-                          className="bg-white rounded-lg p-4 shadow-sm border border-gray-200"
+                          className="rounded-lg p-4"
+                          style={{
+                            backgroundColor: "#FFFFFF",
+                            border: "1.5px solid #E2E8F0",
+                            borderRadius: "8px",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                          }}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
                                 <FileText
                                   size={18}
-                                  className="text-indigo-600"
+                                  style={{ color: "#2563EB" }}
                                 />
-                                <h5 className="font-semibold text-gray-800">
+                                <h5 className="font-semibold" style={{ color: "#1B2B4B" }}>
                                   {bs.syllabus.subject}
                                 </h5>
                               </div>
                               {bs.syllabus.description && (
-                                <p className="text-sm text-gray-600 mb-2">
+                                <p className="text-sm mb-2" style={{ color: "#64748B" }}>
                                   {bs.syllabus.description}
                                 </p>
                               )}
                               {bs.notes && (
-                                <p className="text-xs text-gray-500 italic mb-2">
+                                <p className="text-xs italic mb-2" style={{ color: "#94A3B8" }}>
                                   Note: {bs.notes}
                                 </p>
                               )}
-                              <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <div className="flex items-center gap-2 text-xs" style={{ color: "#94A3B8" }}>
                                 <span className="flex items-center gap-1">
                                   <Calendar size={12} />
                                   Assigned:{" "}
@@ -426,7 +533,17 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => openTopicsModal(bs)}
-                                className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
+                                className="px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors"
+                                style={{
+                                  backgroundColor: "#2563EB",
+                                  borderRadius: "8px",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = "#1E40AF";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = "#2563EB";
+                                }}
                               >
                                 View Topics
                               </button>
@@ -435,7 +552,19 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                                 onClick={() =>
                                   handleDeleteBatchSyllabus(bs._id)
                                 }
-                                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-200"
+                                className="p-2 rounded-lg transition-colors"
+                                style={{
+                                  backgroundColor: "#FEF2F2",
+                                  color: "#EF4444",
+                                  border: "1.5px solid #FECACA",
+                                  borderRadius: "8px",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = "#FEE2E2";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = "#FEF2F2";
+                                }}
                                 title="Delete Assignment"
                               >
                                 <Trash2 size={18} />
@@ -445,11 +574,8 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <AlertCircle
-                          size={32}
-                          className="mx-auto mb-2 opacity-50"
-                        />
+                      <div className="text-center py-8" style={{ color: "#94A3B8" }}>
+                        <AlertCircle size={32} className="mx-auto mb-2" />
                         <p className="text-sm">
                           No syllabi assigned to this batch yet
                         </p>
@@ -471,7 +597,7 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
         >
           <form onSubmit={handleAssignToBatch} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Select Batch *
               </label>
               <select
@@ -480,7 +606,19 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                   setAssignForm({ ...assignForm, batchId: e.target.value })
                 }
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                className="w-full px-3 py-2 rounded-lg outline-none transition"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  borderRadius: "8px",
+                  color: "#1B2B4B",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#2563EB";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#E2E8F0";
+                }}
               >
                 <option value="">Choose batch...</option>
                 {batches.map((b) => (
@@ -493,7 +631,7 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Select Syllabus Template *
               </label>
               <select
@@ -505,7 +643,19 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                   })
                 }
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                className="w-full px-3 py-2 rounded-lg outline-none transition"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  borderRadius: "8px",
+                  color: "#1B2B4B",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#2563EB";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#E2E8F0";
+                }}
               >
                 <option value="">Choose syllabus...</option>
                 {templates.map((t) => (
@@ -517,7 +667,7 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Due Date
               </label>
               <input
@@ -526,12 +676,24 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                 onChange={(e) =>
                   setAssignForm({ ...assignForm, dueDate: e.target.value })
                 }
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none resize-none"
+                className="w-full px-3 py-2 rounded-lg outline-none transition"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  borderRadius: "8px",
+                  color: "#1B2B4B",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#2563EB";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#E2E8F0";
+                }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Notes (optional)
               </label>
               <textarea
@@ -541,7 +703,19 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                   setAssignForm({ ...assignForm, notes: e.target.value })
                 }
                 placeholder="Add any notes about this assignment..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none resize-none"
+                className="w-full px-3 py-2 rounded-lg outline-none resize-none transition"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  borderRadius: "8px",
+                  color: "#1B2B4B",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#2563EB";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#E2E8F0";
+                }}
               />
             </div>
 
@@ -549,14 +723,38 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
               <button
                 type="button"
                 onClick={() => setShowAssignModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  color: "#1B2B4B",
+                  borderRadius: "8px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#F8FAFC";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#FFFFFF";
+                }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: "#2563EB",
+                  borderRadius: "8px",
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.backgroundColor = "#1E40AF";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#2563EB";
+                }}
               >
                 {loading ? "Assigning..." : "Assign Syllabus"}
               </button>
@@ -579,14 +777,17 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
             {loadingTopics ? (
               <div className="py-8 text-center">
                 <RefreshCw
-                  className="animate-spin mx-auto text-indigo-600 mb-3"
+                  className="animate-spin mx-auto mb-3"
                   size={32}
+                  style={{ color: "#2563EB" }}
                 />
-                <p className="text-sm text-gray-600">Loading topics...</p>
+                <p className="text-sm" style={{ color: "#64748B" }}>
+                  Loading topics...
+                </p>
               </div>
             ) : batchTopics.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <AlertCircle size={32} className="mx-auto mb-2 opacity-50" />
+              <div className="text-center py-8" style={{ color: "#94A3B8" }}>
+                <AlertCircle size={32} className="mx-auto mb-2" />
                 <p className="text-sm">
                   No topics found for this batch-syllabus assignment.
                 </p>
@@ -595,29 +796,44 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
               batchTopics.map((t) => (
                 <div
                   key={t._id}
-                  className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                  className="p-4 rounded-lg transition-colors"
+                  style={{
+                    backgroundColor: "#F8FAFC",
+                    border: "1px solid #E2E8F0",
+                    borderRadius: "8px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#2563EB";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#E2E8F0";
+                  }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold text-gray-800">
+                        <span className="font-semibold" style={{ color: "#1B2B4B" }}>
                           {t.title}
                         </span>
                         <span
-                          className={`text-xs px-2 py-1 rounded-md border flex items-center gap-1 ${getStatusColor(
-                            t.completionStatus
-                          )}`}
+                          className="text-xs px-2 py-1 rounded flex items-center gap-1 font-medium"
+                          style={{
+                            ...getStatusColor(t.completionStatus),
+                            borderRadius: "6px",
+                            border: `1px solid ${getStatusColor(t.completionStatus).borderColor}`,
+                            padding: "3px 12px",
+                          }}
                         >
                           {getStatusIcon(t.completionStatus)}
                           {t.completionStatus || "Pending"}
                         </span>
                       </div>
                       {t.description && (
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-sm mb-2" style={{ color: "#64748B" }}>
                           {t.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-4 text-xs" style={{ color: "#94A3B8" }}>
                         {t.dueDate && (
                           <span className="flex items-center gap-1">
                             <Calendar size={12} />
@@ -641,7 +857,19 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                         });
                         setShowAssignTeacherModal(true);
                       }}
-                      className="px-3 py-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors text-sm font-medium flex items-center gap-2 border border-indigo-200"
+                      className="px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                      style={{
+                        backgroundColor: "#EFF6FF",
+                        color: "#2563EB",
+                        border: "1.5px solid #BFDBFE",
+                        borderRadius: "8px",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#DBEAFE";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "#EFF6FF";
+                      }}
                     >
                       <User size={16} />
                       {t.assignedTo ? "Reassign" : "Assign"}
@@ -673,7 +901,7 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
             className="space-y-4"
           >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Select Teacher *
               </label>
               <select
@@ -685,7 +913,19 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                   })
                 }
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                className="w-full px-3 py-2 rounded-lg outline-none transition"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  borderRadius: "8px",
+                  color: "#1B2B4B",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#2563EB";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#E2E8F0";
+                }}
               >
                 <option value="">Choose teacher...</option>
                 {teachers.map((t) => (
@@ -697,7 +937,7 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Due Date (optional)
               </label>
               <input
@@ -709,7 +949,19 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                     dueDate: e.target.value,
                   })
                 }
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
+                className="w-full px-3 py-2 rounded-lg outline-none transition"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  borderRadius: "8px",
+                  color: "#1B2B4B",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#2563EB";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#E2E8F0";
+                }}
               />
             </div>
 
@@ -720,14 +972,38 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
                   setShowAssignTeacherModal(false);
                   setSelectedTopicForAssign(null);
                 }}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  color: "#1B2B4B",
+                  borderRadius: "8px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#F8FAFC";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#FFFFFF";
+                }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: "#2563EB",
+                  borderRadius: "8px",
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.backgroundColor = "#1E40AF";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#2563EB";
+                }}
               >
                 {loading ? "Assigning..." : "Assign Teacher"}
               </button>

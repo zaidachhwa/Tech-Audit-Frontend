@@ -61,32 +61,32 @@ export default function StudentProjectsView() {
   }, [studentId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-100">
+    <div className="min-h-screen bg-[#F8FAFC] font-[DM_Sans]">
       <Toaster position="top-right" />
 
       {/* Header */}
-      <header className="bg-white/70 backdrop-blur-xl border-b border-white/30 shadow-sm px-6 py-4">
+      <header className="bg-white border-b border-[#E2E8F0] shadow-sm px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button onClick={() => navigate(-1)}>
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-white/70 p-2 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer"
+                className="bg-white border border-[#E2E8F0] p-2 rounded-lg hover:bg-[#F8FAFC] transition"
               >
-                <ArrowLeft className="text-purple-600" size={20} />
+                <ArrowLeft className="text-[#1B2B4B]" size={18} />
               </motion.div>
             </button>
 
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-3 shadow-md">
-              <FolderGit2 size={24} />
+            <div className="bg-[#EFF6FF] text-[#2563EB] rounded-xl p-3">
+              <FolderGit2 size={22} />
             </div>
 
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">
+              <h1 className="text-[20px] font-bold text-[#1B2B4B]">
                 {student?.name || "Loading..."}'s Projects
               </h1>
-              <p className="text-sm text-gray-600 flex items-center gap-2">
+              <p className="text-[13px] text-[#64748B] flex items-center gap-2">
                 <Mail size={14} />
                 {student?.email || "-"}
               </p>
@@ -98,9 +98,9 @@ export default function StudentProjectsView() {
             whileTap={{ scale: 0.95 }}
             onClick={fetchStudentProjects}
             disabled={loading}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-xl shadow-lg"
+            className="inline-flex items-center gap-2 bg-white border border-[#E2E8F0] text-[#1B2B4B] px-4 py-2 rounded-lg hover:bg-[#F8FAFC] text-sm font-medium"
           >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Refresh
           </motion.button>
         </div>
@@ -111,25 +111,31 @@ export default function StudentProjectsView() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-3xl shadow-xl p-6 mb-6"
+            className="bg-white border-[1.5px] border-[#E2E8F0] rounded-xl shadow-sm p-6 mb-6"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="bg-white/20 rounded-2xl p-4">
-                  <Users size={32} />
+                <div className="bg-[#EFF6FF] text-[#2563EB] rounded-xl p-4">
+                  <Users size={28} />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">{student.name}</h2>
-                  <p className="text-purple-100 flex items-center gap-2 mt-1">
+                  <h2 className="text-[20px] font-bold text-[#1B2B4B]">
+                    {student.name}
+                  </h2>
+                  <p className="text-[13px] text-[#64748B] flex items-center gap-2 mt-1">
                     <Mail size={14} />
                     {student.email}
                   </p>
                 </div>
               </div>
 
-              <div className="bg-white/20 px-4 py-2 rounded-xl">
-                <div className="text-3xl font-bold">{projects.length}</div>
-                <div className="text-sm text-purple-100">Total Projects</div>
+              <div className="bg-[#F8FAFC] border border-[#E2E8F0] px-4 py-2 rounded-lg text-center">
+                <div className="text-[28px] font-extrabold text-[#1B2B4B]">
+                  {projects.length}
+                </div>
+                <div className="text-[11px] uppercase text-[#64748B] font-semibold tracking-wide">
+                  Total Projects
+                </div>
               </div>
             </div>
           </motion.div>
@@ -139,18 +145,18 @@ export default function StudentProjectsView() {
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-3xl shadow-xl p-6"
+          className="bg-white border-[1.5px] border-[#E2E8F0] rounded-xl shadow-sm p-6"
         >
-          <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-            <FolderGit2 size={20} className="text-purple-600" />
+          <h2 className="text-[14px] font-semibold uppercase tracking-wide text-[#64748B] mb-6 flex items-center gap-2">
+            <FolderGit2 size={16} />
             All Projects
           </h2>
 
           {loading ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 text-[#64748B]">
               <RefreshCw
-                className="animate-spin mx-auto text-purple-600"
-                size={32}
+                className="animate-spin mx-auto"
+                size={28}
               />
             </div>
           ) : (
@@ -177,11 +183,9 @@ export default function StudentProjectsView() {
 function ProjectCard({ project, index, onApprove }) {
   const [open, setOpen] = useState(false);
 
-  // Correct status
   const status = project.overallStatus || "Pending";
   const isApproved = status === "Approved";
 
-  // Modules must ALL be completed to enable approve
   const allModulesCompleted =
     Array.isArray(project.modules) &&
     project.modules.length > 0 &&
@@ -194,30 +198,28 @@ function ProjectCard({ project, index, onApprove }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-purple-200 overflow-hidden"
+      className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm hover:shadow-lg transition-all"
     >
-      {/* Header (Collapsible trigger) */}
       <button
         onClick={() => setOpen(!open)}
         className="w-full p-4 flex items-center justify-between text-left"
       >
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-2 rounded-lg shadow">
-            <FolderGit2 size={18} />
+          <div className="bg-[#EFF6FF] text-[#2563EB] p-2 rounded-lg">
+            <FolderGit2 size={16} />
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-900">
+            <h3 className="font-semibold text-[#1B2B4B] text-[14px]">
               {project.title || "Untitled Project"}
             </h3>
-            <p className="text-xs text-gray-500">
-              Status:{" "}
+            <p className="text-[12px] mt-1">
               <span
-                className={
+                className={`px-3 py-[3px] rounded-full font-semibold ${
                   isApproved
-                    ? "text-green-600 font-medium"
-                    : "text-yellow-600 font-medium"
-                }
+                    ? "bg-[#ECFDF5] text-[#065F46]"
+                    : "bg-[#EFF6FF] text-[#1E40AF]"
+                }`}
               >
                 {status}
               </span>
@@ -226,57 +228,51 @@ function ProjectCard({ project, index, onApprove }) {
         </div>
 
         {open ? (
-          <ChevronUp size={20} className="text-purple-600" />
+          <ChevronUp size={18} className="text-[#64748B]" />
         ) : (
-          <ChevronDown size={20} className="text-purple-600" />
+          <ChevronDown size={18} className="text-[#64748B]" />
         )}
       </button>
 
-      {/* Collapsible Body */}
       <AnimatePresence>
         {open && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="p-5 border-t border-purple-100 space-y-4"
+            className="p-5 border-t border-[#F1F5F9] space-y-4"
           >
-            {/* Description */}
             <div>
-              <h4 className="font-medium text-gray-700 mb-1 flex items-center gap-2">
-                <FileText size={14} className="text-purple-600" />
+              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B] mb-1">
                 Description
               </h4>
-              <p className="text-sm text-gray-600">{project.description}</p>
+              <p className="text-[13px] text-[#1B2B4B]">
+                {project.description}
+              </p>
             </div>
 
-            {/* Modules */}
             <div>
-              <h4 className="font-medium text-gray-700 mb-2">Modules</h4>
+              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B] mb-2">
+                Modules
+              </h4>
               <div className="space-y-2">
                 {project.modules.map((mod) => (
                   <div
                     key={mod._id}
-                    className="flex justify-between items-center bg-white p-3 rounded-xl shadow hover:shadow-md transition border border-purple-100"
+                    className="flex justify-between items-center bg-white border border-[#F1F5F9] p-3 rounded-lg"
                   >
                     <div>
-                      <p className="font-medium text-gray-800">{mod.name}</p>
+                      <p className="font-medium text-[#1B2B4B] text-[13px]">
+                        {mod.name}
+                      </p>
                       {mod.notes && (
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Notes: {mod.notes}
+                        <p className="text-[12px] text-[#64748B] mt-0.5">
+                          {mod.notes}
                         </p>
                       )}
                     </div>
 
-                    <span
-                      className={`px-3 py-1 text-xs rounded-full font-semibold ${
-                        mod.status === "Completed"
-                          ? "bg-green-100 text-green-700"
-                          : mod.status === "In Progress"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}
-                    >
+                    <span className="px-3 py-[3px] text-[12px] rounded-full font-semibold bg-[#EFF6FF] text-[#1E40AF]">
                       {mod.status}
                     </span>
                   </div>
@@ -284,15 +280,16 @@ function ProjectCard({ project, index, onApprove }) {
               </div>
             </div>
 
-            {/* Skills */}
             {project.skills.length > 0 && (
               <div>
-                <h4 className="font-medium text-gray-700 mb-2">Skills</h4>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B] mb-2">
+                  Skills
+                </h4>
                 <div className="flex flex-wrap gap-2">
                   {project.skills.map((s) => (
                     <div
                       key={s._id}
-                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
+                      className="px-3 py-1 bg-[#EFF6FF] text-[#2563EB] rounded-full text-[12px] font-medium"
                     >
                       {s.name} — {s.level}
                     </div>
@@ -301,11 +298,12 @@ function ProjectCard({ project, index, onApprove }) {
               </div>
             )}
 
-            {/* Outcomes */}
             {project.outcomes.length > 0 && (
               <div>
-                <h4 className="font-medium text-gray-700 mb-2">Outcomes</h4>
-                <ul className="list-disc ml-6 text-sm text-gray-600 space-y-1">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B] mb-2">
+                  Outcomes
+                </h4>
+                <ul className="list-disc ml-6 text-[13px] text-[#1B2B4B] space-y-1">
                   {project.outcomes.map((o) => (
                     <li key={o._id}>
                       <span className="font-medium">{o.title}:</span>{" "}
@@ -316,35 +314,34 @@ function ProjectCard({ project, index, onApprove }) {
               </div>
             )}
 
-            {/* Created By */}
-            <div className="text-sm text-gray-600 flex justify-between mb-2">
+            <div className="text-[13px] text-[#64748B] flex justify-between">
               <span>
                 Created By:{" "}
-                <strong>{project.createdBy?.name || "Unknown"}</strong>
+                <strong className="text-[#1B2B4B]">
+                  {project.createdBy?.name || "Unknown"}
+                </strong>
               </span>
               <span>
                 Batch:{" "}
-                <strong>
+                <strong className="text-[#1B2B4B]">
                   {project.batch?.batch_name} #{project.batch?.batch_no}
                 </strong>
               </span>
             </div>
 
-            {/* Date */}
-            <div className="text-xs text-gray-500 flex items-center gap-2">
+            <div className="text-[12px] text-[#94A3B8] flex items-center gap-2">
               <Calendar size={12} />
               {new Date(project.createdAt).toLocaleDateString()}
             </div>
 
-            {/* Approve Button — only if allowed */}
             {canApprove && (
               <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onApprove(project._id)}
-                className="mt-3 inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow"
+                className="mt-3 inline-flex items-center gap-2 bg-[#2563EB] text-white px-4 py-2 rounded-lg text-[13px] font-medium"
               >
-                <CheckCircle2 size={16} />
+                <CheckCircle2 size={14} />
                 Approve Project
               </motion.button>
             )}

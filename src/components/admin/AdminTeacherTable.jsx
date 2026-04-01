@@ -90,8 +90,19 @@ export default function AdminTeacherTable() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white/60 backdrop-blur-xl p-6 rounded-3xl shadow-xl mt-10"
+      className="p-6 rounded-3xl mt-10"
+      style={{
+        backgroundColor: "#FFFFFF",
+        border: "1.5px solid #E2E8F0",
+        borderRadius: "12px",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        fontFamily: "'DM Sans', sans-serif",
+      }}
     >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
         {/* Search */}
@@ -100,7 +111,20 @@ export default function AdminTeacherTable() {
           placeholder="Search teachers..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="p-3 rounded-xl bg-white/70 border border-white/30 shadow outline-0 w-full md:w-1/3"
+          className="p-3 rounded-lg w-full md:w-1/3 outline-none transition"
+          style={{
+            backgroundColor: "#FFFFFF",
+            border: "1.5px solid #E2E8F0",
+            borderRadius: "8px",
+            color: "#1B2B4B",
+            fontSize: "14px",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "#2563EB";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "#E2E8F0";
+          }}
         />
 
         {/* Filters */}
@@ -108,7 +132,20 @@ export default function AdminTeacherTable() {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="p-3 rounded-xl bg-white/70 border border-white/30 shadow outline-0"
+            className="p-3 rounded-lg outline-none transition cursor-pointer"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "8px",
+              color: "#1B2B4B",
+              fontSize: "14px",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#2563EB";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "#E2E8F0";
+            }}
           >
             <option value="all">All</option>
             <option value="approved">Approved</option>
@@ -118,7 +155,20 @@ export default function AdminTeacherTable() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="p-3 rounded-xl bg-white/70 border border-white/30 shadow outline-0"
+            className="p-3 rounded-lg outline-none transition cursor-pointer"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "8px",
+              color: "#1B2B4B",
+              fontSize: "14px",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#2563EB";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "#E2E8F0";
+            }}
           >
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
@@ -128,7 +178,17 @@ export default function AdminTeacherTable() {
 
           <button
             onClick={fetchTeachers}
-            className="cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-xl shadow"
+            className="cursor-pointer text-white px-4 py-2 rounded-lg transition"
+            style={{
+              backgroundColor: "#2563EB",
+              borderRadius: "8px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#1E40AF";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#2563EB";
+            }}
           >
             <RefreshCw size={18} />
           </button>
@@ -136,47 +196,149 @@ export default function AdminTeacherTable() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl">
+      <div className="overflow-x-auto rounded-lg">
         <table className="min-w-full">
-          <thead className="bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-800">
-            <tr>
-              <th className="p-3 text-left">Name</th>
-              <th className="p-3 text-left">Email</th>
-              <th className="p-3 text-left">Subjects</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 text-left">Actions</th>
+          <thead>
+            <tr style={{ backgroundColor: "#F8FAFC" }}>
+              <th
+                className="p-3 text-left"
+                style={{
+                  color: "#64748B",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  borderBottom: "1px solid #F1F5F9",
+                }}
+              >
+                Name
+              </th>
+              <th
+                className="p-3 text-left"
+                style={{
+                  color: "#64748B",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  borderBottom: "1px solid #F1F5F9",
+                }}
+              >
+                Email
+              </th>
+              <th
+                className="p-3 text-left"
+                style={{
+                  color: "#64748B",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  borderBottom: "1px solid #F1F5F9",
+                }}
+              >
+                Subjects
+              </th>
+              <th
+                className="p-3 text-left"
+                style={{
+                  color: "#64748B",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  borderBottom: "1px solid #F1F5F9",
+                }}
+              >
+                Status
+              </th>
+              <th
+                className="p-3 text-left"
+                style={{
+                  color: "#64748B",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  borderBottom: "1px solid #F1F5F9",
+                }}
+              >
+                Actions
+              </th>
             </tr>
           </thead>
 
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-gray-600">
+                <td
+                  colSpan={5}
+                  className="p-6 text-center"
+                  style={{ color: "#64748B", backgroundColor: "#F8FAFC" }}
+                >
                   Loading...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-gray-600">
+                <td
+                  colSpan={5}
+                  className="p-6 text-center"
+                  style={{ color: "#64748B", backgroundColor: "#F8FAFC" }}
+                >
                   No teachers found.
                 </td>
               </tr>
             ) : (
-              filtered.map((t) => (
-                <tr key={t._id} className="border-b border-white/30">
-                  <td className="p-3 font-medium text-gray-800">{t.name}</td>
-                  <td className="p-3">{t.email}</td>
-                  <td className="p-3">
+              filtered.map((t, idx) => (
+                <tr
+                  key={t._id}
+                  style={{
+                    backgroundColor: idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC",
+                    borderBottom: "1px solid #F1F5F9",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#F1F5F9";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC";
+                  }}
+                >
+                  <td className="p-3 font-medium" style={{ color: "#1B2B4B", fontSize: "14px" }}>
+                    {t.name}
+                  </td>
+                  <td className="p-3" style={{ color: "#1B2B4B", fontSize: "14px" }}>
+                    {t.email}
+                  </td>
+                  <td className="p-3" style={{ color: "#1B2B4B", fontSize: "14px" }}>
                     {t.subjects?.length ? t.subjects.join(", ") : "—"}
                   </td>
 
                   <td className="p-3">
                     {t.isActive ? (
-                      <span className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-xs">
-                        Approved
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-medium inline-block"
+                        style={{
+                          backgroundColor: "#ECFDF5",
+                          color: "#065F46",
+                          borderRadius: "20px",
+                          padding: "3px 12px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        Active
                       </span>
                     ) : (
-                      <span className="bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full text-xs">
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-medium inline-block"
+                        style={{
+                          backgroundColor: "#EFF6FF",
+                          color: "#1E40AF",
+                          borderRadius: "20px",
+                          padding: "3px 12px",
+                          fontSize: "12px",
+                        }}
+                      >
                         Pending
                       </span>
                     )}
@@ -187,14 +349,36 @@ export default function AdminTeacherTable() {
                       {!t.isActive ? (
                         <button
                           onClick={() => approveTeacher(t._id)}
-                          className="cursor-pointer bg-gradient-to-r from-green-600 to-emerald-500 text-white p-2 rounded-xl"
+                          className="cursor-pointer text-white p-2 rounded-lg transition"
+                          style={{
+                            backgroundColor: "#10B981",
+                            borderRadius: "8px",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#059669";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#10B981";
+                          }}
+                          title="Approve"
                         >
                           <CheckCircle2 size={16} />
                         </button>
                       ) : (
                         <button
                           onClick={() => rejectTeacher(t._id)}
-                          className="cursor-pointer bg-gradient-to-r from-red-600 to-rose-500 text-white p-2 rounded-xl"
+                          className="cursor-pointer text-white p-2 rounded-lg transition"
+                          style={{
+                            backgroundColor: "#EF4444",
+                            borderRadius: "8px",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#DC2626";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#EF4444";
+                          }}
+                          title="Reject"
                         >
                           <Ban size={16} />
                         </button>

@@ -1,36 +1,31 @@
 // src/pages/AdminTeachers.jsx
+
 import React, { useEffect, useState } from "react";
 import { API } from "../api/axios";
 import { useNavigate } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import {
   Plus,
   Edit2,
   Trash2,
   Search,
   RefreshCw,
-  X,
   Check,
   XCircle,
-  CheckCircle,
-  AlertCircle,
-  Filter,
-  GraduationCap,
 } from "lucide-react";
 
 export default function AdminTeachers() {
   const navigate = useNavigate();
+
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Modals
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editTeacher, setEditTeacher] = useState(null);
 
-  // ⭐ Added phone field
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -48,145 +43,74 @@ export default function AdminTeachers() {
       setLoading(true);
       const res = await API.get("/teachers/list");
       setTeachers(res.data?.teachers || []);
-    } catch (err) {
+    } catch (error) {
       toast.error("Failed to load teachers");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!form.name || !form.email || !form.password) {
-      toast.error("Name, email, and password are required");
-      return;
-    }
+  const handleDelete = async (id) => {
     try {
-      const subjects = form.subjects
-        ? form.subjects
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [];
-
-      await API.post("/teachers/register", {
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        subjects,
-        phone: form.phone, // ⭐ Added
-      });
-
-      toast.success("Teacher created successfully");
-      resetForm();
-      setShowCreate(false);
-      fetchTeachers();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to create teacher");
+      await API.delete(`/teachers/${id}`);
+      toast.success("Teacher deleted");
+      await fetchTeachers();
+    } catch (error) {
+      console.log(error);
+      toast.error("Delete failed");
     }
   };
 
-  const openEdit = (teacher) => {
+  const handleToggleStatus = async (id) => {
+    try {
+      await API.patch(`/teachers/toggle/${id}`);
+      toast.success("Status updated");
+      await fetchTeachers();
+    } catch (error) {
+      console.log(error);
+      toast.error("Status update failed");
+    }
+  };
+
+  const handleEdit = (teacher) => {
     setEditTeacher(teacher);
     setForm({
       name: teacher.name,
       email: teacher.email,
       password: "",
       subjects: teacher.subjects?.join(", ") || "",
-      phone: teacher.phone || "", // ⭐ Added
+      phone: teacher.phone || "",
     });
     setShowEdit(true);
   };
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
+  const handleCreate = async () => {
     try {
-      const subjects = form.subjects
-        ? form.subjects
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [];
-
-      await API.patch(`/teachers/update/${editTeacher._id}`, {
-        name: form.name,
-        email: form.email,
-        subjects,
-        phone: form.phone, // ⭐ Added
+      await API.post("/teachers/create", {
+        ...form,
+        subjects: form.subjects.split(",").map((s) => s.trim()),
       });
-
-      toast.success("Teacher updated successfully");
-      resetForm();
-      setShowEdit(false);
-      setEditTeacher(null);
-      fetchTeachers();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to update teacher");
+      toast.success("Teacher created");
+      setShowCreate(false);
+      await fetchTeachers();
+    } catch (error) {
+      console.log(error);
+      toast.error("Create failed");
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this teacher? This action cannot be undone.")) return;
-    try {
-      await API.delete(`/teachers/delete/${id}`);
-      toast.success("Teacher deleted successfully");
-      fetchTeachers();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to delete teacher");
+  const filteredTeachers = teachers.filter((t) => {
+    if (
+      search &&
+      !t.name.toLowerCase().includes(search.toLowerCase()) &&
+      !t.email.toLowerCase().includes(search.toLowerCase())
+    ) {
+      return false;
     }
-  };
-
-  const handleApprove = async (id) => {
-    try {
-      await API.patch(`/admin/approve-teacher/${id}`);
-      toast.success("Teacher approved");
-      fetchTeachers();
-    } catch (err) {
-      toast.error("Failed to approve teacher");
-    }
-  };
-
-  const handleReject = async (id) => {
-    try {
-      await API.patch(`/admin/reject-teacher/${id}`);
-      toast.success("Teacher deactivated");
-      fetchTeachers();
-    } catch (err) {
-      toast.error("Failed to deactivate teacher");
-    }
-  };
-
-  const resetForm = () => {
-    setForm({
-      name: "",
-      email: "",
-      password: "",
-      subjects: "",
-      phone: "", // ⭐ reset phone
-    });
-  };
-
-  const getFilteredTeachers = () => {
-    let filtered = [...teachers];
-
-    if (search) {
-      filtered = filtered.filter(
-        (t) =>
-          t.name.toLowerCase().includes(search.toLowerCase()) ||
-          t.email.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    if (statusFilter === "active") {
-      filtered = filtered.filter((t) => t.isActive === true);
-    } else if (statusFilter === "pending") {
-      filtered = filtered.filter((t) => t.isActive === false);
-    }
-
-    return filtered;
-  };
-
-  const filteredTeachers = getFilteredTeachers();
+    if (statusFilter === "active") return t.isActive;
+    if (statusFilter === "pending") return !t.isActive;
+    return true;
+  });
 
   const stats = {
     total: teachers.length,
@@ -195,480 +119,240 @@ export default function AdminTeachers() {
   };
 
   return (
-    <div className="space-y-5">
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
+    <div className="bg-[#F8FAFC] min-h-screen p-6 space-y-6">
+
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Teachers</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-[20px] font-bold text-[#1B2B4B]">Teachers</h1>
+          <p className="text-[13px] text-[#64748B]">
             Manage teacher accounts and permissions
           </p>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex gap-2">
           <button
             onClick={fetchTeachers}
-            disabled={loading}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+            className="bg-white border px-3 py-2 rounded-lg"
           >
-            <RefreshCw
-              size={18}
-              className={loading ? "animate-spin" : ""}
-            />
+            <RefreshCw size={14} />
           </button>
+
           <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer"
+            onClick={() => {
+              setForm({ name: "", email: "", password: "", subjects: "", phone: "" });
+              setShowCreate(true);
+            }}
+            className="bg-[#2563EB] text-white px-4 py-2 rounded-lg text-sm flex items-center gap-1"
           >
-            <Plus size={18} />
-            Add Teacher
+            <Plus size={14} /> Add Teacher
           </button>
         </div>
       </div>
 
-      {/* CONTENT */}
-      <div>
-        {/* STATS */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {/* Total */}
-          <StatCard
-            label="Total Teachers"
-            value={stats.total}
-            icon={<GraduationCap className="text-purple-600" size={20} />}
-            bg="bg-purple-50"
-          />
-
-          {/* Active */}
-          <StatCard
-            label="Active"
-            value={stats.active}
-            icon={<CheckCircle className="text-green-600" size={20} />}
-            bg="bg-green-50"
-          />
-
-          {/* Pending */}
-          <StatCard
-            label="Pending Approval"
-            value={stats.pending}
-            icon={<AlertCircle className="text-orange-600" size={20} />}
-            bg="bg-orange-50"
-          />
-        </div>
-
-        {/* FILTERS */}
-        <Filters
-          search={search}
-          setSearch={setSearch}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-        />
-
-        {/* TEACHER TABLE */}
-        <TeacherTable
-          loading={loading}
-          teachers={filteredTeachers}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          onEdit={openEdit}
-          onDelete={handleDelete}
-          onViewProfile={(id) => navigate(`/admin/teacher/${id}`)}
-        />
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Total", value: stats.total },
+          { label: "Active", value: stats.active },
+          { label: "Pending", value: stats.pending },
+        ].map((s, i) => (
+          <div key={i} className="bg-white border rounded-xl p-4">
+            <p className="text-[11px] text-[#64748B]">{s.label}</p>
+            <p className="text-[28px] font-bold">{s.value}</p>
+          </div>
+        ))}
       </div>
 
-      {/* CREATE MODAL */}
-      {showCreate && (
-        <Modal
-          title="Add New Teacher"
-          onClose={() => {
-            setShowCreate(false);
-            resetForm();
-          }}
-        >
-          <form onSubmit={handleCreate} className="space-y-4">
-            <FormField
-              label="Full Name"
-              required
-              value={form.name}
-              onChange={(v) => setForm({ ...form, name: v })}
-            />
-            <FormField
-              label="Email Address"
-              type="email"
-              required
-              value={form.email}
-              onChange={(v) => setForm({ ...form, email: v })}
-            />
-            <FormField
-              label="Password"
-              type="password"
-              required
-              value={form.password}
-              onChange={(v) => setForm({ ...form, password: v })}
-            />
-
-            {/* ⭐ Phone Field */}
-            <FormField
-              label="Phone Number"
-              value={form.phone}
-              onChange={(v) => setForm({ ...form, phone: v })}
-              placeholder="9876543210"
-            />
-
-            <FormField
-              label="Subjects (comma-separated)"
-              value={form.subjects}
-              onChange={(v) => setForm({ ...form, subjects: v })}
-            />
-
-            <ModalActions
-              onCancel={() => {
-                setShowCreate(false);
-                resetForm();
-              }}
-              submitLabel="Add Teacher"
-            />
-          </form>
-        </Modal>
-      )}
-
-      {/* EDIT MODAL */}
-      {showEdit && editTeacher && (
-        <Modal
-          title="Edit Teacher"
-          onClose={() => {
-            setShowEdit(false);
-            setEditTeacher(null);
-            resetForm();
-          }}
-        >
-          <form onSubmit={handleUpdate} className="space-y-4">
-            <FormField
-              label="Full Name"
-              required
-              value={form.name}
-              onChange={(v) => setForm({ ...form, name: v })}
-            />
-            <FormField
-              label="Email Address"
-              type="email"
-              required
-              value={form.email}
-              onChange={(v) => setForm({ ...form, email: v })}
-            />
-
-            {/* ⭐ Phone Field */}
-            <FormField
-              label="Phone Number"
-              value={form.phone}
-              onChange={(v) => setForm({ ...form, phone: v })}
-            />
-
-            <FormField
-              label="Subjects (comma-separated)"
-              value={form.subjects}
-              onChange={(v) => setForm({ ...form, subjects: v })}
-            />
-
-            <ModalActions
-              onCancel={() => {
-                setShowEdit(false);
-                setEditTeacher(null);
-                resetForm();
-              }}
-              submitLabel="Update Teacher"
-            />
-          </form>
-        </Modal>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------
-   UI COMPONENTS (UNCHANGED EXCEPT WHAT NEEDED)
-------------------------------------------- */
-
-function StatCard({ label, value, icon, bg }) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500">{label}</p>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
-        </div>
-        <div className={`p-3 rounded-lg ${bg}`}>{icon}</div>
-      </div>
-    </div>
-  );
-}
-
-function Filters({ search, setSearch, statusFilter, setStatusFilter }) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-      <div className="flex items-center gap-3">
+      {/* Filters */}
+      <div className="bg-white border rounded-xl p-4 flex gap-3">
         <div className="flex-1 relative">
-          <Search
-            size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
-            type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or email..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+            placeholder="Search..."
+            className="w-full pl-9 pr-3 py-2 border rounded-lg"
           />
         </div>
 
-        <div className="relative">
-          <Filter
-            size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg bg-white"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active Only</option>
-            <option value="pending">Pending Only</option>
-          </select>
-        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border rounded-lg"
+        >
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="pending">Pending</option>
+        </select>
       </div>
-    </div>
-  );
-}
 
-function TeacherTable({
-  loading,
-  teachers,
-  onApprove,
-  onReject,
-  onEdit,
-  onDelete,
-  onViewProfile,
-}) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <table className="w-full">
-        <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Teacher
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Email
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Phone Number
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Subjects
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-              Status
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-              Actions
-            </th>
-          </tr>
-        </thead>
+      {/* Table */}
+      <div className="bg-white border rounded-xl overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+            <tr>
+              <th className="px-6 py-3 text-left">Teacher</th>
+              <th className="px-6 py-3 text-left">Email</th>
+              <th className="px-6 py-3 text-left">Phone</th>
+              <th className="px-6 py-3 text-left">Subjects</th>
+              <th className="px-6 py-3 text-left">Status</th>
+              <th className="px-6 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
 
-        <tbody className="divide-y divide-gray-200">
-          {loading ? (
-            <tr>
-              <td colSpan="6" className="px-6 py-12 text-center">
-                <RefreshCw
-                  className="animate-spin mx-auto text-gray-400 mb-2"
-                  size={24}
-                />
-                <p className="text-sm text-gray-500">Loading teachers...</p>
-              </td>
-            </tr>
-          ) : teachers.length === 0 ? (
-            <tr>
-              <td colSpan="6" className="px-6 py-12 text-center">
-                <GraduationCap
-                  className="mx-auto text-gray-300 mb-2"
-                  size={32}
-                />
-                <p className="text-sm text-gray-500">No teachers found</p>
-              </td>
-            </tr>
-          ) : (
-            teachers.map((teacher) => (
-              <tr key={teacher._id} className="hover:bg-gray-50 transition">
+          <tbody>
+            {filteredTeachers.map((t, i) => (
+              <tr key={t._id} className={i % 2 ? "bg-gray-50" : ""}>
                 <td className="px-6 py-4">
-                  <button
-                    onClick={() => onViewProfile(teacher._id)}
-                    className="flex items-center gap-3 text-left group"
-                  >
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {teacher.profilePhoto ? (
-                        <img src={teacher.profilePhoto} alt={teacher.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-sm font-medium text-purple-600">
-                          {teacher.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+                      {t.name.charAt(0)}
                     </div>
-                    <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 group-hover:underline transition">
-                      {teacher.name}
-                    </p>
-                  </button>
-                </td>
-
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {teacher.email}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {teacher.phone || "Not Added"}
-                </td>
-
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1">
-                    {teacher.subjects?.length > 0 ? (
-                      teacher.subjects.slice(0, 2).map((s, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs rounded-md border border-purple-200"
-                        >
-                          {s}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-gray-400">No subjects</span>
-                    )}
-
-                    {teacher.subjects?.length > 2 && (
-                      <span className="text-xs text-gray-500">
-                        +{teacher.subjects.length - 2}
-                      </span>
-                    )}
+                    <button
+                      onClick={() => navigate(`/admin/teacher/${t._id}`)}
+                      className="font-medium"
+                    >
+                      {t.name}
+                    </button>
                   </div>
                 </td>
 
+                <td className="px-6 py-4">{t.email}</td>
+                <td className="px-6 py-4">{t.phone || "—"}</td>
+                <td className="px-6 py-4">{t.subjects?.slice(0, 2).join(", ") || "—"}</td>
+
                 <td className="px-6 py-4">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                      teacher.isActive
-                        ? "bg-green-50 text-green-700 border border-green-200"
-                        : "bg-orange-50 text-orange-700 border border-orange-200"
-                    }`}
-                  >
-                    {teacher.isActive ? (
-                      <CheckCircle size={12} />
-                    ) : (
-                      <AlertCircle size={12} />
-                    )}
-                    {teacher.isActive ? "Active" : "Pending"}
+                  <span className={`px-3 py-1 rounded-full text-xs ${
+                    t.isActive ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                  }`}>
+                    {t.isActive ? "Active" : "Pending"}
                   </span>
                 </td>
 
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">
-                    {!teacher.isActive && (
-                      <button
-                        onClick={() => onApprove(teacher._id)}
-                        className="p-1.5 text-green-600 hover:bg-green-50 rounded-md"
-                      >
-                        <Check size={16} />
+                    {!t.isActive && (
+                      <button onClick={() => handleToggleStatus(t._id)} className="text-green-600">
+                        <Check size={14} />
                       </button>
                     )}
-
-                    {teacher.isActive && (
-                      <button
-                        onClick={() => onReject(teacher._id)}
-                        className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-md"
-                      >
-                        <XCircle size={16} />
+                    {t.isActive && (
+                      <button onClick={() => handleToggleStatus(t._id)} className="text-yellow-500">
+                        <XCircle size={14} />
                       </button>
                     )}
-
-                    <button
-                      onClick={() => onEdit(teacher)}
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md"
-                    >
-                      <Edit2 size={16} />
+                    <button onClick={() => handleEdit(t)} className="text-blue-600">
+                      <Edit2 size={14} />
                     </button>
-
-                    <button
-                      onClick={() => onDelete(teacher._id)}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-md"
-                    >
-                      <Trash2 size={16} />
+                    <button onClick={() => handleDelete(t._id)} className="text-red-600">
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Modal({ title, onClose, children }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <div className="p-6">{children}</div>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </div>
-  );
-}
 
-function ModalActions({ onCancel, submitLabel }) {
-  return (
-    <div className="flex gap-3 pt-2">
-      <button
-        type="button"
-        onClick={onCancel}
-        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-      >
-        {submitLabel}
-      </button>
-    </div>
-  );
-}
+      {/* Create Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
+            <h2 className="text-lg font-bold text-[#1B2B4B]">Add Teacher</h2>
 
-function FormField({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  required,
-}) {
-  return (
-    <div>
-      <label className="block text-sm font-medium mb-1.5">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        required={required}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-      />
+            {["name", "email", "password", "phone"].map((field) => (
+              <input
+                key={field}
+                type={field === "password" ? "password" : "text"}
+                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                value={form[field]}
+                onChange={(e) => setForm({ ...form, [field]: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+            ))}
+
+            <input
+              placeholder="Subjects (comma separated)"
+              value={form.subjects}
+              onChange={(e) => setForm({ ...form, subjects: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+            />
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="px-4 py-2 border rounded-lg text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreate}
+                className="px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEdit && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
+            <h2 className="text-lg font-bold text-[#1B2B4B]">Edit Teacher</h2>
+
+            {["name", "email", "password", "phone"].map((field) => (
+              <input
+                key={field}
+                type={field === "password" ? "password" : "text"}
+                placeholder={field === "password" ? "New Password (leave blank to keep)" : field.charAt(0).toUpperCase() + field.slice(1)}
+                value={form[field]}
+                onChange={(e) => setForm({ ...form, [field]: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg text-sm"
+              />
+            ))}
+
+            <input
+              placeholder="Subjects (comma separated)"
+              value={form.subjects}
+              onChange={(e) => setForm({ ...form, subjects: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+            />
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowEdit(false)}
+                className="px-4 py-2 border rounded-lg text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await API.put(`/teachers/${editTeacher._id}`, {
+                      ...form,
+                      subjects: form.subjects.split(",").map((s) => s.trim()),
+                    });
+                    toast.success("Teacher updated");
+                    setShowEdit(false);
+                    await fetchTeachers();
+                  } catch (error) {
+                    console.log(error);
+                    toast.error("Update failed");
+                  }
+                }}
+                className="px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

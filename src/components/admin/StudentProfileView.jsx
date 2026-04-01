@@ -1,4 +1,3 @@
-// src/components/admin/StudentProfileView.jsx
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getStudent, uploadStudentPhoto } from "../../api/student.api";
@@ -134,10 +133,18 @@ export default function StudentProfileView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F8FAFC" }}>
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 text-sm font-medium">Loading profile…</p>
+          <div
+            className="w-12 h-12 border-4 rounded-full animate-spin mx-auto mb-4"
+            style={{
+              borderColor: "#E2E8F0",
+              borderTopColor: "#2563EB",
+            }}
+          />
+          <p className="text-sm font-medium" style={{ color: "#94A3B8" }}>
+            Loading profile…
+          </p>
         </div>
       </div>
     );
@@ -145,25 +152,56 @@ export default function StudentProfileView() {
 
   if (!student) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F8FAFC" }}>
         <div className="text-center max-w-sm px-6">
-          <GraduationCap size={48} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-800 font-semibold mb-1">Could not load student</p>
+          <GraduationCap size={48} style={{ margin: "0 auto 12px", color: "#CBD5E1" }} />
+          <p className="font-semibold mb-1" style={{ color: "#1B2B4B" }}>
+            Could not load student
+          </p>
           {error && (
-            <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4 font-mono">
+            <p
+              className="text-sm rounded-lg px-3 py-2 mb-4 font-mono"
+              style={{
+                backgroundColor: "#FEE2E2",
+                border: "1px solid #FECACA",
+                color: "#DC2626",
+              }}
+            >
               {error}
             </p>
           )}
           <div className="flex gap-3 justify-center">
             <button
               onClick={fetchData}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition"
+              className="px-4 py-2 text-white rounded-lg text-sm transition"
+              style={{
+                backgroundColor: "#2563EB",
+                borderRadius: "8px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#1E40AF";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#2563EB";
+              }}
             >
               Retry
             </button>
             <button
               onClick={() => navigate(-1)}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition"
+              className="px-4 py-2 rounded-lg text-sm transition"
+              style={{
+                backgroundColor: "#FFFFFF",
+                border: "1.5px solid #E2E8F0",
+                color: "#1B2B4B",
+                borderRadius: "8px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#F8FAFC";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#FFFFFF";
+              }}
             >
               Go Back
             </button>
@@ -176,24 +214,56 @@ export default function StudentProfileView() {
   const avatarLetter = student.name?.charAt(0).toUpperCase() ?? "S";
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto w-full px-2 sm:px-4">
+    <div className="space-y-6 max-w-5xl mx-auto w-full px-2 sm:px-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
+      <Toaster position="top-right" />
+
       {/* HEADER ROW */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 transition group"
+          className="flex items-center gap-2 text-sm font-medium transition group"
+          style={{
+            color: "#2563EB",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#1E40AF";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "#2563EB";
+          }}
         >
           <ArrowLeft
             size={18}
-            className="group-hover:-translate-x-1 transition-transform"
+            style={{
+              transform: "translateX(0)",
+              transition: "transform 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.parentElement.style.transform = "translateX(-4px)";
+            }}
           />
           Back to Students
         </button>
         <button
-           onClick={fetchData}
-           disabled={loading || reportsLoading}
-           className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-           title="Refresh"
+          onClick={fetchData}
+          disabled={loading || reportsLoading}
+          className="p-2 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+          style={{
+            backgroundColor: "transparent",
+            color: "#94A3B8",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#F8FAFC";
+            e.currentTarget.style.color = "#1B2B4B";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+            e.currentTarget.style.color = "#94A3B8";
+          }}
+          title="Refresh"
         >
           <RefreshCw size={18} className={loading || reportsLoading ? "animate-spin" : ""} />
         </button>
@@ -203,16 +273,30 @@ export default function StudentProfileView() {
         
         {/* PROFILE HEADER CARD */}
         <motion.div
-           initial={{ opacity: 0, y: 16 }}
-           animate={{ opacity: 1, y: 0 }}
-           className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-lg overflow-hidden"
+          style={{
+            backgroundColor: "#FFFFFF",
+            border: "1.5px solid #E2E8F0",
+            borderRadius: "12px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          }}
         >
-          <div className="h-24 bg-gradient-to-r from-emerald-500 to-teal-600 relative opacity-90 z-0" />
+          <div className="h-24" style={{ backgroundColor: "#2563EB", opacity: 0.9 }} />
           <div className="px-8 pb-8 relative z-10">
             <div className="flex flex-col sm:flex-row sm:items-end gap-5 -mt-12 mb-4">
               {/* AVATAR */}
               <div className="relative flex-shrink-0">
-                <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-emerald-600 flex items-center justify-center">
+                <div
+                  className="w-24 h-24 rounded-lg flex items-center justify-center overflow-hidden"
+                  style={{
+                    backgroundColor: "#2563EB",
+                    border: "4px solid #FFFFFF",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)",
+                  }}
+                >
                   {student.profilePhoto ? (
                     <img src={student.profilePhoto} alt={student.name} className="w-full h-full object-cover" />
                   ) : (
@@ -224,7 +308,18 @@ export default function StudentProfileView() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingPhoto}
-                  className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 hover:bg-emerald-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg transition disabled:opacity-60"
+                  className="absolute -bottom-2 -right-2 w-8 h-8 border-2 text-white rounded-full flex items-center justify-center transition disabled:opacity-60"
+                  style={{
+                    backgroundColor: "#2563EB",
+                    borderColor: "#FFFFFF",
+                    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.3)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#1E40AF";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#2563EB";
+                  }}
                   title="Upload photo"
                 >
                   {uploadingPhoto ? (
@@ -245,30 +340,47 @@ export default function StudentProfileView() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{student.name}</h1>
-                    <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1.5">
-                      <GraduationCap size={14} className="text-emerald-500" />
+                    <h1 className="text-2xl font-bold" style={{ color: "#1B2B4B", fontWeight: "700" }}>
+                      {student.name}
+                    </h1>
+                    <p className="text-sm mt-0.5 flex items-center gap-1.5" style={{ color: "#94A3B8" }}>
+                      <GraduationCap size={14} style={{ color: "#2563EB" }} />
                       Student Profile
                     </p>
                   </div>
-                  <div className="flex items-center gap-4 bg-gray-50 px-4 py-2 border border-gray-100 rounded-lg">
+                  <div
+                    className="flex items-center gap-4 px-4 py-2 rounded-lg"
+                    style={{
+                      backgroundColor: "#F8FAFC",
+                      border: "1.5px solid #E2E8F0",
+                      borderRadius: "8px",
+                    }}
+                  >
                     <div>
-                      <p className="text-xs text-gray-500 font-medium tracking-wide">BATCH NAME</p>
-                      <p className="text-sm font-bold text-gray-900">{student.batch_name}</p>
+                      <p className="text-xs font-medium tracking-wide" style={{ color: "#94A3B8", textTransform: "uppercase", fontSize: "10px", fontWeight: "600", letterSpacing: "0.06em" }}>
+                        BATCH NAME
+                      </p>
+                      <p className="text-sm font-bold" style={{ color: "#1B2B4B" }}>
+                        {student.batch_name}
+                      </p>
                     </div>
-                    <div className="w-px h-8 bg-gray-200" />
+                    <div style={{ width: "1px", height: "32px", backgroundColor: "#E2E8F0" }} />
                     <div>
-                      <p className="text-xs text-gray-500 font-medium tracking-wide">BATCH NO</p>
-                      <p className="text-sm font-bold text-emerald-600">#{student.batch_no}</p>
+                      <p className="text-xs font-medium tracking-wide" style={{ color: "#94A3B8", textTransform: "uppercase", fontSize: "10px", fontWeight: "600", letterSpacing: "0.06em" }}>
+                        BATCH NO
+                      </p>
+                      <p className="text-sm font-bold" style={{ color: "#2563EB" }}>
+                        #{student.batch_no}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
-               <Mail size={16} className="text-gray-400" />
-               {student.email}
+            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#64748B" }}>
+              <Mail size={16} style={{ color: "#94A3B8" }} />
+              {student.email}
             </div>
           </div>
         </motion.div>
@@ -280,22 +392,39 @@ export default function StudentProfileView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 flex flex-col h-[400px]"
+            className="rounded-lg p-6 flex flex-col h-[400px]"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}
           >
             <div className="flex items-center gap-3 mb-6">
-              <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
-                <BarChart2 size={20} className="text-emerald-600" />
+              <div
+                style={{
+                  backgroundColor: "#EFF6FF",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  border: "1px solid #BFDBFE",
+                }}
+              >
+                <BarChart2 size={20} style={{ color: "#2563EB" }} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Overall Performance</h3>
-                <p className="text-sm text-gray-600">Average Scores per Subject</p>
+                <h3 className="text-lg font-bold" style={{ color: "#1B2B4B", fontWeight: "700" }}>
+                  Overall Performance
+                </h3>
+                <p className="text-sm" style={{ color: "#64748B" }}>
+                  Average Scores per Subject
+                </p>
               </div>
             </div>
 
             <div className="flex-1 w-full relative">
               {reportsLoading ? (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <RefreshCw size={24} className="animate-spin text-gray-400" />
+                  <RefreshCw size={24} className="animate-spin" style={{ color: "#CBD5E1" }} />
                 </div>
               ) : pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -319,8 +448,10 @@ export default function StudentProfileView() {
                 </ResponsiveContainer>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <BarChart2 size={40} className="text-gray-300 mb-2" />
-                    <p className="text-gray-500 text-sm">No report data yet.</p>
+                  <BarChart2 size={40} style={{ color: "#CBD5E1", marginBottom: "8px" }} />
+                  <p className="text-sm" style={{ color: "#94A3B8" }}>
+                    No report data yet.
+                  </p>
                 </div>
               )}
             </div>
@@ -331,52 +462,108 @@ export default function StudentProfileView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 flex flex-col h-[400px]"
+            className="rounded-lg p-6 flex flex-col h-[400px]"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="bg-orange-50 p-2.5 rounded-lg border border-orange-200">
-                  <FileText size={20} className="text-orange-600" />
+                <div
+                  style={{
+                    backgroundColor: "#FEF3C7",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid #FCD34D",
+                  }}
+                >
+                  <FileText size={20} style={{ color: "#F59E0B" }} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Recent Reports</h3>
-                  <p className="text-sm text-gray-600">Past evaluation history</p>
+                  <h3 className="text-lg font-bold" style={{ color: "#1B2B4B", fontWeight: "700" }}>
+                    Recent Reports
+                  </h3>
+                  <p className="text-sm" style={{ color: "#64748B" }}>
+                    Past evaluation history
+                  </p>
                 </div>
               </div>
-              <div className="text-sm font-semibold px-2.5 py-1 bg-gray-100 rounded text-gray-600">
-                 {reports.length} Total
+              <div
+                className="text-sm font-semibold px-2.5 py-1 rounded"
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  color: "#64748B",
+                  borderRadius: "6px",
+                }}
+              >
+                {reports.length} Total
               </div>
             </div>
 
-            <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-3 flex-1 overflow-y-auto pr-2">
               {reportsLoading ? (
                 <div className="py-12 flex justify-center">
-                  <RefreshCw size={24} className="animate-spin text-gray-400" />
+                  <RefreshCw size={24} className="animate-spin" style={{ color: "#CBD5E1" }} />
                 </div>
               ) : reports.length > 0 ? (
                 reports.map((r, idx) => {
                   const avg = r.parameters?.reduce((s, p) => s + Number(p.score || 0), 0) / (r.parameters?.length || 1);
                   return (
-                    <div key={r._id || idx} className="p-4 border border-gray-100 bg-gray-50 rounded-xl flex items-center justify-between hover:bg-white transition-colors">
+                    <div
+                      key={r._id || idx}
+                      className="p-4 rounded-lg flex items-center justify-between transition-colors"
+                      style={{
+                        backgroundColor: "#F8FAFC",
+                        border: "1.5px solid #E2E8F0",
+                        borderRadius: "8px",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#FFFFFF";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "#F8FAFC";
+                      }}
+                    >
                       <div>
-                        <h4 className="font-semibold text-gray-900 text-sm">Report #{reports.length - idx}</h4>
-                        <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
-                            <Calendar size={12} />
-                            {r.auditDate ? new Date(r.auditDate).toLocaleDateString() : "N/A"}
+                        <h4 className="font-semibold text-sm" style={{ color: "#1B2B4B" }}>
+                          Report #{reports.length - idx}
+                        </h4>
+                        <div className="flex items-center gap-1.5 mt-1 text-xs" style={{ color: "#94A3B8" }}>
+                          <Calendar size={12} />
+                          {r.auditDate ? new Date(r.auditDate).toLocaleDateString() : "N/A"}
                         </div>
                       </div>
-                      <div className="bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-center shadow-sm min-w-[60px]">
-                          <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-0.5">Score</div>
-                          <div className="text-sm font-bold text-gray-900">{avg.toFixed(1)}</div>
+                      <div
+                        className="px-3 py-1.5 rounded-lg text-center"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          border: "1.5px solid #E2E8F0",
+                          borderRadius: "6px",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                          minWidth: "60px",
+                        }}
+                      >
+                        <div className="text-[10px] font-medium tracking-wide" style={{ color: "#94A3B8", textTransform: "uppercase", fontSize: "9px", fontWeight: "600", letterSpacing: "0.05em" }}>
+                          Score
+                        </div>
+                        <div className="text-sm font-bold" style={{ color: "#1B2B4B" }}>
+                          {avg.toFixed(1)}
+                        </div>
                       </div>
                     </div>
                   )
                 })
               ) : (
-                  <div className="py-12 flex flex-col items-center justify-center text-center">
-                    <FileText size={40} className="text-gray-300 mb-2" />
-                    <p className="text-gray-500 text-sm">No recent reports found.</p>
-                  </div>
+                <div className="py-12 flex flex-col items-center justify-center text-center">
+                  <FileText size={40} style={{ color: "#CBD5E1", marginBottom: "8px" }} />
+                  <p className="text-sm" style={{ color: "#94A3B8" }}>
+                    No recent reports found.
+                  </p>
+                </div>
               )}
             </div>
           </motion.div>

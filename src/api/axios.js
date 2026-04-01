@@ -6,9 +6,16 @@ export const API = axios.create({
 });
 
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  let token = localStorage.getItem("token");
+
   if (token) {
+    // 🔥 handle JSON stored token
+    try {
+      token = JSON.parse(token);
+    } catch { }
+
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });

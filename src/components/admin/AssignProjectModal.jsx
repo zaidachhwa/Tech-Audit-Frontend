@@ -1,4 +1,3 @@
-// src/components/admin/AssignProjectModal.jsx
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
 import toast from "react-hot-toast";
@@ -62,17 +61,46 @@ export default function AssignProjectModal({ batch, onClose, onAssigned }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl p-5 w-full max-w-2xl shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+      }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
+
+      <div
+        className="rounded-lg p-5 w-full max-w-2xl"
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderRadius: "12px",
+          boxShadow: "0 20px 25px rgba(0,0,0,0.15)",
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">
+          <h3 className="font-semibold" style={{ color: "#1B2B4B", fontSize: "18px", fontWeight: "700" }}>
             Assign Project to Students — {batch?.batch_name} #{batch?.batch_no}
           </h3>
           <button
             onClick={onClose}
-            className="text-slate-600 hover:text-slate-800"
+            className="p-2 rounded-lg transition"
+            style={{
+              backgroundColor: "transparent",
+              color: "#94A3B8",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#F8FAFC";
+              e.currentTarget.style.color = "#1B2B4B";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "#94A3B8";
+            }}
           >
-            <X />
+            <X size={20} />
           </button>
         </div>
 
@@ -82,39 +110,104 @@ export default function AssignProjectModal({ batch, onClose, onAssigned }) {
             placeholder="Project Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-3 rounded-xl border border-slate-200"
+            className="w-full p-3 rounded-lg outline-none transition"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "8px",
+              color: "#1B2B4B",
+              fontSize: "14px",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#2563EB";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "#E2E8F0";
+            }}
           />
           <input
             type="text"
             placeholder="Repository URL (optional)"
             value={repo}
             onChange={(e) => setRepo(e.target.value)}
-            className="w-full p-3 rounded-xl border border-slate-200"
+            className="w-full p-3 rounded-lg outline-none transition"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "8px",
+              color: "#1B2B4B",
+              fontSize: "14px",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#2563EB";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "#E2E8F0";
+            }}
           />
           <textarea
             placeholder="Short description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-3 rounded-xl border border-slate-200"
+            className="w-full p-3 rounded-lg outline-none transition resize-none"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "8px",
+              color: "#1B2B4B",
+              fontSize: "14px",
+            }}
             rows={3}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#2563EB";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "#E2E8F0";
+            }}
           />
 
           <div>
-            <div className="text-sm font-medium mb-2">Students</div>
-            <div className="grid gap-2 max-h-40 overflow-auto">
+            <div className="text-sm font-medium mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+              Students
+            </div>
+            <div
+              className="grid gap-2 max-h-40 overflow-auto rounded-lg p-2"
+              style={{
+                backgroundColor: "#F8FAFC",
+                border: "1px solid #E2E8F0",
+                borderRadius: "8px",
+              }}
+            >
               {batch?.students?.map((s) => (
                 <label
                   key={s._id}
-                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50"
+                  className="flex items-center gap-2 p-2 rounded-lg transition cursor-pointer"
+                  style={{
+                    backgroundColor: "transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#FFFFFF";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
                 >
                   <input
                     type="checkbox"
                     checked={selected.includes(s._id)}
                     onChange={() => toggle(s._id)}
+                    style={{
+                      accentColor: "#2563EB",
+                      cursor: "pointer",
+                    }}
                   />
                   <div>
-                    <div className="text-sm font-medium">{s.name}</div>
-                    <div className="text-xs text-slate-500">{s.email}</div>
+                    <div className="text-sm font-medium" style={{ color: "#1B2B4B" }}>
+                      {s.name}
+                    </div>
+                    <div className="text-xs" style={{ color: "#94A3B8" }}>
+                      {s.email}
+                    </div>
                   </div>
                 </label>
               ))}
@@ -124,14 +217,38 @@ export default function AssignProjectModal({ batch, onClose, onAssigned }) {
           <div className="flex items-center gap-3 justify-end mt-4">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-100"
+              className="px-4 py-2 rounded-lg font-medium transition"
+              style={{
+                backgroundColor: "#FFFFFF",
+                border: "1.5px solid #E2E8F0",
+                color: "#1B2B4B",
+                borderRadius: "8px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#F8FAFC";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#FFFFFF";
+              }}
             >
               Cancel
             </button>
             <button
               onClick={submit}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+              className="px-4 py-2 rounded-lg text-white font-medium transition disabled:opacity-50"
+              style={{
+                backgroundColor: "#2563EB",
+                borderRadius: "8px",
+              }}
               disabled={loading}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor = "#1E40AF";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#2563EB";
+              }}
             >
               {loading ? "Assigning..." : "Assign"}
             </button>

@@ -7,6 +7,7 @@ import {
   FolderGit2,
   Notebook,
   FileText,
+  BarChart3,
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -49,6 +50,11 @@ export const adminSidebarItems = [
     name:"Drafts",
     path: "/admin/drafts",
     icon: FileText,
+  },
+  {
+    name:"Analytics",
+    path:"/admin/analytics",
+    icon: BarChart3,
   },
   {
     name: "All Reports",

@@ -1,4 +1,3 @@
-// AdminLayout.jsx
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
@@ -10,7 +9,10 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: "#F8FAFC", fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
       <Toaster position="top-right" />
 
       {/* Sidebar */}
@@ -23,21 +25,38 @@ export default function AdminLayout() {
         }`}
       >
         {/* TOP BAR - Mobile Only */}
-        <header className="lg:hidden h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
+        <header
+          className="lg:hidden h-16 flex items-center justify-between px-6 sticky top-0 z-30"
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderBottom: "1.5px solid #E2E8F0",
+          }}
+        >
           <div className="flex items-center gap-4">
             {/* Mobile toggle */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 rounded-lg transition"
+              style={{
+                backgroundColor: "transparent",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#E2E8F0";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
             >
-              <Menu size={20} className="text-gray-600" />
+              <Menu size={20} style={{ color: "#94A3B8" }} />
             </button>
-            <h1 className="text-lg font-semibold text-gray-900">Admin Panel</h1>
+            <h1 className="font-semibold" style={{ color: "#1B2B4B", fontSize: "18px", fontWeight: "700" }}>
+              Admin Panel
+            </h1>
           </div>
         </header>
 
         {/* ⭐ ALL ADMIN PAGES RENDER HERE */}
-        <main className="p-6">
+        <main className="p-6" style={{ backgroundColor: "#F8FAFC" }}>
           <Outlet />
         </main>
       </div>

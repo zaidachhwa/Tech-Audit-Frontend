@@ -68,27 +68,59 @@ export default function Drafts() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-100">
-      
+    <div className="p-6 min-h-screen" style={{ backgroundColor: "#F8FAFC", fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
+
       {/* Header Card */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-3xl shadow-xl p-6 mb-6">
+      <div
+        className="rounded-lg shadow-sm p-6 mb-6"
+        style={{
+          backgroundColor: "#FFFFFF",
+          border: "1.5px solid #E2E8F0",
+          borderRadius: "12px",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        }}
+      >
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-3 shadow-md">
+          <div
+            className="text-white rounded-lg p-3"
+            style={{
+              backgroundColor: "#2563EB",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(37, 99, 235, 0.3)",
+            }}
+          >
             <Layers size={22} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Draft Reports</h2>
-            <p className="text-sm text-gray-500">{drafts.length} total drafts across all batches</p>
+            <h2 className="text-2xl font-bold" style={{ color: "#1B2B4B", fontWeight: "700" }}>
+              Draft Reports
+            </h2>
+            <p className="text-sm" style={{ color: "#94A3B8" }}>
+              {drafts.length} total drafts across all batches
+            </p>
           </div>
         </div>
       </div>
 
       {/* Body */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-3xl shadow-xl p-6">
+      <div
+        className="rounded-lg shadow-sm p-6"
+        style={{
+          backgroundColor: "#FFFFFF",
+          border: "1.5px solid #E2E8F0",
+          borderRadius: "12px",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        }}
+      >
         {!drafts.length ? (
           <div className="text-center py-12">
-            <Layers size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg">No drafts found.</p>
+            <Layers size={48} style={{ margin: "0 auto 16px", color: "#CBD5E1" }} />
+            <p className="text-lg" style={{ color: "#94A3B8" }}>
+              No drafts found.
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -100,19 +132,44 @@ export default function Drafts() {
                   key={courseName}
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-gradient-to-br from-white to-purple-50 border border-purple-100 rounded-2xl shadow-lg overflow-hidden"
+                  className="rounded-lg overflow-hidden"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    borderRadius: "12px",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                  }}
                 >
                   {/* Course Row */}
                   <div
                     onClick={() => toggleCourse(courseName)}
-                    className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-purple-50 transition"
+                    className="flex items-center gap-4 px-5 py-4 cursor-pointer transition"
+                    style={{
+                      backgroundColor: "#F8FAFC",
+                      borderBottom: "1px solid #F1F5F9",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#F1F5F9";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#F8FAFC";
+                    }}
                   >
-                    <div className="bg-gradient-to-r from-blue-400 to-indigo-600 text-white rounded-xl p-2 shadow-md">
+                    <div
+                      className="text-white rounded-lg p-2"
+                      style={{
+                        backgroundColor: "#2563EB",
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 8px rgba(37, 99, 235, 0.3)",
+                      }}
+                    >
                       <Layers size={20} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-bold text-lg text-gray-800">{courseName}</h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <h3 className="font-bold text-lg" style={{ color: "#1B2B4B", fontWeight: "700" }}>
+                        {courseName}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm" style={{ color: "#94A3B8" }}>
                         <Hash size={13} />
                         <span>{Object.keys(batches).length} batch{Object.keys(batches).length > 1 ? "es" : ""}</span>
                         <span className="mx-1">·</span>
@@ -122,75 +179,184 @@ export default function Drafts() {
                     </div>
                     <ChevronRight
                       size={20}
-                      className={`text-purple-500 transition-transform duration-300 ${openCourses[courseName] ? "rotate-90" : ""}`}
+                      style={{
+                        color: "#2563EB",
+                        transform: openCourses[courseName] ? "rotate(90deg)" : "rotate(0deg)",
+                        transition: "transform 0.3s ease",
+                      }}
                     />
                   </div>
 
                   {/* Batches under this course */}
                   {openCourses[courseName] && (
-                    <div className="border-t border-purple-100 px-5 py-4 space-y-3">
+                    <div
+                      className="px-5 py-4 space-y-3"
+                      style={{
+                        backgroundColor: "#F8FAFC",
+                        borderTop: "1px solid #F1F5F9",
+                      }}
+                    >
                       {Object.entries(batches).map(([batchNo, batchDrafts]) => {
                         const batchKey = `${courseName}-${batchNo}`;
 
                         return (
                           <div
                             key={batchKey}
-                            className="bg-white border border-purple-100 rounded-xl shadow-sm overflow-hidden"
+                            className="rounded-lg overflow-hidden"
+                            style={{
+                              backgroundColor: "#FFFFFF",
+                              border: "1.5px solid #E2E8F0",
+                              borderRadius: "8px",
+                            }}
                           >
                             {/* Batch Row */}
                             <div
                               onClick={() => toggleBatch(batchKey)}
-                              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-purple-50 transition"
+                              className="flex items-center gap-3 px-4 py-3 cursor-pointer transition"
+                              style={{
+                                backgroundColor: "#F8FAFC",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#F1F5F9";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#F8FAFC";
+                              }}
                             >
-                              <div className="bg-purple-100 text-purple-700 rounded-lg p-1.5">
+                              <div
+                                className="rounded-lg p-1.5"
+                                style={{
+                                  backgroundColor: "#EFF6FF",
+                                  color: "#2563EB",
+                                  borderRadius: "6px",
+                                }}
+                              >
                                 <Users size={16} />
                               </div>
                               <div className="flex-1">
-                                <p className="font-semibold text-gray-700 text-sm">Batch No. {batchNo}</p>
-                                <p className="text-xs text-gray-400">{batchDrafts.length} student draft{batchDrafts.length > 1 ? "s" : ""}</p>
+                                <p className="font-semibold text-sm" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                                  Batch No. {batchNo}
+                                </p>
+                                <p className="text-xs" style={{ color: "#94A3B8" }}>
+                                  {batchDrafts.length} student draft{batchDrafts.length > 1 ? "s" : ""}
+                                </p>
                               </div>
                               <ChevronRight
                                 size={16}
-                                className={`text-purple-400 transition-transform duration-300 ${openBatches[batchKey] ? "rotate-90" : ""}`}
+                                style={{
+                                  color: "#2563EB",
+                                  transform: openBatches[batchKey] ? "rotate(90deg)" : "rotate(0deg)",
+                                  transition: "transform 0.3s ease",
+                                }}
                               />
                             </div>
 
                             {/* Student Table */}
                             {openBatches[batchKey] && (
-                              <div className="border-t border-purple-50">
+                              <div style={{ borderTop: "1px solid #F1F5F9" }}>
                                 <table className="w-full text-left">
                                   <thead>
-                                    <tr className="bg-purple-50 text-xs text-purple-700 uppercase tracking-wide">
-                                      <th className="px-4 py-2">Student Name</th>
-                                      <th className="px-4 py-2">Date</th>
-                                      <th className="px-4 py-2">Actions</th>
+                                    <tr
+                                      style={{
+                                        backgroundColor: "#F8FAFC",
+                                        borderBottom: "1px solid #E2E8F0",
+                                      }}
+                                    >
+                                      <th
+                                        className="px-4 py-2 text-xs font-semibold uppercase tracking-wide"
+                                        style={{
+                                          color: "#64748B",
+                                          fontSize: "11px",
+                                          fontWeight: "600",
+                                          letterSpacing: "0.06em",
+                                        }}
+                                      >
+                                        Student Name
+                                      </th>
+                                      <th
+                                        className="px-4 py-2 text-xs font-semibold uppercase tracking-wide"
+                                        style={{
+                                          color: "#64748B",
+                                          fontSize: "11px",
+                                          fontWeight: "600",
+                                          letterSpacing: "0.06em",
+                                        }}
+                                      >
+                                        Date
+                                      </th>
+                                      <th
+                                        className="px-4 py-2 text-xs font-semibold uppercase tracking-wide"
+                                        style={{
+                                          color: "#64748B",
+                                          fontSize: "11px",
+                                          fontWeight: "600",
+                                          letterSpacing: "0.06em",
+                                        }}
+                                      >
+                                        Actions
+                                      </th>
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {batchDrafts.map((d) => (
+                                    {batchDrafts.map((d, idx) => (
                                       <tr
                                         key={d._id}
-                                        className="border-t border-purple-50 hover:bg-purple-50/50 transition"
+                                        style={{
+                                          backgroundColor: idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC",
+                                          borderBottom: "1px solid #F1F5F9",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.backgroundColor = "#F1F5F9";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC";
+                                        }}
                                       >
-                                        <td className="px-4 py-3 text-gray-700 font-medium text-sm">{d.student?.name}</td>
-                                        <td className="px-4 py-3 text-gray-500 text-sm">
+                                        <td className="px-4 py-3 font-medium text-sm" style={{ color: "#1B2B4B" }}>
+                                          {d.student?.name}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm" style={{ color: "#94A3B8" }}>
                                           <div className="flex items-center gap-1">
-                                            <Calendar size={14} className="text-gray-400" />
+                                            <Calendar size={14} />
                                             {d.createdAt?.substring(0, 10)}
                                           </div>
                                         </td>
                                         <td className="px-4 py-3">
                                           <div className="flex items-center gap-2">
-                                            <Eye
-                                              size={28}
-                                              className="text-emerald-600 cursor-pointer hover:bg-green-100 hover:scale-110 p-[3px] rounded transition"
+                                            <button
+                                              className="p-2 rounded-lg transition cursor-pointer"
+                                              style={{
+                                                backgroundColor: "transparent",
+                                                color: "#10B981",
+                                              }}
+                                              onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = "#ECFDF5";
+                                              }}
+                                              onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = "transparent";
+                                              }}
                                               onClick={() => handleViewDraft(d)}
-                                            />
-                                            <Trash2
-                                              size={28}
-                                              className="text-red-500 cursor-pointer hover:bg-red-50 hover:scale-110 p-[3px] rounded transition"
+                                              title="View Draft"
+                                            >
+                                              <Eye size={18} />
+                                            </button>
+                                            <button
+                                              className="p-2 rounded-lg transition cursor-pointer"
+                                              style={{
+                                                backgroundColor: "transparent",
+                                                color: "#EF4444",
+                                              }}
+                                              onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = "#FEE2E2";
+                                              }}
+                                              onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = "transparent";
+                                              }}
                                               onClick={() => handleDelete(d._id)}
-                                            />
+                                              title="Delete Draft"
+                                            >
+                                              <Trash2 size={18} />
+                                            </button>
                                           </div>
                                         </td>
                                       </tr>
@@ -229,17 +395,42 @@ export default function Drafts() {
 function PreviewModal({ pdfUrl, onClose }) {
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      className="fixed inset-0 flex items-center justify-center z-50"
+      style={{
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+      }}
       onClick={onClose}
     >
       <div
-        className="bg-white w-[90%] h-[90%] rounded-2xl shadow-2xl overflow-hidden"
+        className="w-[90%] h-[90%] rounded-lg overflow-hidden"
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderRadius: "12px",
+          boxShadow: "0 20px 25px rgba(0,0,0,0.15)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-3 border-b flex justify-end">
+        <div
+          className="p-3 flex justify-end"
+          style={{
+            backgroundColor: "#F8FAFC",
+            borderBottom: "1px solid #E2E8F0",
+          }}
+        >
           <button
             onClick={onClose}
-            className="px-4 py-1.5 text-sm bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition"
+            className="px-4 py-1.5 text-sm rounded-lg font-medium transition"
+            style={{
+              backgroundColor: "#FEE2E2",
+              color: "#EF4444",
+              borderRadius: "6px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#FEE2E2";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#FEE2E2";
+            }}
           >
             Close
           </button>

@@ -28,15 +28,18 @@ export default function StudentProjectCard({
 
   return (
     <div
-      className={`p-4 rounded-2xl shadow-md ${
-        compact ? "bg-white/70" : "bg-gradient-to-br from-white to-slate-50"
-      } border border-transparent hover:shadow-lg transition`}
+      className={`p-4 rounded-xl bg-white border-[1.5px] border-[#E2E8F0] shadow-sm transition-all duration-200 hover:shadow-lg hover:-translate-y-[2px] ${
+        compact ? "" : ""
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="font-medium text-slate-800">{title}</div>
+          <div className="text-[14px] font-semibold text-[#1B2B4B]">
+            {title}
+          </div>
+
           {!compact && (
-            <div className="text-sm text-slate-500 mt-1 line-clamp-3">
+            <div className="text-[13px] text-[#64748B] mt-1 line-clamp-3">
               {desc}
             </div>
           )}
@@ -44,10 +47,10 @@ export default function StudentProjectCard({
 
         <div className="text-right">
           <div
-            className={`px-2 py-1 rounded-full text-xs font-semibold ${
+            className={`px-3 py-[3px] rounded-full text-[12px] font-semibold ${
               status === "Approved" || status === "approved"
-                ? "bg-green-50 text-green-700"
-                : "bg-yellow-50 text-yellow-700"
+                ? "bg-[#ECFDF5] text-[#065F46]"
+                : "bg-[#EFF6FF] text-[#1E40AF]"
             }`}
           >
             {status === "Approved" || status === "approved"
@@ -58,19 +61,19 @@ export default function StudentProjectCard({
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-3 text-sm text-slate-500">
+        <div className="flex items-center gap-3 text-[13px] text-[#64748B]">
           <GitBranch size={14} />
           {repo ? (
             <a
               href={repo}
               target="_blank"
               rel="noreferrer"
-              className="text-purple-700 hover:underline"
+              className="text-[#2563EB] hover:underline font-medium"
             >
               Repo
             </a>
           ) : (
-            <span className="text-slate-400">No repo</span>
+            <span className="text-[#94A3B8]">No repo</span>
           )}
         </div>
 
@@ -78,15 +81,16 @@ export default function StudentProjectCard({
           {project._id && (
             <Link
               to={`/admin/project/${project._id}`}
-              className="text-sm text-purple-700 hover:underline"
+              className="text-[13px] font-medium text-[#1B2B4B] border border-[#E2E8F0] px-3 py-1 rounded-lg hover:bg-[#F8FAFC]"
             >
               Details
             </Link>
           )}
+
           {onApprove && (
             <button
               onClick={onApprove}
-              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg"
+              className="inline-flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-[13px] font-medium"
               title="Approve project"
             >
               <BadgeCheck size={14} />

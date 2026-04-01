@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { API } from '../../api/axios';
-import { FileText, Eye, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { FileText, Eye, Trash2, X, ChevronDown, ChevronRight, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -51,24 +51,53 @@ export default function ReportsList() {
   };
 
   return (
-    <div>
+    <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <FileText className="w-6 h-6 text-emerald-600" />
+        <div
+          className="w-6 h-6 flex items-center justify-center rounded-lg"
+          style={{ backgroundColor: "#EFF6FF" }}
+        >
+          <FileText className="w-6 h-6" style={{ color: "#2563EB" }} />
+        </div>
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Audit Reports</h1>
-          <p className="text-sm text-gray-500">{reports.length} total reports</p>
+          <h1 className="font-bold" style={{ color: "#1B2B4B", fontSize: "20px", fontWeight: "700" }}>
+            Audit Reports
+          </h1>
+          <p className="text-sm" style={{ color: "#94A3B8", fontSize: "13px" }}>
+            {reports.length} total reports
+          </p>
         </div>
       </div>
 
       {/* Accordion List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="py-12 text-center text-gray-500 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div
+            className="py-12 text-center rounded-lg"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              color: "#94A3B8",
+            }}
+          >
             Loading reports...
           </div>
         ) : Object.keys(groupedReports).length === 0 ? (
-          <div className="py-12 text-center text-gray-500 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div
+            className="py-12 text-center rounded-lg"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              color: "#94A3B8",
+            }}
+          >
             No reports found
           </div>
         ) : (
@@ -93,9 +122,19 @@ export default function ReportsList() {
               {/* Close button - absolute top-right */}
               <button
                 onClick={() => setSelectedReport(null)}
-                className="absolute -top-1 -right-1 w-8 h-8 flex items-center justify-center
-                           text-gray-400 hover:text-gray-600 hover:bg-gray-100 
-                           rounded-full transition-colors"
+                className="absolute -top-1 -right-1 w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#94A3B8",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#F8FAFC";
+                  e.currentTarget.style.color = "#1B2B4B";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = "#94A3B8";
+                }}
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -103,7 +142,7 @@ export default function ReportsList() {
 
               {/* Title and Download button */}
               <div className="flex items-center justify-between pr-10">
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="font-semibold" style={{ color: "#1B2B4B", fontSize: "18px", fontWeight: "700" }}>
                   Report Details
                 </h2>
 
@@ -122,7 +161,6 @@ export default function ReportsList() {
                       const blob = await res.blob();
                       const url = window.URL.createObjectURL(blob);
 
-                      // 🔥 Build meaningful filename
                       const studentName =
                         selectedReport.student?.name?.replace(/\s+/g, '_') ||
                         'Student';
@@ -149,9 +187,21 @@ export default function ReportsList() {
                       toast.error('Download failed');
                     }
                   }}
-                  className="px-4 py-1.5 text-sm border border-gray-300 rounded-lg 
-             text-gray-700 hover:bg-gray-100 transition"
+                  className="px-4 py-1.5 text-sm rounded-lg font-medium transition flex items-center gap-2"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    color: "#1B2B4B",
+                    borderRadius: "8px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#F8FAFC";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#FFFFFF";
+                  }}
                 >
+                  <Download size={16} />
                   Download
                 </button>
               </div>
@@ -173,7 +223,7 @@ export default function ReportsList() {
 
             {/* PARAMETERS */}
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+              <h3 className="text-sm font-semibold mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Parameters
               </h3>
 
@@ -181,10 +231,17 @@ export default function ReportsList() {
                 {selectedReport.parameters?.map((p) => (
                   <div
                     key={p._id}
-                    className="rounded-xl border bg-emerald-50/40 px-3 py-2"
+                    className="rounded-lg px-3 py-2"
+                    style={{
+                      backgroundColor: "#ECFDF5",
+                      border: "1px solid #D1FAE5",
+                      borderRadius: "8px",
+                    }}
                   >
-                    <div className="text-xs text-gray-500">{p.name}</div>
-                    <div className="text-lg font-semibold text-emerald-700">
+                    <div className="text-xs" style={{ color: "#94A3B8" }}>
+                      {p.name}
+                    </div>
+                    <div className="font-semibold" style={{ color: "#065F46", fontSize: "16px", fontWeight: "700" }}>
                       {p.score} / 10
                     </div>
                   </div>
@@ -194,14 +251,15 @@ export default function ReportsList() {
 
             {/* FEEDBACK */}
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">
+              <h3 className="text-sm font-semibold mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Feedback
               </h3>
 
               {selectedReport.feedbackSchema?.map((f, idx) => (
                 <ul
                   key={idx}
-                  className="list-disc list-inside text-sm text-gray-700 space-y-1"
+                  className="list-disc list-inside text-sm space-y-1"
+                  style={{ color: "#1B2B4B" }}
                 >
                   {f.point1 && <li>{f.point1}</li>}
                   {f.point2 && <li>{f.point2}</li>}
@@ -212,10 +270,18 @@ export default function ReportsList() {
 
             {/* OVERALL REMARKS */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">
+              <h3 className="text-sm font-semibold mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Overall Remarks
               </h3>
-              <p className="text-sm text-gray-800 bg-gray-50 rounded-xl p-3 border">
+              <p
+                className="text-sm rounded-lg p-3 border"
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  color: "#1B2B4B",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "8px",
+                }}
+              >
                 {selectedReport.overallRemarks || '—'}
               </p>
             </div>
@@ -227,25 +293,47 @@ export default function ReportsList() {
       <AnimatePresence>
         {deleteTarget && (
           <Modal onClose={() => setDeleteTarget(null)}>
-            <h2 className="text-lg font-semibold mb-3 text-red-600">
+            <h2 className="font-semibold mb-3" style={{ color: "#EF4444", fontSize: "18px", fontWeight: "700" }}>
               Delete Report
             </h2>
 
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm mb-6" style={{ color: "#64748B" }}>
               Are you sure you want to delete this report?
             </p>
 
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 rounded-lg border"
+                className="px-4 py-2 rounded-lg font-medium transition"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  color: "#1B2B4B",
+                  borderRadius: "8px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#F8FAFC";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#FFFFFF";
+                }}
               >
                 Cancel
               </button>
 
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white"
+                className="px-4 py-2 rounded-lg text-white font-medium transition"
+                style={{
+                  backgroundColor: "#EF4444",
+                  borderRadius: "8px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#DC2626";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#EF4444";
+                }}
               >
                 Delete
               </button>
@@ -263,15 +351,49 @@ function BatchAccordion({ batchName, reports, onSelectedReport, onDeleteTarget }
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div
+      className="rounded-lg overflow-hidden"
+      style={{
+        backgroundColor: "#FFFFFF",
+        border: "1.5px solid #E2E8F0",
+        borderRadius: "12px",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      }}
+    >
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition border-b border-gray-100"
+        className="w-full flex items-center justify-between p-4 transition"
+        style={{
+          backgroundColor: "#F8FAFC",
+          borderBottom: "1px solid #F1F5F9",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#F1F5F9";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#F8FAFC";
+        }}
       >
         <div className="flex items-center gap-3">
-          {isOpen ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
-          <span className="font-semibold text-gray-800">{batchName}</span>
-          <span className="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full font-medium">
+          {isOpen ? (
+            <ChevronDown className="w-5 h-5" style={{ color: "#94A3B8" }} />
+          ) : (
+            <ChevronRight className="w-5 h-5" style={{ color: "#94A3B8" }} />
+          )}
+          <span className="font-semibold" style={{ color: "#1B2B4B" }}>
+            {batchName}
+          </span>
+          <span
+            className="text-xs px-2.5 py-1 rounded-full font-medium"
+            style={{
+              backgroundColor: "#ECFDF5",
+              color: "#065F46",
+              borderRadius: "20px",
+              padding: "3px 12px",
+              fontSize: "12px",
+              fontWeight: "600",
+            }}
+          >
             {reports.length} report{reports.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -287,37 +409,117 @@ function BatchAccordion({ batchName, reports, onSelectedReport, onDeleteTarget }
           >
             <div className="p-4 overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50/50 border-b border-gray-100">
+                <thead style={{ backgroundColor: "#F8FAFC", borderBottom: "1px solid #F1F5F9" }}>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Student</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Audit Date</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+                    <th
+                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
+                      style={{
+                        color: "#64748B",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Student
+                    </th>
+                    <th
+                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
+                      style={{
+                        color: "#64748B",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Email
+                    </th>
+                    <th
+                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
+                      style={{
+                        color: "#64748B",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Audit Date
+                    </th>
+                    <th
+                      className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide"
+                      style={{
+                        color: "#64748B",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map((r) => (
-                    <tr key={r._id} className="border-b last:border-0 border-gray-50 hover:bg-emerald-50/40 transition">
-                      <td className="px-4 py-3 font-medium text-gray-800">
+                  {reports.map((r, idx) => (
+                    <tr
+                      key={r._id}
+                      style={{
+                        backgroundColor: idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC",
+                        borderBottom: "1px solid #F1F5F9",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#F1F5F9";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC";
+                      }}
+                    >
+                      <td className="px-4 py-3 font-medium" style={{ color: "#1B2B4B" }}>
                         {r.student?.name}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3" style={{ color: "#94A3B8" }}>
                         {r.student?.email}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3" style={{ color: "#64748B" }}>
                         {new Date(r.auditDate).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => onSelectedReport(r)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs hover:bg-emerald-700 transition shadow-sm"
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-medium transition"
+                            style={{
+                              backgroundColor: "#2563EB",
+                              borderRadius: "6px",
+                              boxShadow: "0 2px 8px rgba(37, 99, 235, 0.3)",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#1E40AF";
+                              e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 99, 235, 0.4)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "#2563EB";
+                              e.currentTarget.style.boxShadow = "0 2px 8px rgba(37, 99, 235, 0.3)";
+                            }}
                           >
                             <Eye className="w-4 h-4" /> View
                           </button>
                           <button
                             onClick={() => onDeleteTarget(r)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs hover:bg-red-100 transition"
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                            style={{
+                              backgroundColor: "#FEF2F2",
+                              color: "#EF4444",
+                              borderRadius: "6px",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#FEE2E2";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "#FEF2F2";
+                            }}
                           >
                             <Trash2 className="w-4 h-4" /> Delete
                           </button>
@@ -341,13 +543,21 @@ function Modal({ children, onClose }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+      }}
     >
       <motion.div
         initial={{ scale: 0.95 }}
         animate={{ scale: 1 }}
         exit={{ scale: 0.95 }}
-        className="bg-white rounded-2xl p-6 w-full max-w-lg relative shadow-xl"
+        className="rounded-lg p-6 w-full max-w-lg relative"
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderRadius: "12px",
+          boxShadow: "0 20px 25px rgba(0,0,0,0.15)",
+        }}
       >
         {children}
       </motion.div>
@@ -358,8 +568,12 @@ function Modal({ children, onClose }) {
 function Info({ label, value }) {
   return (
     <div>
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="font-medium text-gray-800">{value || '—'}</div>
+      <div className="text-xs" style={{ color: "#94A3B8" }}>
+        {label}
+      </div>
+      <div className="font-medium" style={{ color: "#1B2B4B" }}>
+        {value || '—'}
+      </div>
     </div>
   );
 }

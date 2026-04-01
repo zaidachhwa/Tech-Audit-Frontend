@@ -27,6 +27,7 @@ import Drafts from "./components/admin/Drafts";
 import AdminStudents from "./pages/AdminStudents";
 import AdminBatches from "./pages/AdminBatches";
 import AdminTeachers from "./pages/AdminTeachers";
+import AdminAnalytics from "./pages/AdminAnalytics"; // ✅ ADDED
 import TeacherProfileView from "./components/admin/TeacherProfileView";
 import StudentProfileView from "./components/admin/StudentProfileView";
 
@@ -91,6 +92,10 @@ export default function App() {
           <Route path="syllabus" element={<AdminSyllabusManagement />} />
           <Route path="all-reports" element={<AllReports />} />
           <Route path="drafts" element={<Drafts />} />
+
+          {/* ✅ ANALYTICS ROUTE */}
+          <Route path="analytics" element={<AdminAnalytics />} />
+
           <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
         </Route>
