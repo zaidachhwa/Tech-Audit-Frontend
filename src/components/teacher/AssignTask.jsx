@@ -50,11 +50,12 @@ export default function AssignTask() {
         setDate={setDate}
       />
 
-      <StudentSelector
+       <StudentSelector
         student={student}
         setStudent={setStudent}
+        batchName={batchName}
+        batchNumber={batchNumber}
       />
-
       <ParameterSection
         parameters={parameters}
         setParameters={setParameters}

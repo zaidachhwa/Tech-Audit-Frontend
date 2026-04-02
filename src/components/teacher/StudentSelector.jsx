@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
 
-export default function StudentSelector({ student, setStudent }) {
+export default function StudentSelector({ student, setStudent, batchName, batchNumber }) {
   const [students, setStudents] = useState([]);
 
   useEffect(() => {
+    if (!batchName || !batchNumber) return;
     const fetchStudents = async () => {
       try {
-        const res = await API.get("/students/list"); // ✅ FIXED
+        const res = await API.get(
+        `/students/list?batchName=${batchName}&batchNumber=${batchNumber}`
+     );
         console.log(res.data);
         setStudents(res.data.students);
       } catch (err) {
@@ -16,7 +19,7 @@ export default function StudentSelector({ student, setStudent }) {
     };
 
     fetchStudents();
-  }, []);
+  }, [batchName, batchNumber]);
 
   return (
     <div className="bg-white p-4 rounded-xl border">

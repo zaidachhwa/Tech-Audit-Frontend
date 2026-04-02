@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Menu, GraduationCap, LogOut } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { adminSidebarItems } from "./sidebarItems";
 
@@ -18,40 +18,57 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
         }`}
         style={{
           backgroundColor: "#1B2B4B",
-          borderRight: "1px solid #1B2B4B",
+          borderRight: "1px solid #ffffff",
           fontFamily: "'DM Sans', sans-serif",
+          borderRadius: "0px 20px 20px 0px",
         }}
       >
         <div className="flex flex-col h-full">
-          {/* HEADER */}
+          {/* LOGO HEADER SECTION */}
           <div
-            className="h-40 flex items-center justify-between px-4"
-            style={{
-              borderBottom: "1px solid #243452",
-            }}
+            className="flex flex-col border-b"
+            style={{ borderColor: "#243452" }}
           >
-            {sidebarOpen && (
-              <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="Logo" className="w-auto h-40 object-contain" />
-                <span className="font-bold text-lg tracking-tight" style={{ color: "#FFFFFF" }}></span>
+            {sidebarOpen ? (
+              <div>
+                {/* Independent White Div for Logo */}
+               
+                <div className="w-full bg-white h-40 flex items-center justify-center p-6">
+                  <img
+                    src="/logo.png"
+                    alt="Logo"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                {/* Small bar for the Menu Toggle when open */}
+                <div className="flex justify-end px-2 py-1">
+                  <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="p-1.5 rounded-md transition hidden lg:block hover:bg-[#243452]"
+                  >
+                    <Menu size={18} style={{ color: "#94A3B8" }} />
+                  </button>
+                </div>
+              </div>
+              
+            ) : (
+              /* Collapsed State Logo/Menu Area */
+              <div className="h-20 flex items-center justify-center">
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="p-2 rounded-lg transition hidden lg:block"
+                  style={{ backgroundColor: "transparent" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#243452")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <Menu size={20} style={{ color: "#94A3B8" }} />
+                </button>
               </div>
             )}
-
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg transition hidden lg:block"
-              style={{
-                backgroundColor: "transparent",
-              }}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = "#243452")}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
-            >
-              <Menu size={20} style={{ color: "#94A3B8" }} />
-            </button>
           </div>
 
           {/* NAVIGATION */}
-          <nav className="flex-1 py-6 px-3 overflow-y-auto">
+          <nav className="flex-1 py-4 px-3 overflow-y-auto">
             <div className="space-y-1">
               {adminSidebarItems.map((item) => {
                 const Icon = item.icon;
@@ -80,7 +97,7 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
                     <Icon
                       size={20}
                       style={{
-                        color: isActive ? "#FFFFFF" : "#94A3B8",
+                            color: isActive ? "#FFFFFF" : "#94A3B8",
                       }}
                     />
 
@@ -118,12 +135,14 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = "#243452";
                 e.currentTarget.style.color = "#EF4444";
-                e.currentTarget.querySelector("svg").style.color = "#EF4444";
+                const svg = e.currentTarget.querySelector("svg");
+                if (svg) svg.style.color = "#EF4444";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "transparent";
                 e.currentTarget.style.color = "#94A3B8";
-                e.currentTarget.querySelector("svg").style.color = "#94A3B8";
+                const svg = e.currentTarget.querySelector("svg");
+                if (svg) svg.style.color = "#94A3B8";
               }}
             >
               <LogOut

@@ -1,3 +1,5 @@
+
+
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -27,15 +29,18 @@ import Drafts from "./components/admin/Drafts";
 import AdminStudents from "./pages/AdminStudents";
 import AdminBatches from "./pages/AdminBatches";
 import AdminTeachers from "./pages/AdminTeachers";
-import AdminAnalytics from "./pages/AdminAnalytics"; // ✅ ADDED
 import TeacherProfileView from "./components/admin/TeacherProfileView";
 import StudentProfileView from "./components/admin/StudentProfileView";
 
 /* TEACHER */
 import TeacherLogin from "./components/teacher/TeacherLogin";
 import TeacherRegister from "./components/teacher/TeacherRegister";
+import TeacherLayout from "./components/teacher/TeacherLayout";
 import TeacherSyllabusDashboard from "./components/teacher/TeacherSyllabusDashboard";
 import TeacherProfile from "./components/teacher/TeacherProfile";
+import TeacherStudentProgress from "./components/teacher/TeacherStudentProgress";
+import AssignTask from "./components/teacher/AssignTask";
+import AdminAnalytics from "./pages/AdminAnalytics";
 
 /* PRIVATE ROUTE */
 function PrivateRoute({ children, role }) {
@@ -92,35 +97,30 @@ export default function App() {
           <Route path="syllabus" element={<AdminSyllabusManagement />} />
           <Route path="all-reports" element={<AllReports />} />
           <Route path="drafts" element={<Drafts />} />
-
-          {/* ✅ ANALYTICS ROUTE */}
-          <Route path="analytics" element={<AdminAnalytics />} />
-
           <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
         </Route>
 
         {/* TEACHER */}
         <Route path="/teacher/login" element={<TeacherLogin />} />
         <Route path="/teacher/register" element={<TeacherRegister />} />
+        
 
         <Route
-          path="/teacher/dashboard"
+          path="/teacher"
           element={
             <PrivateRoute role="teacher">
-              <TeacherSyllabusDashboard />
+              <TeacherLayout />
             </PrivateRoute>
           }
-        />
-
-        <Route
-          path="/teacher/profile"
-          element={
-            <PrivateRoute role="teacher">
-              <TeacherProfile />
-            </PrivateRoute>
-          }
-        />
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<TeacherSyllabusDashboard />} />
+          <Route path="performance" element={<TeacherStudentProgress />} />
+          <Route path="profile" element={<TeacherProfile />} />
+          <Route path="assign-task" element={<AssignTask />} />
+        </Route>
 
         {/* DEFAULT */}
         <Route path="*" element={<Navigate to="/student/login" replace />} />

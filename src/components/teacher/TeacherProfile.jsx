@@ -279,13 +279,13 @@ export default function TeacherProfile() {
 
         {/* PROFILE CARD */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="h-32 bg-gradient-to-r from-indigo-600 to-purple-600"></div>
+          <div className="h-32 bg-emerald-500"></div>
 
           <div className="px-6 md:px-8 pb-8">
             {/* Top Profile Section */}
             <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-16 mb-6">
               <div className="relative">
-                <div className="w-32 h-32 bg-indigo-600 rounded-lg shadow-xl flex items-center justify-center text-white text-5xl font-bold border-4 border-white">
+                <div className="w-32 h-32 bg-emerald-700 rounded-lg shadow-xl flex items-center justify-center text-white text-5xl font-bold border-4 border-white">
                   {profileData?.name?.charAt(0).toUpperCase()}
                 </div>
               </div>

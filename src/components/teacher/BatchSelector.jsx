@@ -43,11 +43,11 @@ export default function BatchSelector({
 >
   <option value="">Select Batch Name</option>
 
-  {batches.map((b) => (
-    <option key={b._id} value={b.batch_name}>
-      {b.batch_name}
-    </option>
-  ))}
+  {[...new Set(batches.map(b => b.batch_name))].map((name) => (
+  <option key={name} value={name}>
+    {name}
+  </option>
+))}
 </select>
 
 {/* Batch Number */}
@@ -58,7 +58,9 @@ export default function BatchSelector({
 >
   <option value="">Select Batch Number</option>
 
-  {batches.map((b) => (
+  {batches
+  .filter((b) => b.batch_name === batchName)
+  .map((b) => (
     <option key={b._id} value={b.batch_no}>
       {b.batch_no}
     </option>
