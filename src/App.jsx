@@ -1,46 +1,47 @@
-
-
-import { Navigate, Route, Routes } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 /* FORGOT PASSWORD */
-import ForgotPassword from "./components/auth/ForgotPassword";
+import ForgotPassword from './components/auth/ForgotPassword';
 
 /* STUDENT */
-import StudentLogin from "./components/student/StudentLogin";
-import StudentSignup from "./components/student/StudentSignup";
-import StudentLayout from "./components/student/StudentLayout";
-import Dashboard from "./components/student/Dashboard";
-import Projects from "./components/student/Projects";
-import Reports from "./components/student/Reports";
-import StudentProfile from "./components/student/StudentProfile";
+import StudentLogin from './components/student/StudentLogin';
+import StudentSignup from './components/student/StudentSignup';
+import StudentLayout from './components/student/StudentLayout';
+import Dashboard from './components/student/Dashboard';
+import Projects from './components/student/Projects';
+import Reports from './components/student/Reports';
+import StudentProfile from './components/student/StudentProfile';
 
 /* ADMIN */
-import AdminLogin from "./components/admin/AdminLogin";
-import AdminLayout from "./components/admin/AdminLayout";
-import AdminDashboard from "./components/admin/AdminDashboard";
-import ProjectTracking from "./components/admin/ProjectTracking";
-import BatchStudentsView from "./components/admin/BatchStudentsView";
-import StudentProjectsView from "./components/admin/StudentProjectsView";
-import AdminSyllabusManagement from "./components/admin/AdminSyllabusManagement";
-import AllReports from "./components/admin/AllReports";
-import AddReport2 from "./components/admin/AddReport2";
-import Drafts from "./components/admin/Drafts";
-import AdminStudents from "./pages/AdminStudents";
-import AdminBatches from "./pages/AdminBatches";
-import AdminTeachers from "./pages/AdminTeachers";
-import TeacherProfileView from "./components/admin/TeacherProfileView";
-import StudentProfileView from "./components/admin/StudentProfileView";
+import AdminLogin from './components/admin/AdminLogin';
+import AdminLayout from './components/admin/AdminLayout';
+import AdminDashboard from './components/admin/AdminDashboard';
+import ProjectTracking from './components/admin/ProjectTracking';
+import BatchStudentsView from './components/admin/BatchStudentsView';
+import StudentProjectsView from './components/admin/StudentProjectsView';
+import AdminSyllabusManagement from './components/admin/AdminSyllabusManagement';
+import AllReports from './components/admin/AllReports';
+import AddReport2 from './components/admin/AddReport2';
+import Drafts from './components/admin/Drafts';
+import AdminStudents from './pages/AdminStudents';
+import AdminBatches from './pages/AdminBatches';
+import AdminTeachers from './pages/AdminTeachers';
+import TeacherProfileView from './components/admin/TeacherProfileView';
+import StudentProfileView from './components/admin/StudentProfileView';
 
 /* TEACHER */
-import TeacherLogin from "./components/teacher/TeacherLogin";
-import TeacherRegister from "./components/teacher/TeacherRegister";
-import TeacherLayout from "./components/teacher/TeacherLayout";
-import TeacherSyllabusDashboard from "./components/teacher/TeacherSyllabusDashboard";
-import TeacherProfile from "./components/teacher/TeacherProfile";
-import TeacherStudentProgress from "./components/teacher/TeacherStudentProgress";
-import AssignTask from "./components/teacher/AssignTask";
-import AdminAnalytics from "./pages/AdminAnalytics";
+import TeacherLogin from './components/teacher/TeacherLogin';
+import TeacherRegister from './components/teacher/TeacherRegister';
+import TeacherLayout from './components/teacher/TeacherLayout';
+import TeacherSyllabusDashboard from './components/teacher/TeacherSyllabusDashboard';
+import TeacherProfile from './components/teacher/TeacherProfile';
+import TeacherStudentProgress from './components/teacher/TeacherStudentProgress';
+import AssignTask from './components/teacher/AssignTask';
+import AdminAnalytics from './pages/AdminAnalytics';
+import TeacherAttendance from './components/teacher/TeacherAttendance';
+import TeacherGrades from './components/teacher/TeacherGrades';
+import TeacherAnnouncements from './components/teacher/TeacherAnnouncements';
 
 /* PRIVATE ROUTE */
 function PrivateRoute({ children, role }) {
@@ -91,8 +92,14 @@ export default function App() {
           <Route path="teacher-management" element={<AdminTeachers />} />
           <Route path="batch-management" element={<AdminBatches />} />
           <Route path="project-tracking" element={<ProjectTracking />} />
-          <Route path="project-tracking/batch/:batchId" element={<BatchStudentsView />} />
-          <Route path="project-tracking/student/:studentId" element={<StudentProjectsView />} />
+          <Route
+            path="project-tracking/batch/:batchId"
+            element={<BatchStudentsView />}
+          />
+          <Route
+            path="project-tracking/student/:studentId"
+            element={<StudentProjectsView />}
+          />
           <Route path="add-reports" element={<AddReport2 />} />
           <Route path="syllabus" element={<AdminSyllabusManagement />} />
           <Route path="all-reports" element={<AllReports />} />
@@ -105,7 +112,6 @@ export default function App() {
         {/* TEACHER */}
         <Route path="/teacher/login" element={<TeacherLogin />} />
         <Route path="/teacher/register" element={<TeacherRegister />} />
-        
 
         <Route
           path="/teacher"
@@ -118,8 +124,11 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<TeacherSyllabusDashboard />} />
           <Route path="performance" element={<TeacherStudentProgress />} />
-          <Route path="profile" element={<TeacherProfile />} />
+          <Route path="profile" element={<TeacherProfile />} />f
           <Route path="assign-task" element={<AssignTask />} />
+          <Route path="attendance" element={<TeacherAttendance />} />
+          <Route path="grades" element={<TeacherGrades />} />
+          <Route path="announcements" element={<TeacherAnnouncements />} />
         </Route>
 
         {/* DEFAULT */}

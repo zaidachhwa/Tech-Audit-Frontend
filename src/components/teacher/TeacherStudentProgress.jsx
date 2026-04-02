@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
-import {
-  BarChart3,
-  Users,
-  CheckCircle2,
-  Clock,
-  RefreshCw,
-} from "lucide-react";
+import { BarChart3, Users, CheckCircle2, Clock, RefreshCw, AlertCircle, TrendingUp } from "lucide-react";
+
+const S = {
+  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
+  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
+  pageTitle: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 },
+  label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },
+  secondaryBtn: { background: "#fff", color: "#1B2B4B", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "'DM Sans', sans-serif" },
+  input: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#1B2B4B", width: "100%", outline: "none", fontFamily: "'DM Sans', sans-serif", appearance: "none" },
+};
 
 export default function TeacherStudentProgress() {
   const [batchesWithSyllabi, setBatchesWithSyllabi] = useState([]);
@@ -17,18 +20,10 @@ export default function TeacherStudentProgress() {
   const [loading, setLoading] = useState(false);
   const [loadingTopics, setLoadingTopics] = useState(false);
 
+  useEffect(() => { fetchBatchesWithSyllabi(); }, []);
   useEffect(() => {
-    fetchBatchesWithSyllabi();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (selectedBatchId) {
-      fetchTopicsForSelectedBatch(selectedBatchId);
-    } else {
-      setTopics([]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (selectedBatchId) fetchTopicsForSelectedBatch(selectedBatchId);
+    else setTopics([]);
   }, [selectedBatchId]);
 
   async function fetchBatchesWithSyllabi() {
@@ -37,250 +32,178 @@ export default function TeacherStudentProgress() {
       const res = await API.get("/syllabus/assigned-syllabi");
       const fetched = res.data?.batches || [];
       setBatchesWithSyllabi(fetched);
-
-      const simple = fetched.map((batch) => ({
-        _id: batch._id,
-        name: batch.batch_name || batch.batch_no || "Batch",
-        studentsCount: batch.students?.length || 0,
-      }));
+      const simple = fetched.map((b) => ({ _id: b._id, name: b.batch_name || b.batch_no || "Batch", studentsCount: b.students?.length || 0 }));
       setBatches(simple);
-      if (simple.length === 1) {
-        setSelectedBatchId(simple[0]._id);
-      }
-    } catch (err) {
-      console.error("Failed to load student progress batches:", err);
-      toast.error("Unable to load assigned batches");
-    } finally {
-      setLoading(false);
-    }
+      if (simple.length === 1) setSelectedBatchId(simple[0]._id);
+    } catch { toast.error("Unable to load assigned batches"); }
+    finally { setLoading(false); }
   }
 
   async function fetchTopicsForSelectedBatch(batchId) {
-    const batchObj = batchesWithSyllabi.find((batch) => String(batch._id) === String(batchId));
-    if (!batchObj) {
-      setTopics([]);
-      return;
-    }
-
-    const assigned = batchObj.assignedSyllabi || [];
-    const firstSyllabus = assigned[0];
-    const syllabusTemplateId = firstSyllabus
-      ? typeof firstSyllabus.syllabus === "object"
-        ? firstSyllabus.syllabus._id || firstSyllabus.syllabus
-        : firstSyllabus.syllabus
-      : "";
-
-    if (!syllabusTemplateId) {
-      setTopics([]);
-      return;
-    }
-
+    const batchObj = batchesWithSyllabi.find((b) => String(b._id) === String(batchId));
+    if (!batchObj) { setTopics([]); return; }
+    const firstSyllabus = (batchObj.assignedSyllabi || [])[0];
+    const syllabusTemplateId = firstSyllabus ? (typeof firstSyllabus.syllabus === "object" ? firstSyllabus.syllabus._id || firstSyllabus.syllabus : firstSyllabus.syllabus) : "";
+    if (!syllabusTemplateId) { setTopics([]); return; }
     try {
       setLoadingTopics(true);
-      const res = await API.get(
-        `/syllabus/batch-topics-teacher?batchId=${encodeURIComponent(batchId)}&syllabusId=${encodeURIComponent(
-          syllabusTemplateId
-        )}`
-      );
+      const res = await API.get(`/syllabus/batch-topics-teacher?batchId=${encodeURIComponent(batchId)}&syllabusId=${encodeURIComponent(syllabusTemplateId)}`);
       setTopics(res.data?.topics || []);
-    } catch (err) {
-      console.error("Failed to load batch topics:", err);
-      toast.error("Unable to load student progress data");
-      setTopics([]);
-    } finally {
-      setLoadingTopics(false);
-    }
+    } catch { toast.error("Unable to load student progress data"); setTopics([]); }
+    finally { setLoadingTopics(false); }
   }
 
-  const completedTopics = topics.filter((topic) => topic.completionStatus === "Completed").length;
-  const inProgressTopics = topics.filter((topic) => topic.completionStatus === "In Progress").length;
-  const pendingTopics = topics.filter((topic) => topic.completionStatus === "Pending").length;
-  const totalTopics = topics.length;
-  const completionRate = totalTopics ? Math.round((completedTopics / totalTopics) * 100) : 0;
+  const completed = topics.filter((t) => t.completionStatus === "Completed").length;
+  const inProgress = topics.filter((t) => t.completionStatus === "In Progress").length;
+  const pending = topics.filter((t) => t.completionStatus === "Pending").length;
+  const total = topics.length;
+  const rate = total ? Math.round((completed / total) * 100) : 0;
+  const selectedBatch = batches.find((b) => b._id === selectedBatchId);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div style={S.page}>
       <Toaster position="top-right" />
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-6">
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
         <div>
-          <p className="text-sm text-emerald-600 font-semibold uppercase tracking-wide">
-            Teacher tools
-          </p>
-          <h1 className="text-3xl font-semibold text-gray-900">Student Progress</h1>
-          <p className="mt-2 text-sm text-gray-600 max-w-2xl">
-            Review the latest batch progress and topic completion for students assigned to you.
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <div style={{ width: 4, height: 20, background: "#2563EB", borderRadius: 4 }} />
+            <h1 style={S.pageTitle}>Student Progress</h1>
+          </div>
+          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Review batch progress and topic completion for your students.</p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (selectedBatchId) fetchTopicsForSelectedBatch(selectedBatchId);
-          }}
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
-          <RefreshCw size={16} />
-          Refresh progress
+        <button style={S.secondaryBtn} onClick={() => { if (selectedBatchId) fetchTopicsForSelectedBatch(selectedBatchId); }}>
+          <RefreshCw size={14} className={loadingTopics ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 mb-6">
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-500">Assigned Batches</p>
-            <Users size={20} className="text-emerald-500" />
+      {/* Stat Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 20 }}>
+        {[
+          { label: "Assigned Batches", value: batches.length, icon: <Users size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
+          { label: "Students in Batch", value: selectedBatch?.studentsCount ?? "—", icon: <Users size={20} />, tint: "#ECFDF5", iconColor: "#10B981" },
+          { label: "Completion Rate", value: `${rate}%`, icon: <BarChart3 size={20} />, tint: "#FEF3C7", iconColor: "#F59E0B" },
+          { label: "Topics Completed", value: completed, icon: <CheckCircle2 size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
+        ].map((s) => (
+          <div key={s.label} style={{ ...S.card, padding: "18px 20px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <p style={S.label}>{s.label}</p>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: s.tint, display: "flex", alignItems: "center", justifyContent: "center", color: s.iconColor }}>{s.icon}</div>
+            </div>
+            <p style={{ fontSize: 28, fontWeight: 800, color: "#1B2B4B", margin: 0 }}>{s.value}</p>
           </div>
-          <p className="mt-5 text-3xl font-semibold text-gray-900">{batches.length}</p>
-        </div>
-
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-500">Students in Selected Batch</p>
-            <Users size={20} className="text-blue-500" />
-          </div>
-          <p className="mt-5 text-3xl font-semibold text-gray-900">
-            {batches.find((batch) => batch._id === selectedBatchId)?.studentsCount ?? "-"}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-500">Completion Rate</p>
-            <BarChart3 size={20} className="text-indigo-500" />
-          </div>
-          <p className="mt-5 text-3xl font-semibold text-gray-900">{completionRate}%</p>
-        </div>
-
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-500">Topics Completed</p>
-            <CheckCircle2 size={20} className="text-emerald-500" />
-          </div>
-          <p className="mt-5 text-3xl font-semibold text-gray-900">{completedTopics}</p>
-        </div>
+        ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[350px_1fr]">
-        <section className="space-y-5 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Batch selection</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Choose a batch to inspect student progress and topic status.
-              </p>
+      {/* Main grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20 }}>
+        {/* Batch selector */}
+        <div style={{ ...S.card, padding: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
+            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Batch Selection</p>
+          </div>
+          <p style={{ color: "#64748B", fontSize: 12, margin: "0 0 16px" }}>Choose a batch to view topic status.</p>
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "30px 0", color: "#94A3B8", fontSize: 13 }}>Loading batches…</div>
+          ) : batches.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "30px 0", color: "#94A3B8", fontSize: 13 }}>No assigned batches found.</div>
+          ) : (
+            <select value={selectedBatchId} onChange={(e) => setSelectedBatchId(e.target.value)} style={S.input}>
+              <option value="">Select a batch</option>
+              {batches.map((b) => <option key={b._id} value={b._id}>{b.name} ({b.studentsCount} students)</option>)}
+            </select>
+          )}
+          {selectedBatch && (
+            <div style={{ marginTop: 16, padding: "12px 14px", background: "#EFF6FF", borderRadius: 8, border: "1.5px solid #BFDBFE" }}>
+              <p style={{ fontWeight: 600, color: "#1E40AF", fontSize: 13, margin: "0 0 4px" }}>{selectedBatch.name}</p>
+              <p style={{ color: "#64748B", fontSize: 12, margin: 0 }}>{selectedBatch.studentsCount} students enrolled</p>
             </div>
+          )}
+        </div>
+
+        {/* Progress panel */}
+        <div style={S.card}>
+          <div style={{ padding: "18px 22px", borderBottom: "1.5px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#F8FAFC", borderRadius: "12px 12px 0 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
+              <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Current Progress</p>
+            </div>
+            <span style={{ background: "#EFF6FF", color: "#1E40AF", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600 }}>{total} topics tracked</span>
           </div>
 
-          <div className="space-y-3">
-            {loading ? (
-              <div className="rounded-3xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-                Loading batches…
-              </div>
-            ) : batches.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-                No assigned batches found.
-              </div>
-            ) : (
-              <select
-                value={selectedBatchId}
-                onChange={(event) => setSelectedBatchId(event.target.value)}
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-              >
-                <option value="">Select a batch</option>
-                {batches.map((batch) => (
-                  <option key={batch._id} value={batch._id}>
-                    {batch.name} ({batch.studentsCount} students)
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Current progress</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Topic status for the selected batch.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
-                {totalTopics} topics tracked
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6">
+          <div style={{ padding: 22 }}>
             {loadingTopics ? (
-              <div className="rounded-3xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
-                Loading progress details…
+              <div style={{ textAlign: "center", padding: "40px 0" }}>
+                <RefreshCw size={32} color="#2563EB" style={{ animation: "spin 1s linear infinite", marginBottom: 10 }} />
+                <p style={{ color: "#64748B", fontSize: 13 }}>Loading progress...</p>
               </div>
-            ) : totalTopics === 0 ? (
-              <div className="rounded-3xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
-                Pick a batch to view topic progress.
-              </div>
+            ) : total === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#94A3B8", fontSize: 13 }}>Pick a batch to view topic progress.</div>
             ) : (
-              <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="rounded-3xl border border-gray-200 p-4">
-                    <p className="text-sm text-gray-500">Completed</p>
-                    <p className="mt-3 text-2xl font-semibold text-gray-900">{completedTopics}</p>
+              <>
+                {/* Mini stat row */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+                  {[
+                    { label: "Completed", val: completed, bg: "#ECFDF5", color: "#065F46", icon: <CheckCircle2 size={14} /> },
+                    { label: "In Progress", val: inProgress, bg: "#EFF6FF", color: "#1E40AF", icon: <Clock size={14} /> },
+                    { label: "Pending", val: pending, bg: "#FEF3C7", color: "#92400E", icon: <AlertCircle size={14} /> },
+                  ].map((s) => (
+                    <div key={s.label} style={{ background: s.bg, borderRadius: 10, padding: "12px 14px", border: "1.5px solid rgba(0,0,0,0.06)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, color: s.color, marginBottom: 6 }}>{s.icon}<span style={{ fontSize: 11, fontWeight: 600 }}>{s.label}</span></div>
+                      <p style={{ fontSize: 24, fontWeight: 800, color: "#1B2B4B", margin: 0 }}>{s.val}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Progress bar */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#64748B" }}>Overall Completion</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{rate}%</span>
                   </div>
-                  <div className="rounded-3xl border border-gray-200 p-4">
-                    <p className="text-sm text-gray-500">In Progress</p>
-                    <p className="mt-3 text-2xl font-semibold text-gray-900">{inProgressTopics}</p>
-                  </div>
-                  <div className="rounded-3xl border border-gray-200 p-4">
-                    <p className="text-sm text-gray-500">Pending</p>
-                    <p className="mt-3 text-2xl font-semibold text-gray-900">{pendingTopics}</p>
+                  <div style={{ height: 8, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${rate}%`, background: "linear-gradient(90deg,#2563EB,#60A5FA)", borderRadius: 99, transition: "width 0.5s" }} />
                   </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-3xl border border-gray-200">
-                  <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 font-semibold text-gray-500">Topic</th>
-                        <th className="px-4 py-3 font-semibold text-gray-500">Status</th>
-                        <th className="px-4 py-3 font-semibold text-gray-500">Due date</th>
-                        <th className="px-4 py-3 font-semibold text-gray-500">Batch</th>
+                {/* Table */}
+                <div style={{ overflowX: "auto", borderRadius: 8, border: "1.5px solid #E2E8F0" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: "#F8FAFC" }}>
+                        {["Topic", "Status", "Due Date", "Batch"].map((h) => (
+                          <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, color: "#64748B", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>{h}</th>
+                        ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
-                      {topics.map((topic) => (
-                        <tr key={topic._id}>
-                          <td className="px-4 py-4 text-gray-900">{topic.title || topic.name}</td>
-                          <td className="px-4 py-4">
-                            <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                                topic.completionStatus === "Completed"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : topic.completionStatus === "In Progress"
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-slate-100 text-slate-700"
-                              }`}
-                            >
-                              {topic.completionStatus || "Unknown"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-gray-600">
-                            {topic.dueDate ? new Date(topic.dueDate).toLocaleDateString() : "—"}
-                          </td>
-                          <td className="px-4 py-4 text-gray-600">
-                            {batches.find((batch) => batch._id === selectedBatchId)?.name ?? "Batch"}
-                          </td>
-                        </tr>
-                      ))}
+                    <tbody>
+                      {topics.map((topic, i) => {
+                        const statusBadge = {
+                          Completed: { bg: "#ECFDF5", color: "#065F46" },
+                          "In Progress": { bg: "#EFF6FF", color: "#1E40AF" },
+                          Pending: { bg: "#FEF3C7", color: "#92400E" },
+                        }[topic.completionStatus] || { bg: "#F1F5F9", color: "#64748B" };
+                        return (
+                          <tr key={topic._id} style={{ background: i % 2 === 0 ? "#fff" : "#F8FAFC", borderTop: "1px solid #F1F5F9" }}>
+                            <td style={{ padding: "11px 14px", fontWeight: 500, color: "#1B2B4B" }}>{topic.title || topic.name}</td>
+                            <td style={{ padding: "11px 14px" }}>
+                              <span style={{ ...statusBadge, borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600 }}>{topic.completionStatus || "Unknown"}</span>
+                            </td>
+                            <td style={{ padding: "11px 14px", color: "#64748B" }}>{topic.dueDate ? new Date(topic.dueDate).toLocaleDateString() : "—"}</td>
+                            <td style={{ padding: "11px 14px", color: "#64748B" }}>{selectedBatch?.name ?? "Batch"}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </>
             )}
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );

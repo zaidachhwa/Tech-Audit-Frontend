@@ -1,723 +1,329 @@
-// src/components/teacher/TeacherProfile.jsx
-
 import { useState, useEffect } from "react";
 import { API } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
 import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  Award,
-  BookOpen,
-  TrendingUp,
-  Edit,
-  Save,
-  X,
-  ArrowLeft,
-  Camera,
-  Shield,
-  Lock,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  Clock,
-  Target,
-  Star,
-  Trophy,
-  Zap,
-  Users,
-  GraduationCap,
-  MessageSquare,
+  Mail, Phone, MapPin, Calendar, Award, BookOpen,
+  TrendingUp, Edit, Save, X, ArrowLeft, Shield, Lock,
+  Eye, EyeOff, CheckCircle2, Clock, Target, Star, Trophy,
+  Zap, Users, GraduationCap, MessageSquare,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const S = {
+  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
+  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
+  label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },
+  primaryBtn: { background: "#2563EB", color: "#fff", border: "none", borderRadius: 8, padding: "9px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "'DM Sans', sans-serif" },
+  secondaryBtn: { background: "#fff", color: "#1B2B4B", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "'DM Sans', sans-serif" },
+  input: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#1B2B4B", width: "100%", outline: "none", fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" },
+};
+
 export default function TeacherProfile() {
   const { user } = useAuth();
-
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState(null);
-
-  const [stats, setStats] = useState({
-    totalTopics: 0,
-    completedTopics: 0,
-    inProgressTopics: 0,
-    totalBatches: 0,
-    totalStudents: 0,
-    completionRate: 0,
-  });
-
+  const [stats, setStats] = useState({ totalTopics: 0, completedTopics: 0, inProgressTopics: 0, totalBatches: 0, totalStudents: 0, completionRate: 0 });
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    name: "",
-    phone: "",
-    location: "",
-    bio: "",
-  });
-
+  const [editForm, setEditForm] = useState({ name: "", phone: "", location: "", bio: "" });
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
-
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [achievements, setAchievements] = useState([]);
 
-  useEffect(() => {
-    fetchProfileData();
-    fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchProfileData(); fetchStats(); }, []);
 
-  /* ------------------------------------------------------------------
-      FETCH PROFILE
-  ------------------------------------------------------------------ */
   const fetchProfileData = async () => {
     try {
       setLoading(true);
-
-      // ✅ Correct API
       const res = await API.get("/teachers/profile");
-
       setProfileData(res.data.user);
-
-      setEditForm({
-        name: res.data.user.name || "",
-        phone: res.data.user.phone || "",
-        location: res.data.user.location || "",
-        bio: res.data.user.bio || "",
-      });
-    } catch (err) {
-      console.error("Profile fetch failed:", err);
-      toast.error("Failed to load profile");
-    } finally {
-      setLoading(false);
-    }
+      setEditForm({ name: res.data.user.name || "", phone: res.data.user.phone || "", location: res.data.user.location || "", bio: res.data.user.bio || "" });
+    } catch (err) { toast.error("Failed to load profile"); }
+    finally { setLoading(false); }
   };
 
-  /* ------------------------------------------------------------------
-      FETCH STATS
-  ------------------------------------------------------------------ */
   const fetchStats = async () => {
     try {
-      // ✅ Correct API
       const res = await API.get("/teachers/stats");
-
-      const data = res.data;
-
-      setStats({
-        totalTopics: data.totalTopics || 0,
-        completedTopics: data.completedTopics || 0,
-        inProgressTopics: data.inProgressTopics || 0,
-        totalBatches: data.totalBatches || 0,
-        totalStudents: data.totalStudents || 0,
-        completionRate: data.completionRate || 0,
-      });
-
-      calculateAchievements(data);
-    } catch (err) {
-      console.error("Stats fetch failed:", err);
-      toast.error("Failed to load statistics");
-    }
+      const d = res.data;
+      setStats({ totalTopics: d.totalTopics || 0, completedTopics: d.completedTopics || 0, inProgressTopics: d.inProgressTopics || 0, totalBatches: d.totalBatches || 0, totalStudents: d.totalStudents || 0, completionRate: d.completionRate || 0 });
+      const list = [];
+      if (d.completedTopics >= 1) list.push({ id: 1, title: "First Steps", desc: "Completed your first topic", icon: <Star size={15} />, tint: "#ECFDF5", color: "#065F46" });
+      if (d.completedTopics >= 10) list.push({ id: 2, title: "Topic Master", desc: "Completed 10 topics", icon: <Target size={15} />, tint: "#EFF6FF", color: "#1E40AF" });
+      if (d.completedTopics >= 50) list.push({ id: 3, title: "Teaching Expert", desc: "Completed 50 topics", icon: <Trophy size={15} />, tint: "#F5F3FF", color: "#6D28D9" });
+      if (d.completionRate === 100 && d.totalTopics > 0) list.push({ id: 4, title: "Perfect Score", desc: "100% completion rate", icon: <Award size={15} />, tint: "#ECFDF5", color: "#065F46" });
+      if (d.totalBatches >= 3) list.push({ id: 5, title: "Multi-Batch Hero", desc: "Teaching 3+ batches", icon: <Users size={15} />, tint: "#FEF3C7", color: "#92400E" });
+      if (d.completionRate >= 80 && d.totalTopics >= 5) list.push({ id: 6, title: "Consistent Teacher", desc: "Maintained 80%+ rate", icon: <Zap size={15} />, tint: "#FEF3C7", color: "#92400E" });
+      setAchievements(list);
+    } catch (err) { console.error("Stats fetch failed:", err); }
   };
 
-  /* ------------------------------------------------------------------
-      ACHIEVEMENTS
-  ------------------------------------------------------------------ */
-  const calculateAchievements = (data) => {
-    const newAchievements = [];
-
-    if (data.completedTopics >= 1)
-      newAchievements.push({
-        id: 1,
-        title: "First Steps",
-        description: "Completed your first topic",
-        icon: <Star size={20} />,
-        color: "bg-emerald-50 border-emerald-200 text-emerald-700",
-      });
-
-    if (data.completedTopics >= 10)
-      newAchievements.push({
-        id: 2,
-        title: "Topic Master",
-        description: "Completed 10 topics",
-        icon: <Target size={20} />,
-        color: "bg-blue-50 border-blue-200 text-blue-700",
-      });
-
-    if (data.completedTopics >= 50)
-      newAchievements.push({
-        id: 3,
-        title: "Teaching Expert",
-        description: "Completed 50 topics",
-        icon: <Trophy size={20} />,
-        color: "bg-purple-50 border-purple-200 text-purple-700",
-      });
-
-    if (data.completionRate === 100 && data.totalTopics > 0)
-      newAchievements.push({
-        id: 4,
-        title: "Perfect Score",
-        description: "Achieved 100% completion",
-        icon: <Award size={20} />,
-        color: "bg-green-50 border-green-200 text-green-700",
-      });
-
-    if (data.totalBatches >= 3)
-      newAchievements.push({
-        id: 5,
-        title: "Multi-Batch Hero",
-        description: "Teaching 3+ batches",
-        icon: <Users size={20} />,
-        color: "bg-orange-50 border-orange-200 text-orange-700",
-      });
-
-    if (data.completionRate >= 80 && data.totalTopics >= 5)
-      newAchievements.push({
-        id: 6,
-        title: "Consistent Teacher",
-        description: "Maintained 80%+ completion",
-        icon: <Zap size={20} />,
-        color: "bg-yellow-50 border-yellow-200 text-yellow-700",
-      });
-
-    setAchievements(newAchievements);
-  };
-
-  /* ------------------------------------------------------------------
-      UPDATE PROFILE
-  ------------------------------------------------------------------ */
   const handleUpdateProfile = async () => {
     try {
-      // ✅ Correct API
       await API.patch("/teachers/profile", editForm);
-
       toast.success("Profile updated!");
       setIsEditing(false);
       fetchProfileData();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Update failed");
-    }
+    } catch (err) { toast.error(err?.response?.data?.message || "Update failed"); }
   };
 
-  /* ------------------------------------------------------------------
-      CHANGE PASSWORD
-  ------------------------------------------------------------------ */
   const handleChangePassword = async () => {
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error("New passwords do not match!");
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
-      return;
-    }
-
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) { toast.error("Passwords do not match!"); return; }
+    if (passwordForm.newPassword.length < 6) { toast.error("Min 6 characters required"); return; }
     try {
-      // ✅ Correct API
-      await API.patch("/teachers/change-password", {
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
-      });
-
+      await API.patch("/teachers/change-password", { currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword });
       toast.success("Password changed!");
       setShowPasswordModal(false);
-
-      setPasswordForm({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Password change failed");
-    }
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err) { toast.error(err?.response?.data?.message || "Password change failed"); }
   };
 
-  /* ------------------------------------------------------------------
-      LOADING SCREEN
-  ------------------------------------------------------------------ */
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-emerald-600 mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
+      <div style={{ minHeight: "100vh", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: 40, height: 40, border: "3px solid #E2E8F0", borderTopColor: "#2563EB", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+          <p style={{ color: "#64748B", fontSize: 13 }}>Loading profile...</p>
         </div>
       </div>
     );
   }
 
-  /* ------------------------------------------------------------------
-      MAIN UI
-  ------------------------------------------------------------------ */
-  return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <Toaster position="top-right" />
+  const statCards = [
+    { label: "Total Topics", value: stats.totalTopics, icon: <BookOpen size={17} />, tint: "#EFF6FF", ic: "#2563EB" },
+    { label: "Completed", value: stats.completedTopics, icon: <CheckCircle2 size={17} />, tint: "#ECFDF5", ic: "#10B981" },
+    { label: "In Progress", value: stats.inProgressTopics, icon: <Clock size={17} />, tint: "#FEF3C7", ic: "#F59E0B" },
+    { label: "Batches", value: stats.totalBatches, icon: <Users size={17} />, tint: "#EFF6FF", ic: "#2563EB" },
+    { label: "Students", value: stats.totalStudents, icon: <GraduationCap size={17} />, tint: "#ECFDF5", ic: "#10B981" },
+    { label: "Completion", value: `${stats.completionRate}%`, icon: <TrendingUp size={17} />, tint: "#EFF6FF", ic: "#2563EB" },
+  ];
 
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* BACK BUTTON */}
-        <div className="flex items-center justify-between">
-          <Link to="/teacher/dashboard">
-            <button className="flex items-center gap-2 bg-white hover:bg-gray-50 px-4 py-2 rounded-lg shadow-sm border border-gray-200 font-medium text-gray-700 transition">
-              <ArrowLeft size={18} />
-              Back to Dashboard
-            </button>
+  const infoFields = [
+    { icon: <Mail size={13} />, label: "Email", value: profileData?.email, field: null },
+    { icon: <Phone size={13} />, label: "Phone", value: isEditing ? editForm.phone : (profileData?.phone || "Not provided"), field: "phone" },
+    { icon: <MapPin size={13} />, label: "Location", value: isEditing ? editForm.location : (profileData?.location || "Not provided"), field: "location" },
+    { icon: <Calendar size={13} />, label: "Member Since", value: profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long" }) : "N/A", field: null },
+  ];
+
+  return (
+    <div style={S.page}>
+      <Toaster position="top-right" />
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .tp-wrap { max-width: 860px; margin: 0 auto; }
+        .tp-toprow { display:flex; align-items:flex-end; justify-content:space-between; margin-top:-34px; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+        .tp-namerow { display:flex; align-items:flex-end; gap:14px; }
+        .tp-info { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+        .tp-stats { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:20px; }
+        .tp-ach { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+        @media(max-width:860px){.tp-stats{grid-template-columns:repeat(3,1fr)!important}.tp-ach{grid-template-columns:repeat(2,1fr)!important}}
+        @media(max-width:560px){.tp-stats{grid-template-columns:repeat(2,1fr)!important}.tp-info{grid-template-columns:1fr!important}.tp-ach{grid-template-columns:1fr!important}.tp-toprow{flex-direction:column;align-items:flex-start}}
+      `}</style>
+
+      <div className="tp-wrap">
+        {/* Back */}
+        <div style={{ marginBottom: 20 }}>
+          <Link to="/teacher/dashboard" style={{ textDecoration: "none" }}>
+            <button style={S.secondaryBtn}><ArrowLeft size={13} /> Back to Dashboard</button>
           </Link>
         </div>
 
-        {/* PROFILE CARD */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="h-32 bg-emerald-500"></div>
+        {/* ── PROFILE CARD ── */}
+        <div style={{ ...S.card, marginBottom: 20, overflow: "hidden" }}>
+          {/* Banner */}
+          <div style={{ height: 96, background: "linear-gradient(135deg,#1B2B4B 0%,#2563EB 100%)", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ position: "absolute", bottom: -40, left: 240, width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+          </div>
 
-          <div className="px-6 md:px-8 pb-8">
-            {/* Top Profile Section */}
-            <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-16 mb-6">
-              <div className="relative">
-                <div className="w-32 h-32 bg-emerald-700 rounded-lg shadow-xl flex items-center justify-center text-white text-5xl font-bold border-4 border-white">
-                  {profileData?.name?.charAt(0).toUpperCase()}
+          <div style={{ padding: "0 24px 24px" }}>
+            <div className="tp-toprow">
+              <div className="tp-namerow">
+                {/* Avatar */}
+                <div style={{ width: 68, height: 68, borderRadius: 14, background: "#2563EB", border: "3px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "#fff", flexShrink: 0, boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}>
+                  {(profileData?.name || user?.teacher?.name || "T").charAt(0).toUpperCase()}
                 </div>
-              </div>
-
-              <div className="flex-1">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                      {profileData?.name}
-                    </h1>
-                    <p className="text-gray-600 font-medium flex items-center gap-2">
-                      <GraduationCap size={18} className="text-emerald-600" />
-                      Teacher • {profileData?.role || "Educator"}
+                <div style={{ paddingBottom: 4 }}>
+                  {isEditing ? (
+                    <input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} style={{ ...S.input, fontSize: 16, fontWeight: 700, padding: "6px 10px", width: 200 }} />
+                  ) : (
+                    <p style={{ fontWeight: 800, color: "#1B2B4B", fontSize: 18, margin: "0 0 3px", letterSpacing: "-0.02em" }}>
+                      {profileData?.name || user?.teacher?.name || "Teacher"}
                     </p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    {!isEditing ? (
-                      <button
-                        onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg font-medium transition shadow-sm"
-                      >
-                        <Edit size={18} />
-                        Edit Profile
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => {
-                            setIsEditing(false);
-                            setEditForm({
-                              name: profileData?.name || "",
-                              phone: profileData?.phone || "",
-                              location: profileData?.location || "",
-                              bio: profileData?.bio || "",
-                            });
-                          }}
-                          className="flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 px-5 py-2 rounded-lg font-medium transition"
-                        >
-                          <X size={18} />
-                          Cancel
-                        </button>
-
-                        <button
-                          onClick={handleUpdateProfile}
-                          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg font-medium transition shadow-sm"
-                        >
-                          <Save size={18} />
-                          Save
-                        </button>
-                      </>
-                    )}
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <GraduationCap size={12} color="#2563EB" />
+                    <span style={{ color: "#64748B", fontSize: 12 }}>Teacher • {profileData?.role || "Educator"}</span>
+                    <span style={{ background: "#ECFDF5", color: "#065F46", borderRadius: 20, padding: "1px 8px", fontSize: 11, fontWeight: 600 }}>Active</span>
                   </div>
                 </div>
               </div>
+              {/* Edit/Save buttons */}
+              <div style={{ display: "flex", gap: 8 }}>
+                {!isEditing ? (
+                  <button style={S.primaryBtn} onClick={() => setIsEditing(true)}><Edit size={13} /> Edit Profile</button>
+                ) : (
+                  <>
+                    <button style={S.secondaryBtn} onClick={() => { setIsEditing(false); setEditForm({ name: profileData?.name || "", phone: profileData?.phone || "", location: profileData?.location || "", bio: profileData?.bio || "" }); }}>
+                      <X size={13} /> Cancel
+                    </button>
+                    <button style={S.primaryBtn} onClick={handleUpdateProfile}><Save size={13} /> Save</button>
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* INFO GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-              <InfoCard
-                icon={<Mail size={18} />}
-                label="Email"
-                value={profileData?.email}
-                isEditing={false}
-                type="email"
-              />
-              <InfoCard
-                icon={<Phone size={18} />}
-                label="Phone"
-                value={
-                  isEditing
-                    ? editForm.phone
-                    : profileData?.phone || "Not provided"
-                }
-                isEditing={isEditing}
-                onChange={(val) => setEditForm((p) => ({ ...p, phone: val }))}
-              />
-              <InfoCard
-                icon={<MapPin size={18} />}
-                label="Location"
-                value={
-                  isEditing
-                    ? editForm.location
-                    : profileData?.location || "Not provided"
-                }
-                isEditing={isEditing}
-                onChange={(val) =>
-                  setEditForm((p) => ({ ...p, location: val }))
-                }
-              />
-              <InfoCard
-                icon={<Calendar size={18} />}
-                label="Member Since"
-                value={
-                  profileData?.createdAt
-                    ? new Date(profileData.createdAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          year: "numeric",
-                          month: "long",
-                        }
-                      )
-                    : "N/A"
-                }
-                isEditing={false}
-              />
+            {/* Info fields */}
+            <div className="tp-info">
+              {infoFields.map((item) => (
+                <div key={item.label} style={{ background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "11px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6, color: "#2563EB" }}>
+                    {item.icon}<span style={S.label}>{item.label}</span>
+                  </div>
+                  {isEditing && item.field ? (
+                    <input value={item.value} onChange={(e) => setEditForm((p) => ({ ...p, [item.field]: e.target.value }))} style={{ ...S.input, padding: "7px 10px" }} />
+                  ) : (
+                    <p style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 13, margin: 0 }}>{item.value}</p>
+                  )}
+                </div>
+              ))}
             </div>
 
-            {/* BIO */}
-            <div className="mb-6">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <MessageSquare size={16} className="text-emerald-600" />
-                Bio
-              </label>
-
+            {/* Bio */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
+                <MessageSquare size={13} color="#2563EB" />
+                <span style={S.label}>Bio</span>
+              </div>
               {isEditing ? (
-                <textarea
-                  value={editForm.bio}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({ ...prev, bio: e.target.value }))
-                  }
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none resize-none"
-                />
+                <textarea value={editForm.bio} onChange={(e) => setEditForm((p) => ({ ...p, bio: e.target.value }))} rows={3} placeholder="Tell students about yourself..." style={{ ...S.input, resize: "vertical" }} />
               ) : (
-                <div className="bg-gray-50 border border-gray-200 px-5 py-4 rounded-lg">
-                  <p className="text-gray-700 leading-relaxed">
-                    {profileData?.bio || "No bio added yet."}
-                  </p>
+                <div style={{ background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "11px 14px" }}>
+                  <p style={{ color: "#64748B", fontSize: 13, margin: 0, lineHeight: 1.6 }}>{profileData?.bio || "No bio added yet."}</p>
                 </div>
               )}
             </div>
 
-            {/* SECURITY */}
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="w-full bg-white hover:bg-gray-50 border border-gray-300 px-6 py-4 rounded-lg flex items-center justify-between font-medium text-gray-700 transition"
-            >
-              <div className="flex items-center gap-3">
-                <Shield size={20} className="text-gray-600" />
-                <span>Change Password</span>
+            {/* Change Password row */}
+            <button onClick={() => setShowPasswordModal(true)}
+              style={{ width: "100%", background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "11px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#F1F5F9")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "#F8FAFC")}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Shield size={14} color="#2563EB" />
+                <span style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 13 }}>Change Password</span>
               </div>
-              <Lock size={18} className="text-gray-600" />
+              <Lock size={13} color="#94A3B8" />
             </button>
           </div>
         </div>
 
-        {/* STATS GRID */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <StatBox
-            icon={<BookOpen size={20} />}
-            label="Total Topics"
-            value={stats.totalTopics}
-            iconColor="text-emerald-600"
-            iconBgColor="bg-emerald-50"
-            borderColor="border-gray-200"
-          />
-          <StatBox
-            icon={<CheckCircle2 size={20} />}
-            label="Completed"
-            value={stats.completedTopics}
-            iconColor="text-green-600"
-            iconBgColor="bg-green-50"
-            borderColor="border-gray-200"
-          />
-          <StatBox
-            icon={<Clock size={20} />}
-            label="In Progress"
-            value={stats.inProgressTopics}
-            iconColor="text-orange-600"
-            iconBgColor="bg-orange-50"
-            borderColor="border-gray-200"
-          />
-          <StatBox
-            icon={<Users size={20} />}
-            label="Batches"
-            value={stats.totalBatches}
-            iconColor="text-purple-600"
-            iconBgColor="bg-purple-50"
-            borderColor="border-gray-200"
-          />
-          <StatBox
-            icon={<GraduationCap size={20} />}
-            label="Students"
-            value={stats.totalStudents}
-            iconColor="text-blue-600"
-            iconBgColor="bg-blue-50"
-            borderColor="border-gray-200"
-          />
-          <StatBox
-            icon={<TrendingUp size={20} />}
-            label="Completion"
-            value={`${stats.completionRate}%`}
-            iconColor="text-emerald-600"
-            iconBgColor="bg-emerald-50"
-            borderColor="border-gray-200"
-          />
+        {/* ── STAT CARDS ── */}
+        <div className="tp-stats">
+          {statCards.map((s) => (
+            <div key={s.label} style={{ ...S.card, padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <p style={S.label}>{s.label}</p>
+                <div style={{ width: 30, height: 30, borderRadius: 7, background: s.tint, display: "flex", alignItems: "center", justifyContent: "center", color: s.ic }}>{s.icon}</div>
+              </div>
+              <p style={{ fontSize: 22, fontWeight: 800, color: "#1B2B4B", margin: 0 }}>{s.value}</p>
+            </div>
+          ))}
         </div>
 
-        {/* ACHIEVEMENTS */}
+        {/* ── ACHIEVEMENTS ── */}
         {achievements.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <Trophy size={24} className="text-emerald-600" />
-              Achievements
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {achievements.map((ach) => (
-                <AchievementCard key={ach.id} achievement={ach} />
+          <div style={{ ...S.card, padding: "20px 22px", marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
+              <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Achievements</p>
+            </div>
+            <div className="tp-ach">
+              {achievements.map((a) => (
+                <div key={a.id} style={{ background: a.tint, border: "1.5px solid rgba(0,0,0,0.06)", borderRadius: 10, padding: "13px 15px" }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 7, background: "#fff", border: "1.5px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, color: a.color }}>{a.icon}</div>
+                  <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 13, margin: "0 0 2px" }}>{a.title}</p>
+                  <p style={{ color: "#64748B", fontSize: 11, margin: 0 }}>{a.desc}</p>
+                </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ACTIVITY SECTION (STATIC DATA) */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 md:p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-            <TrendingUp size={24} className="text-emerald-600" />
-            Recent Activity
-          </h2>
-
-          <div className="space-y-3">
-            <ActivityItem
-              icon={<CheckCircle2 size={18} className="text-green-600" />}
-              title="Completed 5 topics this week"
-              time="2 days ago"
-              color="bg-green-50 border-green-200"
-            />
-            <ActivityItem
-              icon={<MessageSquare size={18} className="text-blue-600" />}
-              title="Added remarks to 3 topics"
-              time="3 days ago"
-              color="bg-blue-50 border-blue-200"
-            />
-            <ActivityItem
-              icon={<Users size={18} className="text-purple-600" />}
-              title="Joined 2 new batches"
-              time="1 week ago"
-              color="bg-purple-50 border-purple-200"
-            />
+        {/* ── RECENT ACTIVITY ── */}
+        <div style={{ ...S.card, padding: "20px 22px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
+            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Recent Activity</p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[
+              { icon: <CheckCircle2 size={13} color="#10B981" />, title: "Completed 5 topics this week", time: "2 days ago", tint: "#ECFDF5", border: "#A7F3D0" },
+              { icon: <MessageSquare size={13} color="#2563EB" />, title: "Added remarks to 3 topics", time: "3 days ago", tint: "#EFF6FF", border: "#BFDBFE" },
+              { icon: <Users size={13} color="#F59E0B" />, title: "Joined 2 new batches", time: "1 week ago", tint: "#FEF3C7", border: "#FDE68A" },
+            ].map((a, i) => (
+              <div key={i} style={{ background: a.tint, border: `1.5px solid ${a.border}`, borderRadius: 8, padding: "11px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 7, background: "#fff", border: "1.5px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{a.icon}</div>
+                <div>
+                  <p style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 13, margin: "0 0 1px" }}>{a.title}</p>
+                  <p style={{ color: "#94A3B8", fontSize: 11, margin: 0 }}>{a.time}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* PASSWORD MODAL */}
+      {/* ── PASSWORD MODAL ── */}
       {showPasswordModal && (
-        <PasswordModal
-          passwordForm={passwordForm}
-          setPasswordForm={setPasswordForm}
-          showPasswords={showPasswords}
-          setShowPasswords={setShowPasswords}
-          onSubmit={handleChangePassword}
-          onClose={() => {
-            setShowPasswordModal(false);
-            setPasswordForm({
-              currentPassword: "",
-              newPassword: "",
-              confirmPassword: "",
-            });
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-/* ============================================================================================
-    HELPER COMPONENTS — (NO CHANGES TO VISUAL LAYOUT)
-============================================================================================ */
-
-function InfoCard({ icon, label, value, isEditing, onChange, type = "text" }) {
-  return (
-    <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-      <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-        <div className="text-emerald-600">{icon}</div>
-        {label}
-      </div>
-
-      {isEditing && onChange ? (
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
-        />
-      ) : (
-        <p className="text-gray-900 font-medium">{value}</p>
-      )}
-    </div>
-  );
-}
-
-function StatBox({ icon, label, value, iconColor, iconBgColor, borderColor }) {
-  return (
-    <div
-      className={`${iconColor} ${iconBgColor} ${iconBgColor} ${borderColor} border rounded-lg p-4`}
-    >
-      <div className="mb-3">{icon}</div>
-      <div className="text-3xl font-bold mb-1">{value}</div>
-      <div className="text-sm font-medium">{label}</div>
-    </div>
-  );
-}
-
-function AchievementCard({ achievement }) {
-  return (
-    <div className={`${achievement.color} border rounded-lg p-5`}>
-      <div className="mb-3">{achievement.icon}</div>
-      <h3 className="font-bold text-lg mb-1">{achievement.title}</h3>
-      <p className="text-sm opacity-90">{achievement.description}</p>
-    </div>
-  );
-}
-
-function ActivityItem({ icon, title, time, color }) {
-  return (
-    <div className={`${color} border p-4 rounded-lg flex items-start gap-4`}>
-      <div className="bg-white p-2 rounded-lg border border-gray-200">
-        {icon}
-      </div>
-      <div className="flex-1">
-        <p className="font-semibold text-gray-900">{title}</p>
-        <p className="text-sm text-gray-600 mt-1">{time}</p>
-      </div>
-    </div>
-  );
-}
-
-function PasswordModal({
-  passwordForm,
-  setPasswordForm,
-  showPasswords,
-  setShowPasswords,
-  onClose,
-  onSubmit,
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
-      <div className="bg-white rounded-lg w-full max-w-md shadow-lg border border-gray-200">
-        <div className="bg-emerald-500 px-6 py-4 flex justify-between items-center rounded-t-lg">
-          <div className="flex items-center gap-3">
-            <Shield size={24} className="text-white" />
-            <h3 className="text-xl font-bold text-white">Change Password</h3>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-emerald-600 p-2 rounded-lg transition"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-4">
-          {/* Current */}
-          <PasswordInput
-            label="Current Password"
-            value={passwordForm.currentPassword}
-            onChange={(v) =>
-              setPasswordForm((p) => ({ ...p, currentPassword: v }))
-            }
-            visible={showPasswords.current}
-            toggle={() =>
-              setShowPasswords((p) => ({ ...p, current: !p.current }))
-            }
-          />
-
-          {/* New */}
-          <PasswordInput
-            label="New Password"
-            value={passwordForm.newPassword}
-            onChange={(v) => setPasswordForm((p) => ({ ...p, newPassword: v }))}
-            visible={showPasswords.new}
-            toggle={() => setShowPasswords((p) => ({ ...p, new: !p.new }))}
-          />
-
-          {/* Confirm */}
-          <PasswordInput
-            label="Confirm New Password"
-            value={passwordForm.confirmPassword}
-            onChange={(v) =>
-              setPasswordForm((p) => ({ ...p, confirmPassword: v }))
-            }
-            visible={showPasswords.confirm}
-            toggle={() =>
-              setShowPasswords((p) => ({ ...p, confirm: !p.confirm }))
-            }
-          />
-
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 hover:bg-gray-50 font-medium transition"
-            >
-              Cancel
-            </button>
-
-            <button
-              onClick={onSubmit}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition shadow-sm"
-            >
-              Change Password
-            </button>
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 420, border: "1.5px solid #E2E8F0", boxShadow: "0 20px 60px rgba(0,0,0,0.15)", fontFamily: "'DM Sans', sans-serif" }}>
+            <div style={{ background: "#1B2B4B", padding: "16px 20px", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Shield size={14} color="#fff" />
+                <p style={{ fontWeight: 700, color: "#fff", fontSize: 14, margin: 0 }}>Change Password</p>
+              </div>
+              <button onClick={() => { setShowPasswordModal(false); setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" }); }}
+                style={{ background: "rgba(255,255,255,0.12)", border: "none", borderRadius: 6, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
+                <X size={13} />
+              </button>
+            </div>
+            <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                { label: "Current Password", field: "currentPassword", vis: "current" },
+                { label: "New Password", field: "newPassword", vis: "new" },
+                { label: "Confirm New Password", field: "confirmPassword", vis: "confirm" },
+              ].map((f) => (
+                <div key={f.field}>
+                  <label style={{ ...S.label, display: "block", marginBottom: 6 }}>{f.label}</label>
+                  <div style={{ position: "relative" }}>
+                    <input type={showPasswords[f.vis] ? "text" : "password"} value={passwordForm[f.field]}
+                      onChange={(e) => setPasswordForm((p) => ({ ...p, [f.field]: e.target.value }))}
+                      style={{ ...S.input, paddingRight: 38 }} />
+                    <button type="button" onClick={() => setShowPasswords((p) => ({ ...p, [f.vis]: !p[f.vis] }))}
+                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}>
+                      {showPasswords[f.vis] ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                <button onClick={() => { setShowPasswordModal(false); setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" }); }}
+                  style={{ flex: 1, background: "#fff", color: "#1B2B4B", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                  Cancel
+                </button>
+                <button onClick={handleChangePassword}
+                  style={{ flex: 1, background: "#2563EB", color: "#fff", border: "none", borderRadius: 8, padding: "9px", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                  Change Password
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function PasswordInput({ label, value, onChange, visible, toggle }) {
-  return (
-    <div>
-      <label className="block text-sm font-semibold mb-2 text-gray-700">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          type={visible ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full px-4 py-2.5 pr-12 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none"
-        />
-        <button
-          type="button"
-          onClick={toggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-        >
-          {visible ? <EyeOff size={18} /> : <Eye size={18} />}
-        </button>
-      </div>
+      )}
     </div>
   );
 }
