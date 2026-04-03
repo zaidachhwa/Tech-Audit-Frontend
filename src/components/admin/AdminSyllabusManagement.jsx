@@ -32,6 +32,7 @@ export default function AdminSyllabusManagement() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showEditTopicModal, setShowEditTopicModal] = useState(false);
+  const [showAssignTeacherModal, setShowAssignTeacherModal] = useState(false);
   const [selectedSyllabus, setSelectedSyllabus] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [expandedSyllabi, setExpandedSyllabi] = useState(new Set());
@@ -39,6 +40,7 @@ export default function AdminSyllabusManagement() {
   const [syllabusForm, setSyllabusForm] = useState({ subject: "", description: "" });
   const [topicForm, setTopicForm] = useState({ title: "", description: "", dueDate: "" });
   const [assignForm, setAssignForm] = useState({ teacherId: "" });
+  const [assignTeacherForm, setAssignTeacherForm] = useState({ teacherId: "" });
   const [editForm, setEditForm] = useState({ subject: "", description: "" });
   const [editTopicForm, setEditTopicForm] = useState({ title: "", description: "", dueDate: "" });
   const [activeTab, setActiveTab] = useState("templates");
@@ -101,6 +103,24 @@ export default function AdminSyllabusManagement() {
     } catch (err) {
       console.error(err);
       toast.error(err?.response?.data?.message || "Failed to assign topic");
+    }
+  };
+
+  const handleAssignTeacherToSyllabus = async (e) => {
+    e.preventDefault();
+    if (!assignTeacherForm.teacherId) {
+      toast.error("Please select a teacher");
+      return;
+    }
+    try {
+      await API.patch(`/syllabus/${selectedSyllabus._id}/assign-teacher`, { teacherId: assignTeacherForm.teacherId });
+      toast.success("Teacher assigned to syllabus!");
+      setAssignTeacherForm({ teacherId: "" });
+      setShowAssignTeacherModal(false);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Failed to assign teacher");
     }
   };
 
@@ -508,8 +528,41 @@ export default function AdminSyllabusManagement() {
                               {syllabus.description}
                             </p>
                           )}
+                          {/* Show assigned teacher */}
+                          {syllabus.assignedTeacher && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <User size={14} style={{ color: "#2563EB" }} />
+                              <span className="text-sm font-medium" style={{ color: "#2563EB" }}>
+                                {syllabus.assignedTeacher.name}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedSyllabus(syllabus);
+                              setShowAssignTeacherModal(true);
+                            }}
+                            className="px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2"
+                            style={{
+                              backgroundColor: syllabus.assignedTeacher ? "#EFF6FF" : "#F8FAFC",
+                              color: syllabus.assignedTeacher ? "#2563EB" : "#64748B",
+                              border: "1px solid #E2E8F0",
+                              borderRadius: "6px",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#EFF6FF";
+                              e.currentTarget.style.color = "#2563EB";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = syllabus.assignedTeacher ? "#EFF6FF" : "#F8FAFC";
+                              e.currentTarget.style.color = syllabus.assignedTeacher ? "#2563EB" : "#64748B";
+                            }}
+                          >
+                            <Users size={14} />
+                            {syllabus.assignedTeacher ? "Change Teacher" : "Assign Teacher"}
+                          </button>
                           <button
                             onClick={() => openEditModal(syllabus)}
                             className="p-1.5 rounded transition"
@@ -1171,6 +1224,84 @@ export default function AdminSyllabusManagement() {
                 <button
                   type="button"
                   onClick={() => setShowAssignModal(false)}
+                  className="flex-1 px-4 py-2 rounded-lg font-medium transition text-sm"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    color: "#1B2B4B",
+                    borderRadius: "8px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#F8FAFC";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#FFFFFF";
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 rounded-lg text-white font-medium transition text-sm"
+                  style={{
+                    backgroundColor: "#2563EB",
+                    borderRadius: "8px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#1E40AF";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#2563EB";
+                  }}
+                >
+                  Assign Teacher
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+        {showAssignTeacherModal && selectedSyllabus && (
+          <Modal title={`Assign Teacher to "${selectedSyllabus.subject}"`} onClose={() => { setShowAssignTeacherModal(false); setSelectedSyllabus(null); }}>
+            <form onSubmit={handleAssignTeacherToSyllabus} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                  Select Teacher *
+                </label>
+                <select
+                  value={assignTeacherForm.teacherId}
+                  onChange={(e) => setAssignTeacherForm({teacherId: e.target.value})}
+                  required
+                  className="w-full px-3 py-2 rounded-lg outline-none text-sm transition"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    borderRadius: "8px",
+                    color: "#1B2B4B",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#2563EB";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#E2E8F0";
+                  }}
+                >
+                  <option value="">Choose a teacher...</option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher._id} value={teacher._id}>
+                      {teacher.name} ({teacher.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: "#64748B" }}>
+                  This will assign all topics of this syllabus to the selected teacher.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowAssignTeacherModal(false); setSelectedSyllabus(null); }}
                   className="flex-1 px-4 py-2 rounded-lg font-medium transition text-sm"
                   style={{
                     backgroundColor: "#FFFFFF",

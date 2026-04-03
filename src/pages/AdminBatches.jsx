@@ -232,8 +232,8 @@ export default function AdminBatches() {
                   {b.students?.length || 0}
                 </td>
                 <td className="px-6 py-4 text-right flex justify-end gap-2">
-                  <button onClick={()=>openEdit(b)} className="text-[#2563EB]"> <Edit2 size={14}/> </button>
-                  <button onClick={()=>handleDelete(b._id)} className="text-[#EF4444]"> <Trash2 size={14}/> </button>
+                  <button onClick={()=>openEdit(b)} className="text-[#2563EB] hover:bg-[#EFF6FF] p-2 rounded"> <Edit2 size={14}/> </button>
+                  <button onClick={()=>handleDelete(b._id)} className="text-[#EF4444] hover:bg-[#FEE2E2] p-2 rounded"> <Trash2 size={14}/> </button>
                 </td>
               </tr>
             ))}
@@ -241,6 +241,115 @@ export default function AdminBatches() {
         </table>
       </div>
 
+      {/* Create Batch Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-[18px] font-bold text-[#1B2B4B]">Create Batch</h2>
+              <button onClick={() => setShowCreate(false)} className="text-[#94A3B8]">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch Name</label>
+                <input
+                  required
+                  type="text"
+                  value={form.batch_name}
+                  onChange={(e) => setForm({ ...form, batch_name: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch Number</label>
+                <input
+                  required
+                  type="text"
+                  value={form.batch_no}
+                  onChange={(e) => setForm({ ...form, batch_no: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg font-medium hover:bg-[#1D4ED8]"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Batch Modal */}
+      {showEdit && selectedBatch && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-[18px] font-bold text-[#1B2B4B]">Edit Batch</h2>
+              <button onClick={() => setShowEdit(false)} className="text-[#94A3B8]">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch Name</label>
+                <input
+                  required
+                  type="text"
+                  value={form.batch_name}
+                  onChange={(e) => setForm({ ...form, batch_name: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch Number</label>
+                <input
+                  required
+                  type="text"
+                  value={form.batch_no}
+                  onChange={(e) => setForm({ ...form, batch_no: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowEdit(false)}
+                  className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg font-medium hover:bg-[#1D4ED8]"
+                >
+                  Update
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <Toaster position="top-right" />
     </div>
   );
 }
