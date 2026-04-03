@@ -80,15 +80,16 @@ export default function AssignTask() {
     try {
       setLoading(true);
 
-      await API.post("/assignments/create", {
+       await API.post("/assignment/create", {
         batchName,
         batchNumber,
-        student: assignMode === "individual" ? student : null,
+        student: assignMode === "individual" ? student : "assign to batch",
         parameters,
         date,
         mode: assignMode,
         comment,
       });
+      
 
       toast.success("Assigned successfully");
 
@@ -98,8 +99,11 @@ export default function AssignTask() {
       setDate("");
       setParameters([{ name: "", score: "" }]);
     } catch (err) {
-      toast.error("Failed to assign");
+   
+         console.log(err.response);
+      toast.error(err.response?.data?.message || "Assignment failed");
     } finally {
+
       setLoading(false);
     }
   };

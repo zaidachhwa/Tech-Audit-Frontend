@@ -440,12 +440,12 @@ function TopicCard({ topic, expanded, onToggleExpand, onMarkComplete, onOpenRema
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6, gap: 10 }}>
-            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>{topic.templateTopic?.title || topic.title || "Untitled"}</p>
+            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>{topic.title}</p>
             <span style={{ ...cfg.badge, borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", fontFamily: "'DM Sans', sans-serif" }}>
               {topic.completionStatus}
             </span>
           </div>
-          {(topic.templateTopic?.description || topic.description) && <p style={{ color: "#64748B", fontSize: 12, margin: "0 0 10px", lineHeight: 1.5 }}>{topic.templateTopic?.description || topic.description}</p>}
+          {topic.description && <p style={{ color: "#64748B", fontSize: 12, margin: "0 0 10px", lineHeight: 1.5 }}>{topic.description}</p>}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
             <Calendar size={13} color="#94A3B8" />
             <span style={{ color: "#64748B", fontSize: 12 }}>Due: {dueDate ? dueDate.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "N/A"}</span>
@@ -490,7 +490,7 @@ function RemarkModal({ topic, remarkText, setRemarkText, onClose, onSubmit }) {
         <div style={{ background: "#2563EB", padding: "18px 22px", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <p style={{ fontWeight: 700, color: "#fff", fontSize: 15, margin: 0 }}>{remarkText ? "Edit Remark" : "Add Remark"}</p>
-            <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, margin: 0 }}>{topic.templateTopic?.title || topic.title || "Topic"}</p>
+            <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, margin: 0 }}>{topic.title}</p>
           </div>
           <button onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
             <X size={16} />
