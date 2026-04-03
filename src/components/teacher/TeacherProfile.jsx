@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { API } from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Mail, Phone, MapPin, Calendar, Award, BookOpen,
@@ -20,9 +19,8 @@ const S = {
 };
 
 export default function TeacherProfile() {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [profileData, setProfileData] = useState(null);
+  const [profileData, setProfileData] = useState({});
   const [stats, setStats] = useState({ totalTopics: 0, completedTopics: 0, inProgressTopics: 0, totalBatches: 0, totalStudents: 0, completionRate: 0 });
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", phone: "", location: "", bio: "" });
@@ -30,8 +28,19 @@ export default function TeacherProfile() {
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [achievements, setAchievements] = useState([]);
+  const [activity, setActivity] = useState([]);
 
-  useEffect(() => { fetchProfileData(); fetchStats(); }, []);
+  useEffect(() => { fetchProfileData(); fetchStats(); fetchActivity(); }, []);
+
+  const fetchActivity = async () => {
+    try {
+      const res = await API.get("/teachers/activity");
+      setActivity(res.data?.activity || []);
+    } catch (err) { 
+      console.error("Activity fetch failed:", err);
+      setActivity([]);
+    }
+  };
 
   const fetchProfileData = async () => {
     try {
@@ -67,6 +76,9 @@ export default function TeacherProfile() {
       fetchProfileData();
     } catch (err) { toast.error(err?.response?.data?.message || "Update failed"); }
   };
+
+  const teacherName = profileData?.name || "";
+  const teacherRole = profileData?.role || profileData?.designation || "";
 
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) { toast.error("Passwords do not match!"); return; }
@@ -114,7 +126,7 @@ export default function TeacherProfile() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
         .tp-wrap { max-width: 860px; margin: 0 auto; }
-        .tp-toprow { display:flex; align-items:flex-end; justify-content:space-between; margin-top:-34px; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+        .tp-toprow { display:flex; align-items:center; justify-content:space-between; margin-top:16px; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
         .tp-namerow { display:flex; align-items:flex-end; gap:14px; }
         .tp-info { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
         .tp-stats { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:20px; }
@@ -134,29 +146,33 @@ export default function TeacherProfile() {
         {/* ── PROFILE CARD ── */}
         <div style={{ ...S.card, marginBottom: 20, overflow: "hidden" }}>
           {/* Banner */}
-          <div style={{ height: 96, background: "linear-gradient(135deg,#1B2B4B 0%,#2563EB 100%)", position: "relative", overflow: "hidden" }}>
+         
+<div style={{ height: 96, background: "linear-gradient(135deg,#1B2B4B 0%,#2563EB 100%)", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
             <div style={{ position: "absolute", bottom: -40, left: 240, width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
-          </div>
-
+              </div>
           <div style={{ padding: "0 24px 24px" }}>
+
             <div className="tp-toprow">
               <div className="tp-namerow">
                 {/* Avatar */}
-                <div style={{ width: 68, height: 68, borderRadius: 14, background: "#2563EB", border: "3px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "#fff", flexShrink: 0, boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}>
-                  {(profileData?.name || user?.teacher?.name || "T").charAt(0).toUpperCase()}
+                <div style={{ position: "relative", width: 92, height: 68, flexShrink: 0 }}>
+                  <div style={{ position: "absolute", left: 0, top: 24, width: 92, height: 22, borderRadius: 999, background: "#DCFCE7", zIndex: 0 }} />
+                  <div style={{ position: "relative", width: 68, height: 68, borderRadius: 14, background: "#2563EB", border: "3px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "#fff", boxShadow: "0 4px 14px rgba(37,99,235,0.35)", zIndex: 1 }}>
+                    {(teacherName || "T").charAt(0).toUpperCase()}
+                  </div>
                 </div>
                 <div style={{ paddingBottom: 4 }}>
                   {isEditing ? (
                     <input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} style={{ ...S.input, fontSize: 16, fontWeight: 700, padding: "6px 10px", width: 200 }} />
                   ) : (
                     <p style={{ fontWeight: 800, color: "#1B2B4B", fontSize: 18, margin: "0 0 3px", letterSpacing: "-0.02em" }}>
-                      {profileData?.name || user?.teacher?.name || "Teacher"}
+                      {teacherName || "Teacher"}
                     </p>
                   )}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <GraduationCap size={12} color="#2563EB" />
-                    <span style={{ color: "#64748B", fontSize: 12 }}>Teacher • {profileData?.role || "Educator"}</span>
+                    <span style={{ color: "#64748B", fontSize: 12 }}>Teacher • {teacherRole || "Educator"}</span>
                     <span style={{ background: "#ECFDF5", color: "#065F46", borderRadius: 20, padding: "1px 8px", fontSize: 11, fontWeight: 600 }}>Active</span>
                   </div>
                 </div>
@@ -260,11 +276,7 @@ export default function TeacherProfile() {
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Recent Activity</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {[
-              { icon: <CheckCircle2 size={13} color="#10B981" />, title: "Completed 5 topics this week", time: "2 days ago", tint: "#ECFDF5", border: "#A7F3D0" },
-              { icon: <MessageSquare size={13} color="#2563EB" />, title: "Added remarks to 3 topics", time: "3 days ago", tint: "#EFF6FF", border: "#BFDBFE" },
-              { icon: <Users size={13} color="#F59E0B" />, title: "Joined 2 new batches", time: "1 week ago", tint: "#FEF3C7", border: "#FDE68A" },
-            ].map((a, i) => (
+            {activity.length > 0 ? activity.map((a, i) => (
               <div key={i} style={{ background: a.tint, border: `1.5px solid ${a.border}`, borderRadius: 8, padding: "11px 14px", display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 7, background: "#fff", border: "1.5px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{a.icon}</div>
                 <div>
@@ -272,7 +284,9 @@ export default function TeacherProfile() {
                   <p style={{ color: "#94A3B8", fontSize: 11, margin: 0 }}>{a.time}</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <p style={{ color: "#94A3B8", fontSize: 13, margin: 0, textAlign: "center", padding: "20px" }}>No recent activity</p>
+            )}
           </div>
         </div>
       </div>
