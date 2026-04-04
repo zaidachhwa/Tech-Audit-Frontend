@@ -33,7 +33,13 @@ export default function TeacherAttendance() {
   useEffect(() => {
     if (!selectedBatch) { setStudents([]); setAttendance({}); return; }
     setLoading(true);
-    API.get(`/students/list?batchId=${encodeURIComponent(selectedBatch)}`)
+
+    const batchObj = batches.find((b) => b._id === selectedBatch);
+    const query = batchObj
+      ? `batchName=${encodeURIComponent(batchObj.batch_name)}&batchNumber=${encodeURIComponent(batchObj.batch_no)}`
+      : `batchId=${encodeURIComponent(selectedBatch)}`;
+
+    API.get(`/students/list?${query}`)
       .then((r) => {
         const all = r.data?.students || [];
         setStudents(all);
@@ -43,7 +49,7 @@ export default function TeacherAttendance() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [selectedBatch]);
+  }, [selectedBatch, batches]);
 
   const markAll = (status) => {
     const updated = {};

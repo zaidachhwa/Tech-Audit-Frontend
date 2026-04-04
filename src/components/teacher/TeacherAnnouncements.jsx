@@ -33,7 +33,7 @@ export default function TeacherAnnouncements() {
   const fetchAnnouncements = async () => {
     try {
       setFetching(true);
-      const res = await API.get("/announcements");
+      const res = await API.get("/announcement");
       // Backend returns { announcements: [...] }
       setAnnouncements(res.data.announcements || []);
     } catch (err) {
@@ -61,7 +61,7 @@ export default function TeacherAnnouncements() {
     setLoading(true);
     try {
       // API call to your backend router.post("/")
-      const res = await API.post("/announcements", form);
+      const res = await API.post("/announcement", form);
       
       // Update UI with the newly created database object
       setAnnouncements((prev) => [res.data.announcement, ...prev]);
@@ -80,7 +80,7 @@ export default function TeacherAnnouncements() {
     if (!window.confirm("Are you sure you want to delete this announcement?")) return;
     
     try {
-      await API.delete(`/announcements/${id}`);
+      await API.delete(`/announcement/${id}`);
       setAnnouncements((prev) => prev.filter((a) => a._id !== id));
       toast.success("Announcement removed");
     } catch (err) {

@@ -40,22 +40,9 @@ export default function AccordionBatchSelector({
     onExpandedChange(expandedBatchName === batchName ? "" : batchName);
   };
 
-  const handleBatchNoClick = (batchNo, batchName) => {
-    console.log("Batch clicked - batchNo:", batchNo, "batchName:", batchName);
-    console.log("Looking in batches:", batches);
-
-    const selectedBatchObj = batches.find(
-      (b) => String(b.batch_name).trim().toUpperCase() === batchName && String(b.batch_no) === batchNo
-    );
-
-    console.log("Found batch:", selectedBatchObj);
-
-    if (selectedBatchObj) {
-      console.log("Calling onBatchSelect with:", selectedBatchObj._id);
-      onBatchSelect(selectedBatchObj._id);
-    } else {
-      console.warn("No batch found matching:", { batchName, batchNo });
-    }
+  // Simply pass the batch._id directly — no lookup needed
+  const handleBatchClick = (batchId) => {
+    onBatchSelect(batchId);
   };
 
   const styles = {
@@ -199,7 +186,7 @@ export default function AccordionBatchSelector({
                     <button
                       key={batch._id}
                       className="batch-button"
-                      onClick={() => handleBatchNoClick(batch.batch_no, group.name)}
+                      onClick={() => handleBatchClick(batch._id)}
                       style={{
                         ...styles.batchButton,
                         ...(isSelected ? styles.batchButtonSelected : {}),
