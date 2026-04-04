@@ -19,6 +19,11 @@ import {
   ChevronDown,
   Users,
   BarChart3,
+  Zap,
+  AlertTriangle,
+  Activity,
+  Paperclip,
+  Send,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -112,6 +117,12 @@ export default function TeacherSyllabusDashboard() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("dueDate");
   const [expandedTopic, setExpandedTopic] = useState(null);
+  const [assignments, setAssignments] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [recentSubmissions, setRecentSubmissions] = useState([]);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
   const latestSelectedRefs = useRef({ batchId: null, syllabusId: null });
 
   useEffect(() => { fetchBatchesWithSyllabi(); }, []);
@@ -127,6 +138,8 @@ export default function TeacherSyllabusDashboard() {
     const batchObj = batchesWithSyllabi.find((b) => String(b._id) === String(selectedBatchId));
     const assigned = batchObj?.assignedSyllabi || [];
     setAssignedSyllabiForBatch(assigned);
+    // Fetch metrics for the selected batch
+    fetchMetricsForBatch(selectedBatchId, batchObj);
     if (assigned.length === 1) {
       const only = assigned[0];
       setSelectedBatchSyllabusId(String(only._id));
@@ -180,6 +193,42 @@ export default function TeacherSyllabusDashboard() {
     }
   }
 
+  async function fetchMetricsForBatch(batchId, batchObj) {
+    try {
+      setLoadingMetrics(true);
+      // Fetch assignments for this batch
+      const assignRes = await API.get(`/assignment?batchId=${encodeURIComponent(batchId)}`);
+      const assignData = assignRes.data?.data || assignRes.data?.assignments || [];
+      setAssignments(Array.isArray(assignData) ? assignData : []);
+      
+      // Fetch attendance for this batch
+      const attendRes = await API.get(`/attendance?batchId=${encodeURIComponent(batchId)}`);
+      const attendData = attendRes.data?.data || attendRes.data?.attendance || [];
+      setAttendance(Array.isArray(attendData) ? attendData : []);
+      
+      // Fetch grades for this batch
+      const gradeRes = await API.get(`/grade?batchId=${encodeURIComponent(batchId)}`);
+      const gradeData = gradeRes.data?.data || gradeRes.data?.grades || [];
+      setGrades(Array.isArray(gradeData) ? gradeData : []);
+      
+      // Get student data from batch object
+      const batchStudents = batchObj?.students || [];
+      setStudents(Array.isArray(batchStudents) ? batchStudents : []);
+      
+      // Build recent submissions from assignment submissions
+      if (Array.isArray(assignData)) {
+        const subs = assignData
+          .flatMap(a => (a.submissions || []).map(s => ({ ...s, assignmentId: a._id, assignmentTitle: a.title })))
+          .slice(0, 5);
+        setRecentSubmissions(subs);
+      }
+    } catch (err) {
+      console.error("Failed to fetch metrics:", err);
+    } finally {
+      setLoadingMetrics(false);
+    }
+  }
+
   const markComplete = async (topicId) => {
     try {
       await API.patch(`/syllabus/topic/${topicId}/complete`);
@@ -224,6 +273,33 @@ export default function TeacherSyllabusDashboard() {
     pending: topics.filter((t) => t.completionStatus === "Pending").length,
   };
   const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+
+  // Calculate red flags: students with low attendance
+  const getLowAttendanceStudents = () => {
+    return students.filter((student) => {
+      const studentAttendance = attendance.find((a) => String(a.studentId) === String(student._id));
+      const rate = studentAttendance?.attendanceRate || 0;
+      return rate < 75;
+    });
+  };
+
+  // Get pending grades
+  const getPendingGrades = () => {
+    return grades.filter((g) => g.status === "pending" || g.status === "Pending" || !g.grade);
+  };
+
+  // Calculate assignment submission rates
+  const getAssignmentPulse = () => {
+    return assignments.map((a) => {
+      const totalSubmissions = (a.submissions || []).length;
+      const submissionRate = students.length > 0 ? Math.round((totalSubmissions / students.length) * 100) : 0;
+      return { ...a, submissionRate, totalSubmissions, remainingStudents: students.length - totalSubmissions };
+    });
+  };
+
+  const lowAttendanceStudents = getLowAttendanceStudents();
+  const pendingGradesList = getPendingGrades();
+  const assignmentPulse = getAssignmentPulse();
 
   const handleRefresh = () => {
     if (selectedBatchId && selectedBatchSyllabusId) {
@@ -335,9 +411,118 @@ export default function TeacherSyllabusDashboard() {
         )}
       </div>
 
-      {/* TOPICS */}
-      <div style={S.card}>
-        {/* Filters header */}
+      {/* QUICK ACTIONS */}
+      <div style={{ ...S.card, padding: "24px", marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <div style={{ width: 4, height: 18, background: "#F59E0B", borderRadius: 4 }} />
+          <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 15, margin: 0 }}>Quick Actions</p>
+          <Zap size={16} color="#F59E0B" style={{ marginLeft: "auto" }} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+          <Link to="/teacher/attendance" style={{ textDecoration: "none" }}>
+            <button style={{ ...S.primaryBtn, width: "100%", justifyContent: "center", background: "#10B981", borderRadius: 8, padding: "12px 16px" }}>
+              <Calendar size={16} /> Mark Attendance
+            </button>
+          </Link>
+          <Link to="/teacher/assign-task" style={{ textDecoration: "none" }}>
+            <button style={{ ...S.primaryBtn, width: "100%", justifyContent: "center", background: "#2563EB", borderRadius: 8, padding: "12px 16px" }}>
+              <FileText size={16} /> Post Assignment
+            </button>
+          </Link>
+          <Link to="/teacher/grades" style={{ textDecoration: "none" }}>
+            <button style={{ ...S.primaryBtn, width: "100%", justifyContent: "center", background: "#7C3AED", borderRadius: 8, padding: "12px 16px" }}>
+              <TrendingUp size={16} /> Grade Students
+            </button>
+          </Link>
+          <Link to="/teacher/announcements" style={{ textDecoration: "none" }}>
+            <button style={{ ...S.primaryBtn, width: "100%", justifyContent: "center", background: "#EC4899", borderRadius: 8, padding: "12px 16px" }}>
+              <AlertCircle size={16} /> Announce
+            </button>
+          </Link>
+        </div>
+      </div>
+
+      {/* ASSIGNMENT PULSE */}
+      {assignmentPulse.length > 0 && (
+        <div style={{ ...S.card, padding: "24px", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <div style={{ width: 4, height: 18, background: "#2563EB", borderRadius: 4 }} />
+            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 15, margin: 0 }}>Assignment Pulse</p>
+            <Activity size={16} color="#2563EB" style={{ marginLeft: "auto" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {assignmentPulse.slice(0, 4).map((a) => {
+              const pulseColor = a.submissionRate === 100 ? "#10B981" : a.submissionRate >= 75 ? "#F59E0B" : a.submissionRate >= 50 ? "#F59E0B" : "#EF4444";
+              return (
+                <div key={a._id} style={{ padding: "12px", background: "#F8FAFC", borderRadius: 8, border: "1.5px solid #E2E8F0" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <p style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 13, margin: 0 }}>{a.title}</p>
+                    <span style={{ background: pulseColor, color: "#fff", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>{a.submissionRate}%</span>
+                  </div>
+                  <div style={{ height: 6, background: "#E2E8F0", borderRadius: 99, overflow: "hidden", marginBottom: 6 }}>
+                    <div style={{ height: "100%", width: `${a.submissionRate}%`, background: pulseColor, borderRadius: 99 }} />
+                  </div>
+                  <p style={{ color: "#64748B", fontSize: 11, margin: 0 }}>{a.totalSubmissions} of {students.length} submitted</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* RED FLAGS / URGENCY SECTION */}
+      {(lowAttendanceStudents.length > 0 || pendingGradesList.length > 0) && (
+        <div style={{ ...S.card, padding: "24px", marginBottom: 20, borderLeft: "4px solid #EF4444" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <AlertTriangle size={18} color="#EF4444" />
+            <p style={{ fontWeight: 700, color: "#7F1D1D", fontSize: 15, margin: 0 }}>Red Flags - Immediate Attention</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: lowAttendanceStudents.length > 0 && pendingGradesList.length > 0 ? "1fr 1fr" : "1fr", gap: 16 }}>
+            {lowAttendanceStudents.length > 0 && (
+              <div style={{ padding: "16px", background: "#FEF2F2", borderRadius: 8, border: "1.5px solid #FECACA" }}>
+                <p style={{ fontWeight: 600, color: "#991B1B", fontSize: 13, margin: "0 0 12px" }}>Low Attendance (&lt;75%)</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {lowAttendanceStudents.slice(0, 5).map((s) => {
+                    const studentAttendance = attendance.find((a) => String(a.studentId) === String(s._id));
+                    return (
+                      <div key={s._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", background: "#fff", borderRadius: 6, border: "1px solid #FECACA" }}>
+                        <p style={{ color: "#1B2B4B", fontSize: 12, fontWeight: 500, margin: 0 }}>{s.name}</p>
+                        <span style={{ background: "#FEE2E2", color: "#991B1B", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600 }}>{Math.round(studentAttendance?.attendanceRate || 0)}%</span>
+                      </div>
+                    );
+                  })}
+                  {lowAttendanceStudents.length > 5 && <p style={{ color: "#64748B", fontSize: 11, margin: "8px 0 0", fontStyle: "italic" }}>+{lowAttendanceStudents.length - 5} more</p>}
+                </div>
+              </div>
+            )}
+            {pendingGradesList.length > 0 && (
+              <div style={{ padding: "16px", background: "#FEF3C7", borderRadius: 8, border: "1.5px solid #FDE68A" }}>
+                <p style={{ fontWeight: 600, color: "#92400E", fontSize: 13, margin: "0 0 12px" }}>Pending Grades</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {pendingGradesList.slice(0, 5).map((g) => {
+                    const student = students.find((s) => String(s._id) === String(g.studentId));
+                    return (
+                      <div key={g._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", background: "#fff", borderRadius: 6, border: "1px solid #FDE68A" }}>
+                        <div>
+                          <p style={{ color: "#1B2B4B", fontSize: 12, fontWeight: 500, margin: "0 0 2px" }}>{student?.name || "Unknown"}</p>
+                          <p style={{ color: "#64748B", fontSize: 11, margin: 0 }}>{g.assignment || g.type}</p>
+                        </div>
+                        <span style={{ background: "#FCD34D", color: "#92400E", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600 }}>PENDING</span>
+                      </div>
+                    );
+                  })}
+                  {pendingGradesList.length > 5 && <p style={{ color: "#64748B", fontSize: 11, margin: "8px 0 0", fontStyle: "italic" }}>+{pendingGradesList.length - 5} more</p>}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TWO-COLUMN LAYOUT: MY TOPICS + ACTIVITY FEED */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        {/* LEFT: MY TOPICS */}
+        <div style={S.card}>
         <div style={{ padding: "18px 24px", borderBottom: "1.5px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, background: "#F8FAFC", borderRadius: "12px 12px 0 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 4, height: 18, background: "#2563EB", borderRadius: 4 }} />
@@ -408,7 +593,56 @@ export default function TeacherSyllabusDashboard() {
         </div>
       </div>
 
-      {/* REMARK MODAL */}
+        {/* RIGHT: ACTIVITY FEED / RECENT SUBMISSIONS */}
+        <div style={S.card}>
+          <div style={{ padding: "18px 24px", borderBottom: "1.5px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#F8FAFC", borderRadius: "12px 12px 0 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 4, height: 18, background: "#10B981", borderRadius: 4 }} />
+              <div>
+                <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 15, margin: 0 }}>Recent Submissions</p>
+                <p style={{ color: "#64748B", fontSize: 12, margin: 0 }}>{recentSubmissions.length} recent activity</p>
+              </div>
+            </div>
+            <Activity size={16} color="#10B981" />
+          </div>
+          <div style={{ padding: 24 }}>
+            {loadingMetrics ? (
+              <div style={{ textAlign: "center", padding: "40px 0" }}>
+                <RefreshCw size={32} color="#2563EB" style={{ animation: "spin 1s linear infinite", marginBottom: 10 }} />
+                <p style={{ color: "#64748B", fontSize: 13 }}>Loading activity...</p>
+              </div>
+            ) : recentSubmissions.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#94A3B8", fontSize: 13 }}>
+                <Paperclip size={32} style={{ margin: "0 auto 12px", opacity: 0.5 }} />
+                <p>No recent submissions yet</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {recentSubmissions.map((sub, idx) => {
+                  const student = students.find((s) => String(s._id) === String(sub.studentId));
+                  const submittedDate = sub.submittedDate ? new Date(sub.submittedDate) : null;
+                  return (
+                    <div key={idx} style={{ padding: "12px", background: "#F8FAFC", borderRadius: 8, border: "1.5px solid #E2E8F0" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 12, margin: "0 0 2px" }}>{student?.name || "Student"}</p>
+                          <p style={{ color: "#64748B", fontSize: 11, margin: 0 }}>{sub.assignmentTitle || "Assignment"}</p>
+                        </div>
+                        <span style={{ background: "#ECFDF5", color: "#065F46", padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", marginLeft: 8 }}>
+                          ✓ Submitted
+                        </span>
+                      </div>
+                      <p style={{ color: "#94A3B8", fontSize: 10, margin: 0 }}>
+                        {submittedDate ? submittedDate.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently"}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
       {showRemark && selectedTopic && (
         <RemarkModal
           topic={selectedTopic}

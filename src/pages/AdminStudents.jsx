@@ -36,6 +36,7 @@ export default function AdminStudents() {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editStudent, setEditStudent] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -72,6 +73,71 @@ export default function AdminStudents() {
       const res = await API.get("/batches/public");
       setBatches(res.data || []);
     } catch {}
+  };
+
+  const handleEditClick = (student) => {
+    setEditStudent(student);
+    setForm({
+      name: student.name,
+      email: student.email,
+      password: "",
+      batch_name: student.batch_name,
+      batch_no: student.batch_no,
+    });
+    setShowEdit(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    try {
+      await API.delete(`/students/delete/${deleteConfirm}`);
+      toast.success("Student deleted successfully");
+      setDeleteConfirm(null);
+      fetchStudents();
+    } catch {
+      toast.error("Failed to delete student");
+    }
+  };
+
+  const toggleApproval = async (studentId, currentStatus) => {
+    try {
+      await API.patch(`/students/update/${studentId}`, {
+        isActive: !currentStatus,
+      });
+      toast.success(currentStatus ? "Student deactivated" : "Student approved");
+      fetchStudents();
+    } catch {
+      toast.error("Failed to update student status");
+    }
+  };
+
+  const updateStudent = async (e) => {
+    e.preventDefault();
+    if (!editStudent) return;
+    try {
+      const updateData = { name: form.name, batch_name: form.batch_name, batch_no: form.batch_no };
+      if (form.password) updateData.password = form.password;
+      
+      await API.patch(`/students/update/${editStudent._id}`, updateData);
+      toast.success("Student updated successfully");
+      setShowEdit(false);
+      fetchStudents();
+    } catch {
+      toast.error("Failed to update student");
+    }
+  };
+
+  const createStudent = async (e) => {
+    e.preventDefault();
+    try {
+      await API.post("/students/register", form);
+      toast.success("Student created successfully");
+      setShowCreate(false);
+      setForm({ name: "", email: "", password: "", batch_name: "", batch_no: "" });
+      fetchStudents();
+    } catch {
+      toast.error("Failed to create student");
+    }
   };
 
   const filteredStudents =
@@ -192,19 +258,31 @@ export default function AdminStudents() {
 
                 <td className="px-6 py-4 text-right flex justify-end gap-2">
                   {!s.isActive && (
-                    <button className="text-[#10B981]">
+                    <button 
+                      onClick={() => toggleApproval(s._id, s.isActive)}
+                      className="text-[#10B981] hover:bg-[#ECFDF5] p-2 rounded"
+                    >
                       <Check size={14} />
                     </button>
                   )}
                   {s.isActive && (
-                    <button className="text-[#F59E0B]">
+                    <button 
+                      onClick={() => toggleApproval(s._id, s.isActive)}
+                      className="text-[#F59E0B] hover:bg-[#FEF3C7] p-2 rounded"
+                    >
                       <XCircle size={14} />
                     </button>
                   )}
-                  <button className="text-[#2563EB]">
+                  <button 
+                    onClick={() => handleEditClick(s)}
+                    className="text-[#2563EB] hover:bg-[#EFF6FF] p-2 rounded"
+                  >
                     <Edit2 size={14} />
                   </button>
-                  <button className="text-[#EF4444]">
+                  <button 
+                    onClick={() => setDeleteConfirm(s._id)}
+                    className="text-[#EF4444  ] hover:bg-[#FEE2E2] p-2 rounded"
+                  >
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -214,6 +292,214 @@ export default function AdminStudents() {
         </table>
       </div>
 
+      {/* Create Student Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-[18px] font-bold text-[#1B2B4B]">Add Student</h2>
+              <button onClick={() => setShowCreate(false)} className="text-[#94A3B8]">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={createStudent} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Name</label>
+                <input
+                  required
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Email</label>
+                <input
+                  required
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Password</label>
+                <input
+                  required
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch Name</label>
+                  <input
+                    required
+                    type="text"
+                    value={form.batch_name}
+                    onChange={(e) => setForm({ ...form, batch_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch No</label>
+                  <input
+                    required
+                    type="text"
+                    value={form.batch_no}
+                    onChange={(e) => setForm({ ...form, batch_no: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg font-medium hover:bg-[#1D4ED8]"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Student Modal */}
+      {showEdit && editStudent && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-[18px] font-bold text-[#1B2B4B]">Edit Student</h2>
+              <button onClick={() => setShowEdit(false)} className="text-[#94A3B8]">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={updateStudent} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Name</label>
+                <input
+                  required
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Email</label>
+                <input
+                  disabled
+                  type="email"
+                  value={form.email}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg bg-[#F8FAFC] text-[#64748B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Password (Leave empty to keep current)</label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch Name</label>
+                  <input
+                    required
+                    type="text"
+                    value={form.batch_name}
+                    onChange={(e) => setForm({ ...form, batch_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch No</label>
+                  <input
+                    required
+                    type="text"
+                    value={form.batch_no}
+                    onChange={(e) => setForm({ ...form, batch_no: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowEdit(false)}
+                  className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg font-medium hover:bg-[#1D4ED8]"
+                >
+                  Update
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-sm w-full">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-[#FEE2E2] text-[#EF4444] rounded-full flex items-center justify-center">
+                <AlertCircle size={24} />
+              </div>
+            </div>
+
+            <h2 className="text-[18px] font-bold text-[#1B2B4B] text-center mb-2">Delete Student?</h2>
+            <p className="text-[14px] text-[#64748B] text-center mb-6">
+              This action cannot be undone. The student account will be permanently deleted.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2 bg-[#EF4444] text-white rounded-lg font-medium hover:bg-[#DC2626]"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Toaster position="top-right" />
     </div>
   );
 }

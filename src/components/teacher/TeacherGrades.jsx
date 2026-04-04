@@ -42,7 +42,7 @@ export default function TeacherGrades() {
   useEffect(() => {
     if (!selectedBatch) { setStudents([]); setGrades({}); return; }
     setLoading(true);
-    API.get("/students/list")
+    API.get(`/students/list?batchId=${encodeURIComponent(selectedBatch)}`)
       .then((r) => {
         const all = r.data?.students || [];
         setStudents(all);
