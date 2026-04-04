@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
 import { CalendarCheck, Users, CheckCircle2, XCircle, ChevronDown, RefreshCw, Save, Clock } from "lucide-react";
+import AccordionBatchSelector from "./AccordionBatchSelector";
 
 const S = {
   page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
@@ -23,6 +24,7 @@ export default function TeacherAttendance() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [expandedBatchName, setExpandedBatchName] = useState("");
 
   useEffect(() => {
     API.get("/batches/public").then((r) => setBatches(r.data || [])).catch(console.error);
@@ -31,7 +33,7 @@ export default function TeacherAttendance() {
   useEffect(() => {
     if (!selectedBatch) { setStudents([]); setAttendance({}); return; }
     setLoading(true);
-    API.get("/students/list")
+    API.get(`/students/list?batchId=${encodeURIComponent(selectedBatch)}`)
       .then((r) => {
         const all = r.data?.students || [];
         setStudents(all);
@@ -123,13 +125,14 @@ export default function TeacherAttendance() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 16, alignItems: "flex-end" }}>
           <div>
             <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Select Batch</label>
-            <div style={{ position: "relative" }}>
-              <select value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)} style={S.select}>
-                <option value="">Select a batch...</option>
-                {batches.map((b) => <option key={b._id} value={b._id}>{b.batch_name} (#{b.batch_no})</option>)}
-              </select>
-              <ChevronDown size={14} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", pointerEvents: "none" }} />
-            </div>
+            <AccordionBatchSelector
+              batches={batches}
+              selectedBatch={selectedBatch}
+              onBatchSelect={setSelectedBatch}
+              expandedBatchName={expandedBatchName}
+              onExpandedChange={setExpandedBatchName}
+              loading={loading}
+            />
           </div>
           <div>
             <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Date</label>

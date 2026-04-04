@@ -19,6 +19,7 @@ export default function TeacherStudentProgress() {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingTopics, setLoadingTopics] = useState(false);
+  const [expandedCourses, setExpandedCourses] = useState({});
 
   useEffect(() => { fetchBatchesWithSyllabi(); }, []);
   useEffect(() => {
@@ -59,6 +60,22 @@ export default function TeacherStudentProgress() {
   const total = topics.length;
   const rate = total ? Math.round((completed / total) * 100) : 0;
   const selectedBatch = batches.find((b) => b._id === selectedBatchId);
+
+  // Group batches by course name
+  const groupedBatches = batches.reduce((acc, batch) => {
+    const courseName = batch.name.split("(")[0].trim() || "Batch";
+    if (!acc[courseName]) acc[courseName] = [];
+    acc[courseName].push(batch);
+    return acc;
+  }, {});
+
+  const toggleCourseExpand = (courseName) => {
+    setExpandedCourses((prev) => ({ ...prev, [courseName]: !prev[courseName] }));
+  };
+
+  const handleBatchSelect = (batch) => {
+    setSelectedBatchId(batch._id);
+  };
 
   return (
     <div style={S.page}>
@@ -111,10 +128,108 @@ export default function TeacherStudentProgress() {
           ) : batches.length === 0 ? (
             <div style={{ textAlign: "center", padding: "30px 0", color: "#94A3B8", fontSize: 13 }}>No assigned batches found.</div>
           ) : (
-            <select value={selectedBatchId} onChange={(e) => setSelectedBatchId(e.target.value)} style={S.input}>
-              <option value="">Select a batch</option>
-              {batches.map((b) => <option key={b._id} value={b._id}>{b.name} ({b.studentsCount} students)</option>)}
-            </select>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {Object.entries(groupedBatches).map(([courseName, courseBatches]) => (
+                <div key={courseName} style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, overflow: "hidden" }}>
+                  {/* Course header */}
+                  <button
+                    onClick={() => toggleCourseExpand(courseName)}
+                    style={{
+                      width: "100%",
+                      padding: "11px 14px",
+                      background: expandedCourses[courseName] ? "#EFF6FF" : "#F8FAFC",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      color: "#1B2B4B",
+                      transition: "all 0.2s ease",
+                    }}
+                    onHover={(e) => {
+                      e.currentTarget.style.background = "#EFF6FF";
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>●</span>
+                      {courseName}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 16,
+                        color: "#64748B",
+                        transform: expandedCourses[courseName] ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform 0.2s ease",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      ▼
+                    </span>
+                  </button>
+
+                  {/* Batch items */}
+                  {expandedCourses[courseName] && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 10px" }}>
+                      {courseBatches.map((batch) => {
+                        const isSelected = String(batch._id) === String(selectedBatchId);
+                        return (
+                          <button
+                            key={batch._id}
+                            onClick={() => handleBatchSelect(batch)}
+                            style={{
+                              padding: "10px 12px",
+                              background: isSelected ? "#2563EB" : "#F1F5F9",
+                              color: isSelected ? "#fff" : "#1B2B4B",
+                              border: isSelected ? "1.5px solid #1E40AF" : "1.5px solid #E2E8F0",
+                              borderRadius: 6,
+                              cursor: "pointer",
+                              fontWeight: 500,
+                              fontSize: 12,
+                              transition: "all 0.2s ease",
+                              textAlign: "left",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = "#DBEAFE";
+                                e.currentTarget.style.borderColor = "#93C5FD";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = "#F1F5F9";
+                                e.currentTarget.style.borderColor = "#E2E8F0";
+                              }
+                            }}
+                          >
+                            <span>{batch.name}</span>
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 500,
+                                background: isSelected ? "rgba(255,255,255,0.2)" : "#E0E7FF",
+                                color: isSelected ? "#fff" : "#2563EB",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                whiteSpace: "nowrap",
+                                marginLeft: 6,
+                              }}
+                            >
+                              {batch.studentsCount} {batch.studentsCount === 1 ? "student" : "students"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
           {selectedBatch && (
             <div style={{ marginTop: 16, padding: "12px 14px", background: "#EFF6FF", borderRadius: 8, border: "1.5px solid #BFDBFE" }}>
