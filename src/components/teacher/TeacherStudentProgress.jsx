@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
-import { BarChart3, Users, CheckCircle2, Clock, RefreshCw, AlertCircle, TrendingUp } from "lucide-react";
+import { BarChart3, Users, CheckCircle2, Clock, RefreshCw, AlertCircle } from "lucide-react";
 
 const S = {
   page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
@@ -9,7 +9,6 @@ const S = {
   pageTitle: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 },
   label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },
   secondaryBtn: { background: "#fff", color: "#1B2B4B", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "'DM Sans', sans-serif" },
-  input: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#1B2B4B", width: "100%", outline: "none", fontFamily: "'DM Sans', sans-serif", appearance: "none" },
 };
 
 export default function TeacherStudentProgress() {
@@ -33,7 +32,15 @@ export default function TeacherStudentProgress() {
       const res = await API.get("/syllabus/assigned-syllabi");
       const fetched = res.data?.batches || [];
       setBatchesWithSyllabi(fetched);
-      const simple = fetched.map((b) => ({ _id: b._id, name: b.batch_name || b.batch_no || "Batch", studentsCount: b.students?.length || 0 }));
+      
+      // FIX: Map distinct course names and batch numbers separately
+      const simple = fetched.map((b) => ({ 
+        _id: b._id, 
+        courseName: b.batch_name || "Batch", 
+        batchNumber: b.batch_no || "N/A", 
+        studentsCount: b.students?.length || 0 
+      }));
+      
       setBatches(simple);
       if (simple.length === 1) setSelectedBatchId(simple[0]._id);
     } catch { toast.error("Unable to load assigned batches"); }
@@ -61,9 +68,9 @@ export default function TeacherStudentProgress() {
   const rate = total ? Math.round((completed / total) * 100) : 0;
   const selectedBatch = batches.find((b) => b._id === selectedBatchId);
 
-  // Group batches by course name
+  // FIX: Group by the new courseName property
   const groupedBatches = batches.reduce((acc, batch) => {
-    const courseName = batch.name.split("(")[0].trim() || "Batch";
+    const courseName = batch.courseName;
     if (!acc[courseName]) acc[courseName] = [];
     acc[courseName].push(batch);
     return acc;
@@ -123,15 +130,13 @@ export default function TeacherStudentProgress() {
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Batch Selection</p>
           </div>
           <p style={{ color: "#64748B", fontSize: 12, margin: "0 0 16px" }}>Choose a batch to view topic status.</p>
+          
           {loading ? (
             <div style={{ textAlign: "center", padding: "30px 0", color: "#94A3B8", fontSize: 13 }}>Loading batches…</div>
-          ) : batches.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "30px 0", color: "#94A3B8", fontSize: 13 }}>No assigned batches found.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {Object.entries(groupedBatches).map(([courseName, courseBatches]) => (
                 <div key={courseName} style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, overflow: "hidden" }}>
-                  {/* Course header */}
                   <button
                     onClick={() => toggleCourseExpand(courseName)}
                     style={{
@@ -146,33 +151,17 @@ export default function TeacherStudentProgress() {
                       fontWeight: 600,
                       fontSize: 13,
                       color: "#1B2B4B",
-                      transition: "all 0.2s ease",
-                    }}
-                    onHover={(e) => {
-                      e.currentTarget.style.background = "#EFF6FF";
                     }}
                   >
                     <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>●</span>
                       {courseName}
                     </span>
-                    <span
-                      style={{
-                        fontSize: 16,
-                        color: "#64748B",
-                        transform: expandedCourses[courseName] ? "rotate(180deg)" : "rotate(0deg)",
-                        transition: "transform 0.2s ease",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      ▼
-                    </span>
+                    <span style={{ transform: expandedCourses[courseName] ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}>▼</span>
                   </button>
 
-                  {/* Batch items */}
                   {expandedCourses[courseName] && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 10px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px" }}>
                       {courseBatches.map((batch) => {
                         const isSelected = String(batch._id) === String(selectedBatchId);
                         return (
@@ -188,39 +177,16 @@ export default function TeacherStudentProgress() {
                               cursor: "pointer",
                               fontWeight: 500,
                               fontSize: 12,
-                              transition: "all 0.2s ease",
                               textAlign: "left",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "space-between",
                             }}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.background = "#DBEAFE";
-                                e.currentTarget.style.borderColor = "#93C5FD";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.background = "#F1F5F9";
-                                e.currentTarget.style.borderColor = "#E2E8F0";
-                              }
-                            }}
                           >
-                            <span>{batch.name}</span>
-                            <span
-                              style={{
-                                fontSize: 11,
-                                fontWeight: 500,
-                                background: isSelected ? "rgba(255,255,255,0.2)" : "#E0E7FF",
-                                color: isSelected ? "#fff" : "#2563EB",
-                                padding: "2px 6px",
-                                borderRadius: 4,
-                                whiteSpace: "nowrap",
-                                marginLeft: 6,
-                              }}
-                            >
-                              {batch.studentsCount} {batch.studentsCount === 1 ? "student" : "students"}
+                            {/* FIX: Show Batch Number instead of repeating Course Name */}
+                            <span>Batch #{batch.batchNumber}</span>
+                            <span style={{ fontSize: 11, background: isSelected ? "rgba(255,255,255,0.2)" : "#E0E7FF", color: isSelected ? "#fff" : "#2563EB", padding: "2px 6px", borderRadius: 4 }}>
+                              {batch.studentsCount}
                             </span>
                           </button>
                         );
@@ -229,12 +195,6 @@ export default function TeacherStudentProgress() {
                   )}
                 </div>
               ))}
-            </div>
-          )}
-          {selectedBatch && (
-            <div style={{ marginTop: 16, padding: "12px 14px", background: "#EFF6FF", borderRadius: 8, border: "1.5px solid #BFDBFE" }}>
-              <p style={{ fontWeight: 600, color: "#1E40AF", fontSize: 13, margin: "0 0 4px" }}>{selectedBatch.name}</p>
-              <p style={{ color: "#64748B", fontSize: 12, margin: 0 }}>{selectedBatch.studentsCount} students enrolled</p>
             </div>
           )}
         </div>
@@ -252,14 +212,13 @@ export default function TeacherStudentProgress() {
           <div style={{ padding: 22 }}>
             {loadingTopics ? (
               <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <RefreshCw size={32} color="#2563EB" style={{ animation: "spin 1s linear infinite", marginBottom: 10 }} />
+                <RefreshCw size={32} color="#2563EB" className="animate-spin" style={{ marginBottom: 10 }} />
                 <p style={{ color: "#64748B", fontSize: 13 }}>Loading progress...</p>
               </div>
             ) : total === 0 ? (
               <div style={{ textAlign: "center", padding: "40px 0", color: "#94A3B8", fontSize: 13 }}>Pick a batch to view topic progress.</div>
             ) : (
               <>
-                {/* Mini stat row */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
                   {[
                     { label: "Completed", val: completed, bg: "#ECFDF5", color: "#065F46", icon: <CheckCircle2 size={14} /> },
@@ -273,7 +232,6 @@ export default function TeacherStudentProgress() {
                   ))}
                 </div>
 
-                {/* Progress bar */}
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: "#64748B" }}>Overall Completion</span>
@@ -284,7 +242,6 @@ export default function TeacherStudentProgress() {
                   </div>
                 </div>
 
-                {/* Table */}
                 <div style={{ overflowX: "auto", borderRadius: 8, border: "1.5px solid #E2E8F0" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
@@ -308,7 +265,7 @@ export default function TeacherStudentProgress() {
                               <span style={{ ...statusBadge, borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600 }}>{topic.completionStatus || "Unknown"}</span>
                             </td>
                             <td style={{ padding: "11px 14px", color: "#64748B" }}>{topic.dueDate ? new Date(topic.dueDate).toLocaleDateString() : "—"}</td>
-                            <td style={{ padding: "11px 14px", color: "#64748B" }}>{selectedBatch?.name ?? "Batch"}</td>
+                            <td style={{ padding: "11px 14px", color: "#64748B" }}>Batch #{selectedBatch?.batchNumber ?? "—"}</td>
                           </tr>
                         );
                       })}
