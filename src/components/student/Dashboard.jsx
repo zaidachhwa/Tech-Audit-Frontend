@@ -7,6 +7,11 @@ import { RefreshCw, Layers, CheckCircle2, Clock, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 
+const style = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+  .sd-wrap { font-family: 'DM Sans', sans-serif; }
+`;
+
 export default function StudentDashboard() {
   const { user: authUser } = useAuth();
   const [me, setMe] = useState(null);
@@ -20,7 +25,6 @@ export default function StudentDashboard() {
       const meRes = await API.get("/students/me");
       setMe(meRes.data.student || meRes.data);
 
-      // Projects for student
       const projectRes = await API.get(
         `/projects/student/${
           meRes.data.student?.id ||
@@ -32,7 +36,6 @@ export default function StudentDashboard() {
       const projectsList = projectRes.data?.projects || projectRes.data || [];
       setProjects(projectsList);
 
-      // Reports
       const reportsRes = await API.get(
         `/reports/student/${
           meRes.data.student?.id || meRes.data?.student?._id || meRes.data?.id
@@ -54,9 +57,7 @@ export default function StudentDashboard() {
   }, []);
 
   const total = projects.length;
-  const inProgress = projects.filter(
-    (p) => p.overallStatus === "In Progress"
-  ).length;
+  const inProgress = projects.filter((p) => p.overallStatus === "In Progress").length;
   const completed = projects.filter(
     (p) => p.overallStatus === "Completed" || p.overallStatus === "Approved"
   ).length;
@@ -66,146 +67,180 @@ export default function StudentDashboard() {
     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
     .slice(0, 5);
 
+  const statCards = [
+    { icon: <Layers size={22} />, label: "Total Projects", value: total, tint: "#EFF6FF", iconColor: "#2563EB" },
+    { icon: <Clock size={22} />, label: "In Progress", value: inProgress, tint: "#ECFDF5", iconColor: "#10B981" },
+    { icon: <CheckCircle2 size={22} />, label: "Completed", value: completed, tint: "#FEF3C7", iconColor: "#F59E0B" },
+    { icon: <Calendar size={22} />, label: "Reports", value: reports.length, tint: "#EFF6FF", iconColor: "#2563EB" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg shadow-sm p-6 border border-gray-200"
-        >
-          <div className="flex items-center justify-between">
+    <>
+      <style>{style}</style>
+      <div className="sd-wrap" style={{ minHeight: "100vh", background: "#F8FAFC", padding: "28px 24px" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              background: "#fff",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: 12,
+              padding: "20px 24px",
+              marginBottom: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}
+          >
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                Hello, {me?.name || authUser?.name || "Student"}
-              </h1>
-              <p className="text-gray-600 text-sm">
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#1B2B4B" }}>
+                Hello, {me?.name || authUser?.name || "Student"} 👋
+              </div>
+              <div style={{ fontSize: 13, color: "#64748B", marginTop: 2 }}>
                 Here's your project & report overview
-              </p>
+              </div>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={fetchAll}
               disabled={loading}
-              className="bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer text-gray-700"
+              style={{
+                display: "flex", alignItems: "center", gap: 7,
+                background: "#fff", border: "1.5px solid #E2E8F0",
+                borderRadius: 8, padding: "8px 16px",
+                color: "#1B2B4B", fontWeight: 600, fontSize: 13,
+                cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              }}
             >
-              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-              <span className="text-sm font-medium">Refresh</span>
-            </motion.button>
-          </div>
-        </motion.div>
+              <RefreshCw size={16} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
+              Refresh
+            </button>
+          </motion.div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard
-            icon={<Layers size={20} />}
-            label="Total Projects"
-            value={total}
-          />
-          <StatCard
-            icon={<Clock size={20} />}
-            label="In Progress"
-            value={inProgress}
-          />
-          <StatCard
-            icon={<CheckCircle2 size={20} />}
-            label="Completed"
-            value={completed}
-          />
-          <StatCard
-            icon={<Calendar size={20} />}
-            label="Reports"
-            value={reports.length}
-          />
-        </div>
-
-        {/* Content Grid */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Upcoming Deadlines */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              Upcoming Deadlines
-            </h3>
-            {upcomingDeadlines.length === 0 ? (
-              <p className="text-gray-500 text-sm">No upcoming deadlines.</p>
-            ) : (
-              <div className="space-y-3">
-                {upcomingDeadlines.map((p) => (
-                  <div
-                    key={p._id}
-                    className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 transition"
-                  >
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900 text-sm">
-                        {p.title}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {p.description?.slice(0, 80) || ""}
-                      </div>
-                    </div>
-                    <div className="text-xs font-medium text-gray-700 ml-4 whitespace-nowrap">
-                      {p.dueDate
-                        ? new Date(p.dueDate).toLocaleDateString()
-                        : "—"}
-                    </div>
+          {/* Stat Cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
+            {statCards.map((card, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.07 }}
+                whileHover={{ transform: "translateY(-2px)", boxShadow: "0 6px 20px rgba(0,0,0,0.08)" }}
+                style={{
+                  background: "#fff", border: "1.5px solid #E2E8F0",
+                  borderRadius: 12, padding: "18px 20px",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{
+                    width: 52, height: 52, borderRadius: 14,
+                    background: card.tint, display: "flex",
+                    alignItems: "center", justifyContent: "center",
+                    color: card.iconColor,
+                  }}>
+                    {card.icon}
                   </div>
-                ))}
-              </div>
-            )}
+                  <div style={{ fontSize: 28, fontWeight: 800, color: "#1B2B4B" }}>{card.value}</div>
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  {card.label}
+                </div>
+              </motion.div>
+            ))}
           </div>
 
-          {/* Recent Activity */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              Recent Activity
-            </h3>
-            {projects.length === 0 ? (
-              <p className="text-gray-500 text-sm">No activity yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {projects.slice(0, 6).map((p) => (
-                  <div
-                    key={p._id}
-                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition"
-                  >
-                    <div className="w-1.5 h-1.5 rounded-full mt-1.5 bg-emerald-500" />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 text-sm">{p.title}</div>
-                      <div className="text-xs text-gray-600">
-                        {p.overallStatus} •{" "}
-                        {p.updatedAt ? new Date(p.updatedAt).toLocaleString() : ""}
+          {/* Content Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
+            {/* Upcoming Deadlines */}
+            <div style={{
+              background: "#fff", border: "1.5px solid #E2E8F0",
+              borderRadius: 12, padding: "20px 22px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <div style={{ width: 4, height: 18, background: "#2563EB", borderRadius: 4 }} />
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#1B2B4B" }}>Upcoming Deadlines</div>
+              </div>
+              {upcomingDeadlines.length === 0 ? (
+                <div style={{ color: "#94A3B8", fontSize: 13, textAlign: "center", padding: "24px 0" }}>
+                  No upcoming deadlines
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {upcomingDeadlines.map((p) => (
+                    <div
+                      key={p._id}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "10px 12px", background: "#F8FAFC",
+                        border: "1px solid #F1F5F9", borderRadius: 8,
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#1B2B4B" }}>{p.title}</div>
+                        <div style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                          {p.description?.slice(0, 60) || ""}
+                        </div>
+                      </div>
+                      <div style={{
+                        fontSize: 11, fontWeight: 600, color: "#2563EB",
+                        background: "#EFF6FF", padding: "3px 10px", borderRadius: 20, whiteSpace: "nowrap", marginLeft: 8,
+                      }}>
+                        {p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "—"}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+                  ))}
+                </div>
+              )}
+            </div>
 
-function StatCard({ icon, label, value }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      className="bg-white rounded-lg shadow-sm p-5 border border-gray-200"
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
-          <div className="text-emerald-600">
-            {icon}
+            {/* Recent Activity */}
+            <div style={{
+              background: "#fff", border: "1.5px solid #E2E8F0",
+              borderRadius: 12, padding: "20px 22px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <div style={{ width: 4, height: 18, background: "#2563EB", borderRadius: 4 }} />
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#1B2B4B" }}>Recent Activity</div>
+              </div>
+              {projects.length === 0 ? (
+                <div style={{ color: "#94A3B8", fontSize: 13, textAlign: "center", padding: "24px 0" }}>
+                  No activity yet
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {projects.slice(0, 6).map((p) => (
+                    <div
+                      key={p._id}
+                      style={{
+                        display: "flex", alignItems: "flex-start", gap: 10,
+                        padding: "8px 10px", borderRadius: 8,
+                        borderLeft: "3px solid #2563EB",
+                        background: "#F8FAFC",
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#1B2B4B" }}>{p.title}</div>
+                        <div style={{ fontSize: 11, color: "#64748B" }}>
+                          {p.overallStatus} · {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ""}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+
         </div>
-        <div className="text-2xl font-bold text-gray-900">{value}</div>
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
-      <div className="font-medium text-gray-700 text-sm">{label}</div>
-    </motion.div>
+    </>
   );
 }

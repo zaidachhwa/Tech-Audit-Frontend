@@ -1,27 +1,25 @@
-// src/components/student/Projects.jsx
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Send,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Target,
-  Award,
-  GitBranch,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  TrendingUp,
-  Layers,
-  RefreshCw,
-  FileText,
-  Calendar,
-  User,
-} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Send, CheckCircle2, Clock, AlertCircle, Target, Award, GitBranch, ExternalLink, ChevronDown, ChevronUp, TrendingUp, Layers, RefreshCw, Calendar, User } from "lucide-react";
+
+const S = {
+  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
+  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
+  label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },
+  primaryBtn: { background: "#2563EB", color: "#fff", border: "none", borderRadius: 8, padding: "9px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "'DM Sans', sans-serif" },
+  secondaryBtn: { background: "#fff", color: "#1B2B4B", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "'DM Sans', sans-serif" },
+};
+
+const STATUS_BADGE = {
+  Pending: { bg: "#FEF3C7", color: "#92400E" },
+  "In Progress": { bg: "#EFF6FF", color: "#1E40AF" },
+  Completed: { bg: "#ECFDF5", color: "#065F46" },
+  Submitted: { bg: "#F5F3FF", color: "#6D28D9" },
+  Approved: { bg: "#ECFDF5", color: "#065F46" },
+};
 
 export default function Projects() {
   const { user } = useAuth();
@@ -29,683 +27,286 @@ export default function Projects() {
   const [loading, setLoading] = useState(false);
   const [expandedProjects, setExpandedProjects] = useState(new Set());
 
-  // Fetch projects
-  useEffect(() => {
-    if (!user?.id) return;
-    fetchProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  useEffect(() => { if (!user?.id) return; fetchProjects(); }, [user]);
 
   const fetchProjects = async () => {
     try {
       setLoading(true);
       const res = await API.get(`/projects/student/${user.id}`);
       setProjects(res.data?.projects || res.data || []);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to fetch projects");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { toast.error("Failed to fetch projects"); }
+    finally { setLoading(false); }
   };
 
-  // Toggle project expansion
-  const toggleExpanded = (projectId) => {
-    setExpandedProjects((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(projectId)) newSet.delete(projectId);
-      else newSet.add(projectId);
-      return newSet;
-    });
+  const toggleExpanded = (id) => {
+    setExpandedProjects((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
 
-  // ----------------------
-  // Module toggle: optimistic update for better UX
-  // ----------------------
   const handleModuleToggle = async (project, moduleId, currentStatus) => {
-    if (["Submitted", "Approved"].includes(project.overallStatus)) {
-      toast.error("Cannot modify modules after submission/approval");
-      return;
-    }
-
+    if (["Submitted", "Approved"].includes(project.overallStatus)) { toast.error("Cannot modify modules after submission/approval"); return; }
     const statusFlow = ["Pending", "In Progress", "Completed"];
-    const currentIndex = statusFlow.indexOf(currentStatus);
-    const nextStatus = statusFlow[(currentIndex + 1) % statusFlow.length];
-
-    // Optimistic update: update only the specific module in state
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p._id !== project._id) return p;
-        return {
-          ...p,
-          modules: p.modules.map((m) =>
-            m._id === moduleId ? { ...m, status: nextStatus } : m
-          ),
-        };
-      })
-    );
-
+    const nextStatus = statusFlow[(statusFlow.indexOf(currentStatus) + 1) % statusFlow.length];
+    setProjects((prev) => prev.map((p) => p._id !== project._id ? p : { ...p, modules: p.modules.map((m) => m._id === moduleId ? { ...m, status: nextStatus } : m) }));
     try {
       await API.patch(`/projects/module/${moduleId}`, { status: nextStatus });
       toast.success(`Module updated to ${nextStatus}`);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to update module");
-
-      // Revert on error: fetch the single project from server or re-fetch all
-      // To avoid full fetch we attempt to revert locally by re-requesting that project
-      try {
-        const res = await API.get(`/projects/${project._id}`);
-        const freshProject = res.data || res.data?.project || res.data;
-        setProjects((prev) =>
-          prev.map((p) => (p._id === project._id ? freshProject : p))
-        );
-      } catch (fetchErr) {
-        // fallback: re-fetch all
-        fetchProjects();
-      }
-    }
+    } catch (err) { toast.error("Failed to update module"); fetchProjects(); }
   };
 
-  // ----------------------
-  // Submit project (student)
-  // ----------------------
   const handleSubmit = async (project) => {
-    if (["Submitted", "Approved"].includes(project.overallStatus)) {
-      toast.error("Project already submitted");
-      return;
-    }
-
-    const allCompleted = project.modules?.every(
-      (m) => m.status === "Completed"
-    );
-    if (!allCompleted) {
-      toast.error("Complete all modules before submitting");
-      return;
-    }
-
-    // Additionally require overallStatus === 'Completed' to be allowed to submit
-    if (project.overallStatus !== "Completed") {
-      toast.error("Set overall status to Completed before submitting");
-      return;
-    }
-
+    if (["Submitted", "Approved"].includes(project.overallStatus)) { toast.error("Project already submitted"); return; }
+    if (!project.modules?.every((m) => m.status === "Completed")) { toast.error("Complete all modules before submitting"); return; }
+    if (project.overallStatus !== "Completed") { toast.error("Set overall status to Completed before submitting"); return; }
     try {
       const res = await API.patch(`/projects/${project._id}/submit`);
-      toast.success("Project submitted for approval! 🎉");
-
-      // update local project status to Submitted
-      setProjects((prev) =>
-        prev.map((p) =>
-          p._id === project._id
-            ? { ...p, overallStatus: "Submitted", ...res.data?.project }
-            : p
-        )
-      );
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to submit project");
-    }
+      toast.success("Project submitted! 🎉");
+      setProjects((prev) => prev.map((p) => p._id === project._id ? { ...p, overallStatus: "Submitted", ...res.data?.project } : p));
+    } catch (err) { toast.error("Failed to submit project"); }
   };
 
-  // ----------------------
-  // Update overall project status (student)
-  // - Students can set overall status (but Completed only when all modules done)
-  // ----------------------
   const handleSetOverallStatus = async (project, newStatus) => {
-    // Guard: Completed only when modules all completed
-    const allModulesCompleted = project.modules?.every(
-      (m) => m.status === "Completed"
-    );
-    if (newStatus === "Completed" && !allModulesCompleted) {
-      toast.error(
-        "All modules must be completed before setting overall status to Completed"
-      );
-      return;
-    }
-
-    // Optimistic update local project
-    const prevProject = projects.find((p) => p._id === project._id);
-    setProjects((prev) =>
-      prev.map((p) =>
-        p._id === project._id ? { ...p, overallStatus: newStatus } : p
-      )
-    );
-
+    if (newStatus === "Completed" && !project.modules?.every((m) => m.status === "Completed")) { toast.error("All modules must be completed first"); return; }
+    const prev = projects.find((p) => p._id === project._id);
+    setProjects((ps) => ps.map((p) => p._id === project._id ? { ...p, overallStatus: newStatus } : p));
     try {
-      const res = await API.patch(`/projects/${project._id}/status`, {
-        status: newStatus,
-      });
-      toast.success("Overall status updated");
-      // Update with response project if provided
-      if (res.data?.project) {
-        setProjects((prev) =>
-          prev.map((p) => (p._id === project._id ? res.data.project : p))
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to update overall status");
-      // revert
-      setProjects((prev) =>
-        prev.map((p) => (p._id === project._id ? prevProject : p))
-      );
-    }
+      const res = await API.patch(`/projects/${project._id}/status`, { status: newStatus });
+      toast.success("Status updated");
+      if (res.data?.project) setProjects((ps) => ps.map((p) => p._id === project._id ? res.data.project : p));
+    } catch (err) { toast.error("Failed to update status"); setProjects((ps) => ps.map((p) => p._id === project._id ? prev : p)); }
   };
 
-  // Calculate progress
-  const calculateProgress = (modules) => {
-    if (!modules || modules.length === 0) return 0;
-    const completed = modules.filter((m) => m.status === "Completed").length;
-    return Math.round((completed / modules.length) * 100);
+  const calcProgress = (modules) => {
+    if (!modules?.length) return 0;
+    return Math.round((modules.filter((m) => m.status === "Completed").length / modules.length) * 100);
   };
 
-  // Statistics
   const stats = {
     total: projects.length,
-    inProgress: projects.filter((p) => p.overallStatus === "In Progress")
-      .length,
+    inProgress: projects.filter((p) => p.overallStatus === "In Progress").length,
     completed: projects.filter((p) => p.overallStatus === "Completed").length,
     submitted: projects.filter((p) => p.overallStatus === "Submitted").length,
     approved: projects.filter((p) => p.overallStatus === "Approved").length,
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div style={S.page}>
       <Toaster position="top-right" />
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); @keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg shadow-sm p-6 border border-gray-200"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">My Projects</h1>
-              <p className="text-gray-600 text-sm">
-                Track your progress and submit completed work
-              </p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={fetchProjects}
-              disabled={loading}
-              className="bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer text-gray-700"
-            >
-              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-              <span className="text-sm font-medium">Refresh</span>
-            </motion.button>
-          </div>
-        </motion.div>
-
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <StatCard
-            icon={<Layers size={20} />}
-            label="Total"
-            value={stats.total}
-          />
-          <StatCard
-            icon={<Clock size={20} />}
-            label="In Progress"
-            value={stats.inProgress}
-          />
-          <StatCard
-            icon={<CheckCircle2 size={20} />}
-            label="Completed"
-            value={stats.completed}
-          />
-          <StatCard
-            icon={<Send size={20} />}
-            label="Submitted"
-            value={stats.submitted}
-          />
-          <StatCard
-            icon={<Award size={20} />}
-            label="Approved"
-            value={stats.approved}
-          />
-        </div>
-
-        {/* Projects List */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <RefreshCw className="animate-spin text-emerald-600" size={40} />
-          </div>
-        ) : projects.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200"
-          >
-            <Layers size={64} className="mx-auto text-gray-300 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No Projects Yet
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Projects assigned to you will appear here
-            </p>
-          </motion.div>
-        ) : (
-          <div className="space-y-4">
-            {projects.map((project, index) => (
-              <ProjectCard
-                key={project._id}
-                project={project}
-                index={index}
-                expanded={expandedProjects.has(project._id)}
-                onToggleExpand={() => toggleExpanded(project._id)}
-                onModuleToggle={handleModuleToggle}
-                onSubmit={handleSubmit}
-                onSetOverallStatus={handleSetOverallStatus}
-                calculateProgress={calculateProgress}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Stat Card Component
-function StatCard({ icon, label, value }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      className="bg-white rounded-lg shadow-sm p-5 border border-gray-200"
-    >
-      <div className="flex items-center justify-between mb-3">
-        <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
-          <div className="text-emerald-600">{icon}</div>
-        </div>
-        <div className="text-2xl font-bold text-gray-900">{value}</div>
-      </div>
-      <div className="text-sm font-medium text-gray-700">{label}</div>
-    </motion.div>
-  );
-}
-
-// Project Card Component
-function ProjectCard({
-  project,
-  index,
-  expanded,
-  onToggleExpand,
-  onModuleToggle,
-  onSubmit,
-  onSetOverallStatus,
-  calculateProgress,
-}) {
-  const progress = calculateProgress(project.modules);
-  const isLocked = ["Submitted", "Approved"].includes(project.overallStatus);
-
-  // Student can Submit only when:
-  // - all modules completed
-  // - overallStatus is "Completed"
-  const allModulesCompleted = project.modules?.every(
-    (m) => m.status === "Completed"
-  );
-  const canSubmit =
-    allModulesCompleted &&
-    project.overallStatus === "Completed" &&
-    !["Submitted", "Approved"].includes(project.overallStatus);
-
-  const getStatusConfig = (status) => {
-    const configs = {
-      Pending: {
-        icon: <Clock size={16} />,
-        color: "bg-gray-100 text-gray-700 border-gray-200",
-      },
-      "In Progress": {
-        icon: <TrendingUp size={16} />,
-        color: "bg-blue-50 text-blue-700 border-blue-200",
-      },
-      Completed: {
-        icon: <CheckCircle2 size={16} />,
-        color: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      },
-      Submitted: {
-        icon: <Send size={16} />,
-        color: "bg-purple-50 text-purple-700 border-purple-200",
-      },
-      Approved: {
-        icon: <Award size={16} />,
-        color: "bg-green-50 text-green-700 border-green-200",
-      },
-    };
-    return configs[status] || configs.Pending;
-  };
-
-  const statusConfig = getStatusConfig(project.overallStatus);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all"
-    >
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
-                <Layers size={20} className="text-emerald-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">
-                {project.title}
-              </h3>
-            </div>
-            <p className="text-gray-600 text-sm">{project.description}</p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <div style={{ width: 4, height: 20, background: "#2563EB", borderRadius: 4 }} />
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 }}>My Projects</h1>
           </div>
-
-          <div
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border font-semibold text-sm ${statusConfig.color}`}
-          >
-            {statusConfig.icon}
-            {project.overallStatus}
-          </div>
+          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Track your progress and submit completed work</p>
         </div>
-
-        {/* Progress Bar */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              Overall Progress
-            </span>
-            <span className="text-sm font-bold text-emerald-600">
-              {progress}%
-            </span>
-          </div>
-          <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 1, delay: 0.2 }}
-              className="h-full bg-emerald-500 rounded-full"
-            />
-          </div>
-        </div>
-
-        {/* Info Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <InfoBadge
-            icon={<Layers size={14} />}
-            label="Batch"
-            value={project.batch?.batch_name || "-"}
-          />
-          <InfoBadge
-            icon={<Target size={14} />}
-            label="Batch No"
-            value={`#${project.batch?.batch_no || "-"}`}
-          />
-          <InfoBadge
-            icon={<User size={14} />}
-            label="Assigned By"
-            value={project.createdBy?.name || "-"}
-          />
-          <InfoBadge
-            icon={<Calendar size={14} />}
-            label="Created"
-            value={
-              project.createdAt
-                ? new Date(project.createdAt).toLocaleDateString()
-                : "-"
-            }
-          />
-          <InfoBadge
-            icon={<Clock size={14} />}
-            label="Due Date"
-            value={
-              project.dueDate
-                ? new Date(project.dueDate).toLocaleDateString()
-                : "-"
-            }
-          />
-        </div>
-
-        {/* Repository */}
-        {project.repo && (
-          <a
-            href={project.repo}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 mt-4 text-emerald-600 hover:text-emerald-700 font-medium text-sm"
-          >
-            <GitBranch size={16} />
-            View Repository
-            <ExternalLink size={14} />
-          </a>
-        )}
+        <button style={S.secondaryBtn} onClick={fetchProjects} disabled={loading}>
+          <RefreshCw size={14} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} /> Refresh
+        </button>
       </div>
 
-      {/* Expandable Content */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="p-6 space-y-6 bg-gray-50">
-              {/* Modules */}
-              {project.modules && project.modules.length > 0 && (
-                <div>
-                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <Layers size={18} className="text-emerald-600" />
-                    Modules ({project.modules.length})
-                  </h4>
-                  <div className="space-y-2">
-                    {project.modules.map((module) => (
-                      <ModuleCard
-                        key={module._id}
-                        module={module}
-                        isLocked={isLocked}
-                        onToggle={() =>
-                          onModuleToggle(project, module._id, module.status)
-                        }
-                      />
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 14, marginBottom: 20 }}>
+        {[
+          { label: "Total", value: stats.total, tint: "#EFF6FF", ic: "#2563EB", icon: <Layers size={17} /> },
+          { label: "In Progress", value: stats.inProgress, tint: "#FEF3C7", ic: "#F59E0B", icon: <Clock size={17} /> },
+          { label: "Completed", value: stats.completed, tint: "#ECFDF5", ic: "#10B981", icon: <CheckCircle2 size={17} /> },
+          { label: "Submitted", value: stats.submitted, tint: "#F5F3FF", ic: "#8B5CF6", icon: <Send size={17} /> },
+          { label: "Approved", value: stats.approved, tint: "#ECFDF5", ic: "#10B981", icon: <Award size={17} /> },
+        ].map((s) => (
+          <div key={s.label} style={{ ...S.card, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <p style={S.label}>{s.label}</p>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: s.tint, display: "flex", alignItems: "center", justifyContent: "center", color: s.ic }}>{s.icon}</div>
+            </div>
+            <p style={{ fontSize: 22, fontWeight: 800, color: "#1B2B4B", margin: 0 }}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Project List */}
+      {loading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 0" }}>
+          <div style={{ width: 36, height: 36, border: "3px solid #E2E8F0", borderTopColor: "#2563EB", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        </div>
+      ) : projects.length === 0 ? (
+        <div style={{ ...S.card, padding: "60px 0", textAlign: "center" }}>
+          <Layers size={52} style={{ color: "#CBD5E1", marginBottom: 14 }} />
+          <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 16, margin: "0 0 6px" }}>No Projects Yet</p>
+          <p style={{ color: "#94A3B8", fontSize: 13, margin: 0 }}>Projects assigned to you will appear here</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {projects.map((project, i) => {
+            const progress = calcProgress(project.modules);
+            const isLocked = ["Submitted", "Approved"].includes(project.overallStatus);
+            const allDone = project.modules?.every((m) => m.status === "Completed");
+            const canSubmit = allDone && project.overallStatus === "Completed" && !isLocked;
+            const badge = STATUS_BADGE[project.overallStatus] || STATUS_BADGE.Pending;
+
+            return (
+              <div key={project._id} style={{ ...S.card, overflow: "hidden" }}>
+                {/* Card header */}
+                <div style={{ padding: "20px 22px", borderBottom: "1.5px solid #F1F5F9" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                        <div style={{ width: 34, height: 34, background: "#EFF6FF", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Layers size={16} color="#2563EB" />
+                        </div>
+                        <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 15, margin: 0 }}>{project.title}</p>
+                      </div>
+                      <p style={{ color: "#64748B", fontSize: 13, margin: 0 }}>{project.description}</p>
+                    </div>
+                    <span style={{ ...badge, borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 5 }}>{project.overallStatus}</span>
+                  </div>
+
+                  {/* Progress */}
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#64748B" }}>Overall Progress</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{progress}%</span>
+                    </div>
+                    <div style={{ height: 7, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg,#2563EB,#60A5FA)", borderRadius: 99, transition: "width 0.5s" }} />
+                    </div>
+                  </div>
+
+                  {/* Info badges */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8 }}>
+                    {[
+                      { label: "Batch", value: project.batch?.batch_name || "-" },
+                      { label: "Batch No", value: `#${project.batch?.batch_no || "-"}` },
+                      { label: "Assigned By", value: project.createdBy?.name || "-" },
+                      { label: "Created", value: project.createdAt ? new Date(project.createdAt).toLocaleDateString() : "-" },
+                      { label: "Due Date", value: project.dueDate ? new Date(project.dueDate).toLocaleDateString() : "-" },
+                    ].map((b) => (
+                      <div key={b.label} style={{ background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 7, padding: "8px 10px" }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 3px" }}>{b.label}</p>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: "#1B2B4B", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.value}</p>
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
 
-              {/* Learning Outcomes */}
-              {project.outcomes && project.outcomes.length > 0 && (
-                <div>
-                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <Target size={18} className="text-emerald-600" />
-                    Learning Outcomes
-                  </h4>
-                  <div className="space-y-2">
-                    {project.outcomes.map((outcome, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-white rounded-lg p-4 border border-gray-200"
-                      >
-                        <h5 className="font-semibold text-gray-900 mb-1 text-sm">
-                          {outcome.title}
-                        </h5>
-                        {outcome.description && (
-                          <p className="text-sm text-gray-600">
-                            {outcome.description}
-                          </p>
+                  {project.repo && (
+                    <a href={project.repo} target="_blank" rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12, color: "#2563EB", fontWeight: 600, fontSize: 13, textDecoration: "none" }}>
+                      <GitBranch size={14} /> View Repository <ExternalLink size={12} />
+                    </a>
+                  )}
+                </div>
+
+                {/* Expandable */}
+                <AnimatePresence>
+                  {expandedProjects.has(project._id) && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: "hidden" }}>
+                      <div style={{ padding: "20px 22px", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: 20 }}>
+                        {/* Modules */}
+                        {project.modules?.length > 0 && (
+                          <div>
+                            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 13, margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}>
+                              <Layers size={14} color="#2563EB" /> Modules ({project.modules.length})
+                            </p>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {project.modules.map((module) => {
+                                const modBadge = { Pending: { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" }, "In Progress": { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" }, Completed: { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0" } }[module.status] || { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" };
+                                return (
+                                  <div key={module._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 14px", borderRadius: 8, border: `1.5px solid ${modBadge.border}`, background: modBadge.bg }}>
+                                    <div>
+                                      <p style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 13, margin: 0 }}>{module.name}</p>
+                                      {module.notes && <p style={{ fontSize: 11, color: "#94A3B8", margin: "2px 0 0" }}>{module.notes}</p>}
+                                    </div>
+                                    <button onClick={() => handleModuleToggle(project, module._id, module.status)} disabled={isLocked}
+                                      style={{ background: "#fff", border: `1.5px solid ${modBadge.border}`, color: modBadge.color, borderRadius: 20, padding: "4px 14px", fontSize: 12, fontWeight: 600, cursor: isLocked ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", opacity: isLocked ? 0.6 : 1 }}>
+                                      {module.status}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Outcomes */}
+                        {project.outcomes?.length > 0 && (
+                          <div>
+                            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 13, margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}>
+                              <Target size={14} color="#2563EB" /> Learning Outcomes
+                            </p>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {project.outcomes.map((o, idx) => (
+                                <div key={idx} style={{ background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px 14px" }}>
+                                  <p style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 13, margin: "0 0 2px" }}>{o.title}</p>
+                                  {o.description && <p style={{ color: "#64748B", fontSize: 12, margin: 0 }}>{o.description}</p>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Skills */}
+                        {project.skills?.length > 0 && (
+                          <div>
+                            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 13, margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}>
+                              <Award size={14} color="#2563EB" /> Required Skills
+                            </p>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                              {project.skills.map((skill, idx) => (
+                                <div key={idx} style={{ background: "#EFF6FF", border: "1.5px solid #BFDBFE", borderRadius: 8, padding: "7px 14px" }}>
+                                  <p style={{ fontWeight: 700, color: "#1E40AF", fontSize: 12, margin: "0 0 1px" }}>{skill.name}</p>
+                                  <p style={{ color: "#60A5FA", fontSize: 11, margin: 0 }}>{skill.level}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-              {/* Skills */}
-              {project.skills && project.skills.length > 0 && (
-                <div>
-                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <Award size={18} className="text-emerald-600" />
-                    Required Skills
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {project.skills.map((skill, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-lg"
-                      >
-                        <div className="font-semibold text-emerald-700 text-sm">
-                          {skill.name}
-                        </div>
-                        <div className="text-xs text-emerald-600">
-                          {skill.level}
-                        </div>
+                {/* Footer */}
+                <div style={{ padding: "12px 22px", background: "#F8FAFC", borderTop: "1.5px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <button onClick={() => toggleExpanded(project._id)}
+                    style={{ display: "flex", alignItems: "center", gap: 6, color: "#64748B", fontWeight: 600, fontSize: 13, background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                    {expandedProjects.has(project._id) ? <><ChevronUp size={16} /> Show Less</> : <><ChevronDown size={16} /> Show Details</>}
+                  </button>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "6px 12px" }}>
+                      <span style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>Status</span>
+                      <select value={project.overallStatus} onChange={(e) => handleSetOverallStatus(project, e.target.value)}
+                        disabled={isLocked}
+                        style={{ fontSize: 12, border: "none", outline: "none", background: "transparent", color: "#1B2B4B", fontWeight: 600, cursor: isLocked ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed" disabled={!allDone}>Completed</option>
+                        <option value="Submitted" disabled>Submitted</option>
+                        <option value="Approved" disabled>Approved</option>
+                      </select>
+                    </div>
+
+                    {canSubmit && (
+                      <button onClick={() => handleSubmit(project)} style={{ ...S.primaryBtn, gap: 6 }}>
+                        <Send size={13} /> Submit Project
+                      </button>
+                    )}
+
+                    {isLocked && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#94A3B8", fontSize: 12 }}>
+                        <AlertCircle size={14} />
+                        {project.overallStatus === "Submitted" ? "Awaiting approval" : "Project approved"}
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Footer */}
-      <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onToggleExpand}
-          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium cursor-pointer"
-        >
-          {expanded ? (
-            <>
-              <ChevronUp size={18} />
-              <span className="text-sm">Show Less</span>
-            </>
-          ) : (
-            <>
-              <ChevronDown size={18} />
-              <span className="text-sm">Show Details</span>
-            </>
-          )}
-        </motion.button>
-
-        <div className="flex items-center gap-3">
-          {/* Overall status quick control for student */}
-          <div className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-lg">
-            <label className="text-xs text-gray-600 font-medium">Status</label>
-            <select
-              value={project.overallStatus}
-              onChange={(e) => onSetOverallStatus(project, e.target.value)}
-              disabled={["Submitted", "Approved"].includes(
-                project.overallStatus
-              )}
-              className="text-sm px-2 py-1 rounded-md outline-none border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed" disabled={!allModulesCompleted}>
-                Completed
-              </option>
-              <option value="Submitted" disabled>
-                Submitted
-              </option>
-              <option value="Approved" disabled>
-                Approved
-              </option>
-            </select>
-          </div>
-
-          {/* Submit button -> only when overallStatus is Completed & all modules completed */}
-          {canSubmit && (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onSubmit(project)}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-semibold shadow-sm cursor-pointer"
-            >
-              <Send size={18} />
-              Submit Project
-            </motion.button>
-          )}
-
-          {isLocked && (
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
-              <AlertCircle size={16} />
-              {project.overallStatus === "Submitted"
-                ? "Awaiting approval"
-                : "Project approved"}
-            </div>
-          )}
+              </div>
+            );
+          })}
         </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// Module Card Component
-function ModuleCard({ module, isLocked, onToggle }) {
-  const getModuleConfig = (status) => {
-    const configs = {
-      Pending: {
-        color: "bg-gray-50 border-gray-200 text-gray-700",
-        buttonColor: "bg-gray-100 hover:bg-gray-200 text-gray-700",
-      },
-      "In Progress": {
-        color: "bg-blue-50 border-blue-200 text-blue-700",
-        buttonColor: "bg-blue-100 hover:bg-blue-200 text-blue-700",
-      },
-      Completed: {
-        color: "bg-emerald-50 border-emerald-200 text-emerald-700",
-        buttonColor: "bg-emerald-100 hover:bg-emerald-200 text-emerald-700",
-      },
-    };
-    return configs[status] || configs.Pending;
-  };
-
-  const config = getModuleConfig(module.status);
-
-  return (
-    <div
-      className={`flex items-center justify-between p-4 rounded-lg border ${config.color}`}
-    >
-      <div className="flex-1">
-        <h5 className="font-semibold text-sm">{module.name}</h5>
-        {module.notes && (
-          <p className="text-xs mt-1 opacity-75">{module.notes}</p>
-        )}
-      </div>
-      <motion.button
-        whileHover={{ scale: isLocked ? 1 : 1.02 }}
-        whileTap={{ scale: isLocked ? 1 : 0.98 }}
-        onClick={onToggle}
-        disabled={isLocked}
-        className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-          config.buttonColor
-        } ${isLocked ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-      >
-        {module.status}
-      </motion.button>
-    </div>
-  );
-}
-
-// Info Badge Component
-function InfoBadge({ icon, label, value }) {
-  return (
-    <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-200">
-      <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
-        {icon}
-        <span className="font-medium">{label}</span>
-      </div>
-      <div className="text-sm font-semibold text-gray-900 truncate">
-        {value}
-      </div>
+      )}
     </div>
   );
 }

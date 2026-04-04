@@ -1,57 +1,20 @@
-// src/components/student/StudentSidebar.jsx
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  LayoutDashboard,
-  Layers,
-  BarChart2,
-  LogOut,
-  User,
-  ChevronRight,
-  Menu,
-  X,
-  GraduationCap,
-  Mail,
-  BookOpen,
-} from "lucide-react";
 import { useState } from "react";
-import clsx from "clsx";
+import { GraduationCap, LayoutDashboard, Layers, BarChart2, User, LogOut, Menu, Mail, BookOpen } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
 const navLinks = [
-  {
-    name: "Dashboard",
-    path: "/student/dashboard",
-    icon: LayoutDashboard,
-    gradient: "from-emerald-500 to-teal-500",
-  },
-  {
-    name: "Projects",
-    path: "/student/projects",
-    icon: Layers,
-    gradient: "from-emerald-500 to-teal-500",
-  },
-  {
-    name: "Reports",
-    path: "/student/reports",
-    icon: BarChart2,
-    gradient: "from-emerald-500 to-teal-500",
-  },
-  {
-    name: "Profile",
-    path: "/student/profile",
-    icon: User,
-    gradient: "from-emerald-500 to-teal-500",
-  },
+  { name: "Dashboard", path: "/student/dashboard", icon: LayoutDashboard },
+  { name: "Projects", path: "/student/projects", icon: Layers },
+  { name: "Reports", path: "/student/reports", icon: BarChart2 },
+  { name: "Profile", path: "/student/profile", icon: User },
 ];
 
 export default function StudentSidebar({ currentPath, onNavigate, user }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const auth = useAuth();
 
-  const handleNavigate = (path) => {
-    onNavigate(path);
-    setMobileOpen(false);
-  };
+  const handleNavigate = (path) => { onNavigate(path); setMobileOpen(false); };
 
   const handleLogout = () => {
     auth?.logout?.();
@@ -62,197 +25,128 @@ export default function StudentSidebar({ currentPath, onNavigate, user }) {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 30 }} onClick={() => setMobileOpen(false)} />
+      )}
+
+      {/* Mobile toggle button */}
+      <button
         onClick={() => setMobileOpen(!mobileOpen)}
-        className="md:hidden fixed top-6 left-6 z-50 bg-white border-2 border-gray-200 text-gray-700 p-3 rounded-lg shadow-sm cursor-pointer hover:border-emerald-500"
+        style={{ position: "fixed", top: 16, left: 16, zIndex: 50, background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: 8, cursor: "pointer", display: "none" }}
+        className="mobile-menu-btn"
       >
-        {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-      </motion.button>
+        <Menu size={20} color="#1B2B4B" />
+      </button>
 
-      {/* Mobile Backdrop */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setMobileOpen(false)}
-            className="md:hidden fixed inset-0 bg-black/20 z-40"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <motion.aside
-        initial={{ x: -280 }}
-        animate={{ x: mobileOpen || window.innerWidth >= 768 ? 0 : -280 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className={clsx(
-          "fixed md:sticky top-0 h-screen w-72 bg-white border-r border-gray-200 flex flex-col z-40",
-          "md:translate-x-0"
-        )}
+      <aside style={{
+        width: collapsed ? 64 : 256,
+        minWidth: collapsed ? 64 : 256,
+        height: "100vh",
+        background: "#1B2B4B",
+        display: "flex",
+        flexDirection: "column",
+        position: "sticky",
+        top: 0,
+        transition: "width 0.3s, min-width 0.3s",
+        overflow: "hidden",
+        fontFamily: "'DM Sans', sans-serif",
+        zIndex: 40,
+      }}
+        className={`student-sidebar${mobileOpen ? " mobile-open" : ""}`}
       >
-        {/* Header Section */}
-        <div className="border-b border-gray-200 p-6">
-          {/* Logo & Title */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 mb-6"
-          >
-            <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
-              <GraduationCap size={24} className="text-white" />
-            </div>
-            <div className="flex-1">
-              <h1 className="text-lg font-bold text-gray-900">
-                Student Portal
-              </h1>
-            </div>
-          </motion.div>
-
-          {/* User Info Card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center">
-                <User size={18} className="text-gray-600" />
+        {/* Header */}
+        <div style={{ height: 72, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
+          {!collapsed && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, background: "#2563EB", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <GraduationCap size={20} color="#fff" />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-gray-900 truncate">
+              <div>
+                <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0, letterSpacing: "-0.02em" }}>NexCore</p>
+                <p style={{ color: "#94A3B8", fontSize: 11, margin: 0 }}>Student Portal</p>
+              </div>
+            </div>
+          )}
+          <button onClick={() => setCollapsed(!collapsed)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 6, borderRadius: 6, marginLeft: collapsed ? "auto" : 0, marginRight: collapsed ? "auto" : 0 }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+            <Menu size={18} color="#94A3B8" />
+          </button>
+        </div>
+
+        {/* User info */}
+        {!collapsed && (
+          <div style={{ padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#2563EB,#60A5FA)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                {(user?.name || "S")[0].toUpperCase()}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ color: "#E2E8F0", fontWeight: 600, fontSize: 13, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {user?.name || "Student"}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-gray-500 truncate mt-0.5">
-                  <Mail size={10} />
-                  {user?.email || "student@example.com"}
-                </div>
+                </p>
+                <p style={{ color: "#64748B", fontSize: 11, margin: 0, display: "flex", alignItems: "center", gap: 3 }}>
+                  <Mail size={10} /> {user?.email || ""}
+                </p>
               </div>
             </div>
-
-            {/* Batch Info */}
             {user?.batch_name && (
-              <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
-                <div className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <BookOpen size={12} className="text-gray-500" />
-                    <span className="text-xs font-medium text-gray-700">
-                      {user.batch_name}
-                    </span>
-                  </div>
+              <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "5px 8px", display: "flex", alignItems: "center", gap: 5 }}>
+                  <BookOpen size={11} color="#94A3B8" />
+                  <span style={{ color: "#94A3B8", fontSize: 11, fontWeight: 500 }}>{user.batch_name}</span>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-md px-3 py-1.5">
-                  <span className="text-xs font-semibold text-gray-700">
-                    #{user.batch_no}
-                  </span>
+                <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "5px 8px" }}>
+                  <span style={{ color: "#94A3B8", fontSize: 11, fontWeight: 600 }}>#{user.batch_no}</span>
                 </div>
               </div>
             )}
-          </motion.div>
-        </div>
-
-        {/* Navigation Section */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 mb-3">
-            Menu
           </div>
+        )}
 
-          {navLinks.map(
-            ({ name, path, icon: Icon, gradient, description }, index) => {
-              const isActive = currentPath === path;
-              const safeGradient = gradient || "from-gray-200 to-gray-300";
-
-              return (
-                <motion.button
-                  key={path}
-                  onClick={() => handleNavigate(path)}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.03, x: 6 }}
-                  whileTap={{ scale: 0.97 }}
-                  className={clsx(
-                    "w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl font-medium transition-all group relative overflow-hidden cursor-pointer",
-                    isActive
-                      ? "text-white shadow-xl"
-                      : "text-gray-700 hover:bg-white/60 hover:shadow-md"
-                  )}
-                >
-                  {/* Active Background with Animation */}
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeNav"
-                      className={`absolute inset-0 bg-gradient-to-r ${gradient} shadow-lg`}
-                      transition={{
-                        type: "spring",
-                        bounce: 0.2,
-                        duration: 0.6,
-                      }}
-                    />
-                  )}
-
-                  {/* Icon Container */}
-                  <div
-                    className={clsx(
-                      "relative z-10 p-2.5 rounded-xl transition-all shadow-md",
-                      isActive
-                        ? "bg-white/25 shadow-lg"
-                        : "bg-white group-hover:bg-purple-50"
-                    )}
-                  >
-                    <Icon
-                      size={20}
-                      className={isActive ? "text-white" : "text-gray-700"}
-                    />
-                  </div>
-
-                  {/* Text Content */}
-                  <div className="relative z-10 flex-1 text-left">
-                    <div className="text-sm font-semibold">{name}</div>
-                    <div
-                      className={clsx(
-                        "text-xs mt-0.5",
-                        isActive ? "text-white/80" : "text-gray-500"
-                      )}
-                    >
-                      {description}
-                    </div>
-                  </div>
-
-                  {/* Active Indicator */}
-                  {isActive && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="relative z-10 bg-white/30 p-1.5 rounded-lg"
-                    >
-                      <ChevronRight size={18} />
-                    </motion.div>
-                  )}
-                </motion.button>
-              );
-            }
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: "14px 8px", overflowY: "auto" }}>
+          {!collapsed && (
+            <p style={{ color: "#475569", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "0 8px 8px", margin: 0 }}>Menu</p>
           )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {navLinks.map(({ name, path, icon: Icon }) => {
+              const isActive = currentPath === path;
+              return (
+                <button key={path} onClick={() => handleNavigate(path)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: collapsed ? "9px" : "9px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: isActive ? "#2563EB" : "transparent", justifyContent: collapsed ? "center" : "flex-start", transition: "background 0.15s", width: "100%", fontFamily: "'DM Sans', sans-serif" }}
+                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "#243452"; }}
+                  onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
+                  <Icon size={18} color={isActive ? "#fff" : "#94A3B8"} style={{ flexShrink: 0 }} />
+                  {!collapsed && <span style={{ color: isActive ? "#fff" : "#94A3B8", fontWeight: isActive ? 600 : 500, fontSize: 13 }}>{name}</span>}
+                </button>
+              );
+            })}
+          </div>
         </nav>
 
-        {/* Logout Section */}
-        <div className="p-4 border-t border-gray-200">
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-medium transition-all cursor-pointer"
-          >
-            <LogOut size={18} />
-            <span>Logout</span>
-          </motion.button>
+        {/* Logout */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "10px 8px", flexShrink: 0 }}>
+          <button onClick={handleLogout}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: collapsed ? "9px" : "9px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "transparent", width: "100%", justifyContent: collapsed ? "center" : "flex-start", fontFamily: "'DM Sans', sans-serif", transition: "background 0.15s" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239,68,68,0.12)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+            <LogOut size={18} color="#94A3B8" style={{ flexShrink: 0 }} />
+            {!collapsed && <span style={{ color: "#94A3B8", fontWeight: 500, fontSize: 13 }}>Logout</span>}
+          </button>
         </div>
-      </motion.aside>
+      </aside>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .student-sidebar { position: fixed !important; left: -256px !important; }
+          .student-sidebar.mobile-open { left: 0 !important; }
+          .mobile-menu-btn { display: block !important; }
+        }
+      `}</style>
     </>
   );
 }

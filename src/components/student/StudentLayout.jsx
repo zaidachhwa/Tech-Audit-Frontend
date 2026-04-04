@@ -1,5 +1,4 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import StudentSidebar from "./sidebar/StudentSidebar";
 import { useAuth } from "../../context/AuthContext";
@@ -10,25 +9,13 @@ export default function StudentLayout() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen overflow-x-clip flex bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50">
+    <div style={{ minHeight: "100vh", display: "flex", background: "#F8FAFC", fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
       <Toaster position="top-right" />
-
-      {/* Sidebar */}
-      <StudentSidebar
-        currentPath={location.pathname}
-        onNavigate={navigate}
-        user={user}
-      />
-
-      {/* Main Content */}
-      <motion.main
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex-1 overflow-y-auto"
-      >
+      <StudentSidebar currentPath={location.pathname} onNavigate={navigate} user={user} />
+      <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
         <Outlet />
-      </motion.main>
+      </main>
     </div>
   );
 }

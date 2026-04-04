@@ -1,33 +1,70 @@
-// src/components/student/StudentProfile.jsx
 import { useEffect, useState } from "react";
 import { getMe, updateMe } from "../../api/student.api";
 import toast from "react-hot-toast";
-import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import { getReportsByStudent } from "../../api/report.api";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
 import {
-  User,
-  Mail,
-  Lock,
-  Save,
-  RefreshCw,
-  Shield,
-  Key,
-  CheckCircle2,
-  BookOpen,
-  BarChart2,
-  FileText,
-  Calendar,
-  Award,
+  User, Mail, Lock, Save, RefreshCw, Shield, Key, BookOpen, BarChart2, FileText, Calendar,
 } from "lucide-react";
+
+const S = {
+  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
+  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", marginBottom: 20 },
+  label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },
+  input: { width: "100%", padding: "10px 14px", border: "1.5px solid #E2E8F0", borderRadius: 8, fontSize: 13, color: "#1B2B4B", fontFamily: "'DM Sans', sans-serif", outline: "none", background: "#fff", boxSizing: "border-box" },
+  sectionTitle: { fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 },
+};
+
+// Color based on score out of 10
+function getBarColor(score) {
+  if (score >= 8) return "#10B981";  // green — excellent
+  if (score >= 6) return "#2563EB";  // blue — good
+  if (score >= 4) return "#F59E0B";  // amber — average
+  return "#EF4444";                  // red — needs improvement
+}
+
+// Custom bar value label on top
+function CustomBarLabel({ x, y, width, value }) {
+  return (
+    <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={10} fontWeight={700} fill="#1B2B4B" fontFamily="'DM Sans', sans-serif">
+      {value}
+    </text>
+  );
+}
+
+// Custom X-axis tick — truncates long names
+function CustomXTick({ x, y, payload }) {
+  const name = payload.value.length > 9 ? payload.value.slice(0, 8) + "…" : payload.value;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text x={0} y={0} dy={10} textAnchor="middle" fontSize={9} fontWeight={600} fill="#64748B" fontFamily="'DM Sans', sans-serif">
+        {name}
+      </text>
+    </g>
+  );
+}
+
+// Custom tooltip
+function CustomTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const { name, value } = payload[0].payload;
+  const color = getBarColor(value);
+  return (
+    <div style={{
+      background: "#1B2B4B", borderRadius: 8, padding: "8px 12px",
+      fontSize: 12, fontFamily: "'DM Sans', sans-serif", color: "#fff",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+    }}>
+      <div style={{ fontWeight: 600, marginBottom: 3, color: "#94A3B8", fontSize: 11 }}>{name}</div>
+      <div style={{ color, fontWeight: 800, fontSize: 16 }}>
+        {value}<span style={{ fontSize: 10, fontWeight: 500, color: "#64748B" }}>/10</span>
+      </div>
+    </div>
+  );
+}
 
 export default function StudentProfile() {
   const { user, setUser } = useAuth();
@@ -35,412 +72,302 @@ export default function StudentProfile() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reportsLoading, setReportsLoading] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", currentPassword: "", newPassword: "" });
 
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    currentPassword: "",
-    newPassword: "",
-  });
-
-  const fetch = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       const res = await getMe();
       const s = res.student || res;
       setProfile(s);
       setForm((f) => ({ ...f, name: s.name || "", email: s.email || "" }));
-
-      // Fetch Reports
       setReportsLoading(true);
       try {
         const reportRes = await getReportsByStudent(s._id);
         setReports(reportRes?.reports || []);
-      } catch (rErr) {
-        console.error("Failed to fetch reports for profile", rErr);
-      } finally {
-        setReportsLoading(false);
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load profile");
-    } finally {
-      setLoading(false);
-    }
+      } catch (e) { console.error(e); }
+      finally { setReportsLoading(false); }
+    } catch (err) { toast.error("Failed to load profile"); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     try {
       setLoading(true);
       const payload = {};
       if (form.name) payload.name = form.name;
       if (form.email) payload.email = form.email;
-      if (form.newPassword) {
-        payload.currentPassword = form.currentPassword;
-        payload.newPassword = form.newPassword;
-      }
+      if (form.newPassword) { payload.currentPassword = form.currentPassword; payload.newPassword = form.newPassword; }
       const res = await updateMe(payload);
-      toast.success("Profile updated successfully! ✨");
+      toast.success("Profile updated successfully!");
       const updated = res.student || res;
       setProfile(updated);
       setUser?.(updated);
       setForm((f) => ({ ...f, currentPassword: "", newPassword: "" }));
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "Update failed");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { toast.error(err.response?.data?.message || "Update failed"); }
+    finally { setLoading(false); }
   };
+
+  // Aggregate avg score per parameter across all reports
+  const getBarData = () => {
+    if (!reports.length) return [];
+    const paramStats = {};
+    reports.forEach((r) => {
+      r.parameters?.forEach((p) => {
+        if (!paramStats[p.name]) paramStats[p.name] = { total: 0, count: 0 };
+        paramStats[p.name].total += Number(p.score) || 0;
+        paramStats[p.name].count += 1;
+      });
+    });
+    return Object.keys(paramStats)
+      .map((name) => ({
+        name,
+        value: Number((paramStats[name].total / paramStats[name].count).toFixed(1)),
+      }))
+      .sort((a, b) => b.value - a.value); // highest first
+  };
+
+  const barData = getBarData();
+  const chartHeight = Math.min(Math.max(barData.length * 36, 160), 240);
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="text-center">
-          <RefreshCw className="animate-spin text-emerald-600 mx-auto mb-4" size={40} />
-          <p className="text-gray-600 font-medium">Loading profile...</p>
+      <div style={{ minHeight: "100vh", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: 40, height: 40, border: "3px solid #E2E8F0", borderTopColor: "#2563EB", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+          <p style={{ color: "#64748B", fontSize: 13 }}>Loading profile...</p>
         </div>
       </div>
     );
   }
 
-  // Calculate average per parameter overall
-  const getPieData = () => {
-    if (!reports.length) return [];
-    const paramStats = {};
-    reports.forEach((r) => {
-      r.parameters?.forEach((p) => {
-        if (!paramStats[p.name]) {
-          paramStats[p.name] = { total: 0, count: 0 };
-        }
-        paramStats[p.name].total += Number(p.score) || 0;
-        paramStats[p.name].count += 1;
-      });
-    });
-
-    return Object.keys(paramStats).map((name) => ({
-      name,
-      value: Number((paramStats[name].total / paramStats[name].count).toFixed(2)),
-    }));
-  };
-
-  const pieData = getPieData();
-  const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#f43f5e", "#14b8a6"];
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div style={S.page}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+
+      <div style={{ maxWidth: 800, margin: "0 auto" }}>
+
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg shadow-sm p-6 border border-gray-200"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-200">
-              <User size={28} className="text-emerald-600" />
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <div style={{ width: 4, height: 20, background: "#2563EB", borderRadius: 4 }} />
+            <h1 style={{ fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 }}>Profile Settings</h1>
+          </div>
+          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Manage your account information</p>
+        </div>
+
+        {/* Account Info */}
+        <div style={S.card}>
+          <div style={{ padding: "18px 22px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 34, height: 34, background: "#EFF6FF", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <User size={16} color="#2563EB" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">Profile Settings</h1>
-              <p className="text-gray-600 text-sm">
-                Manage your account information
-              </p>
+              <p style={S.sectionTitle}>Account Information</p>
+              <p style={{ fontSize: 12, color: "#64748B", margin: 0 }}>Update your personal details</p>
             </div>
           </div>
-        </motion.div>
-
-        {/* Profile Info Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-lg p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
-              <User size={20} className="text-emerald-600" />
-            </div>
+          <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">
-                Account Information
-              </h3>
-              <p className="text-sm text-gray-600">
-                Update your personal details
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name Field */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
-                <User size={16} className="text-gray-500" />
-                Full Name
+              <label style={{ ...S.label, display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
+                <User size={11} /> Full Name
               </label>
-              <div className="relative">
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Enter your full name"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-gray-900"
-                />
-              </div>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Enter your full name" style={S.input}
+                onFocus={(e) => (e.target.style.borderColor = "#2563EB")} onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")} />
             </div>
-
-            {/* Email Field */}
             <div>
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
-                <Mail size={16} className="text-gray-500" />
-                Email Address
+              <label style={{ ...S.label, display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
+                <Mail size={11} /> Email Address
               </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="Enter your email"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-gray-900"
-                />
-              </div>
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Enter your email" style={S.input}
+                onFocus={(e) => (e.target.style.borderColor = "#2563EB")} onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")} />
             </div>
-
-            {/* Batch Information Display */}
             {profile.batch_name && (
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <BookOpen size={16} className="text-emerald-600" />
-                  Batch Information
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="text-xs text-gray-600 mb-1">Batch Name</div>
-                    <div className="text-sm font-semibold text-gray-900">
-                      {profile.batch_name}
-                    </div>
+              <div style={{ background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "14px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                  <BookOpen size={13} color="#2563EB" />
+                  <span style={S.label}>Batch Information</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px 12px" }}>
+                    <p style={{ fontSize: 11, color: "#94A3B8", margin: "0 0 4px" }}>Batch Name</p>
+                    <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 13, margin: 0 }}>{profile.batch_name}</p>
                   </div>
-                  <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="text-xs text-gray-600 mb-1">Batch No</div>
-                    <div className="text-sm font-semibold text-gray-900">
-                      #{profile.batch_no}
-                    </div>
+                  <div style={{ background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px 12px" }}>
+                    <p style={{ fontSize: 11, color: "#94A3B8", margin: "0 0 4px" }}>Batch No</p>
+                    <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 13, margin: 0 }}>#{profile.batch_no}</p>
                   </div>
                 </div>
               </div>
             )}
-          </form>
-        </motion.div>
+          </div>
+        </div>
 
-        {/* Password Change Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-lg p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
-              <Shield size={20} className="text-emerald-600" />
+        {/* Security */}
+        <div style={S.card}>
+          <div style={{ padding: "18px 22px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 34, height: 34, background: "#EFF6FF", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Shield size={16} color="#2563EB" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">
-                Security Settings
-              </h3>
-              <p className="text-sm text-gray-600">
-                Change your password (optional)
-              </p>
+              <p style={S.sectionTitle}>Security Settings</p>
+              <p style={{ fontSize: 12, color: "#64748B", margin: 0 }}>Change your password (optional)</p>
             </div>
           </div>
-
-          <div className="space-y-4">
-            {/* Current Password */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
-                <Key size={16} className="text-gray-500" />
-                Current Password
-              </label>
-              <div className="relative">
-                <Lock
-                  size={18}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  type="password"
-                  placeholder="Enter current password"
-                  value={form.currentPassword}
-                  onChange={(e) =>
-                    setForm({ ...form, currentPassword: e.target.value })
-                  }
-                  className="w-full pl-12 pr-4 py-2.5 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-gray-900"
-                />
+          <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
+            {[
+              { label: "Current Password", field: "currentPassword", placeholder: "Enter current password" },
+              { label: "New Password", field: "newPassword", placeholder: "Enter new password" },
+            ].map((f) => (
+              <div key={f.field}>
+                <label style={{ ...S.label, display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
+                  <Key size={11} /> {f.label}
+                </label>
+                <div style={{ position: "relative" }}>
+                  <Lock size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
+                  <input type="password" placeholder={f.placeholder} value={form[f.field]}
+                    onChange={(e) => setForm({ ...form, [f.field]: e.target.value })}
+                    style={{ ...S.input, paddingLeft: 36 }}
+                    onFocus={(e) => (e.target.style.borderColor = "#2563EB")}
+                    onBlur={(e) => (e.target.style.borderColor = "#E2E8F0")} />
+                </div>
               </div>
-            </div>
-
-            {/* New Password */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
-                <Key size={16} className="text-gray-500" />
-                New Password
-              </label>
-              <div className="relative">
-                <Lock
-                  size={18}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  type="password"
-                  placeholder="Enter new password"
-                  value={form.newPassword}
-                  onChange={(e) =>
-                    setForm({ ...form, newPassword: e.target.value })
-                  }
-                  className="w-full pl-12 pr-4 py-2.5 rounded-lg border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition bg-white text-gray-900"
-                />
-              </div>
-              <p className="text-xs text-gray-600 mt-2 flex items-center gap-1">
-                <Shield size={12} />
-                Leave blank if you don't want to change your password
-              </p>
-            </div>
+            ))}
+            <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>Leave blank if you don't want to change your password.</p>
           </div>
-        </motion.div>
+        </div>
 
         {/* Save Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            disabled={loading}
-            onClick={handleSubmit}
-            className="w-full px-6 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {loading ? (
-              <>
-                <RefreshCw size={20} className="animate-spin" />
-                Saving Changes...
-              </>
-            ) : (
-              <>
-                <Save size={20} />
-                Save Changes
-              </>
-            )}
-          </motion.button>
-        </motion.div>
-      </div>
+        <button disabled={loading} onClick={handleSubmit}
+          style={{ width: "100%", background: loading ? "#93C5FD" : "#2563EB", color: "#fff", border: "none", borderRadius: 8, padding: "12px", fontWeight: 700, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'DM Sans', sans-serif", marginBottom: 20 }}>
+          {loading
+            ? <><RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} /> Saving...</>
+            : <><Save size={16} /> Save Changes</>}
+        </button>
 
-      <div className="max-w-4xl mx-auto mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
-        {/* Performance Pie Chart */}
-        <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.4 }}
-           className="bg-white rounded-lg p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-200">
-               <BarChart2 size={20} className="text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Overall Performance</h3>
-              <p className="text-sm text-gray-600">Average Scores per Subject</p>
-            </div>
-          </div>
+        {/* Bar Chart + Recent Reports */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
 
-          <div className="h-64 w-full">
-            {reportsLoading ? (
-               <div className="h-full flex items-center justify-center">
-                 <RefreshCw size={24} className="animate-spin text-gray-400" />
-               </div>
-            ) : pieData.length > 0 ? (
-               <ResponsiveContainer width="100%" height="100%">
-                 <PieChart>
-                   <Pie
-                     data={pieData}
-                     cx="50%"
-                     cy="50%"
-                     innerRadius={60}
-                     outerRadius={80}
-                     paddingAngle={5}
-                     dataKey="value"
-                   >
-                     {pieData.map((entry, index) => (
-                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                     ))}
-                   </Pie>
-                   <Tooltip formatter={(value) => [`${value}/10`, 'Avg Score']} />
-                   <Legend verticalAlign="bottom" height={36} />
-                 </PieChart>
-               </ResponsiveContainer>
-            ) : (
-               <div className="h-full flex flex-col items-center justify-center text-center">
-                  <BarChart2 size={40} className="text-gray-300 mb-2" />
-                  <p className="text-gray-500 text-sm">No report data yet.</p>
-               </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Latest Reports List */}
-        <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.5 }}
-           className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 flex flex-col"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-orange-50 p-2.5 rounded-lg border border-orange-200">
-                <FileText size={20} className="text-orange-600" />
+          {/* ── Bar Chart Card ── */}
+          <div style={{ ...S.card, marginBottom: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              <div style={{ width: 30, height: 30, background: "#EFF6FF", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <BarChart2 size={14} color="#2563EB" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Recent Reports</h3>
-                <p className="text-sm text-gray-600">Your latest evaluations</p>
+                <p style={S.sectionTitle}>Overall Performance</p>
+                <p style={{ fontSize: 11, color: "#64748B", margin: 0 }}>Avg score per parameter</p>
               </div>
+            </div>
+
+            {/* Color legend */}
+            <div style={{ padding: "10px 16px 0", display: "flex", flexWrap: "wrap", gap: "5px 10px", flexShrink: 0 }}>
+              {[
+                { color: "#10B981", label: "Excellent 8+" },
+                { color: "#2563EB", label: "Good 6–7.9" },
+                { color: "#F59E0B", label: "Avg 4–5.9" },
+                { color: "#EF4444", label: "Low <4" },
+              ].map((l) => (
+                <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 2, background: l.color }} />
+                  <span style={{ fontSize: 10, color: "#64748B", fontWeight: 500 }}>{l.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Chart area */}
+            <div style={{ padding: "10px 6px 14px 2px", flexShrink: 0 }}>
+              {reportsLoading ? (
+                <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 28, height: 28, border: "3px solid #E2E8F0", borderTopColor: "#2563EB", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                </div>
+              ) : barData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                  <BarChart data={barData} margin={{ top: 20, right: 8, left: -20, bottom: 4 }} barCategoryGap="35%">
+                    <CartesianGrid vertical={false} stroke="#F1F5F9" />
+                    <XAxis dataKey="name" tick={<CustomXTick />} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]}
+                      tick={{ fontSize: 10, fill: "#94A3B8", fontFamily: "'DM Sans', sans-serif" }}
+                      axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(37,99,235,0.04)" }} />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]} label={<CustomBarLabel />} maxBarSize={32}>
+                      {barData.map((entry, i) => (
+                        <Cell key={i} fill={getBarColor(entry.value)} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+                  <BarChart2 size={36} style={{ marginBottom: 8, opacity: 0.3 }} />
+                  <p style={{ fontSize: 13, margin: 0 }}>No report data yet.</p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar flex-1">
-             {reportsLoading ? (
-               <div className="py-8 flex justify-center">
-                 <RefreshCw size={24} className="animate-spin text-gray-400" />
-               </div>
-             ) : reports.length > 0 ? (
-               reports.map((r, idx) => {
-                 const avg = r.parameters?.reduce((s, p) => s + Number(p.score || 0), 0) / (r.parameters?.length || 1);
-                 return (
-                   <div key={r._id || idx} className="p-4 border border-gray-100 bg-gray-50 rounded-lg flex items-center justify-between hover:bg-white transition-colors">
-                     <div>
-                       <h4 className="font-semibold text-gray-900 text-sm">Report #{reports.length - idx}</h4>
-                       <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
-                          <Calendar size={12} />
-                          {r.auditDate ? new Date(r.auditDate).toLocaleDateString() : "N/A"}
-                       </div>
-                     </div>
-                     <div className="bg-white border border-gray-200 px-3 py-1.5 rounded-md text-center shadow-sm">
-                        <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-0.5">Score</div>
-                        <div className="text-sm font-bold text-gray-900">{avg.toFixed(1)}</div>
-                     </div>
-                   </div>
-                 )
-               })
-             ) : (
-                <div className="py-10 flex flex-col items-center justify-center text-center">
-                   <FileText size={40} className="text-gray-300 mb-2" />
-                   <p className="text-gray-500 text-sm">No recent reports found.</p>
+          {/* Recent Reports */}
+          <div style={{ ...S.card, marginBottom: 0, display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 30, height: 30, background: "#FEF3C7", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FileText size={14} color="#F59E0B" />
+              </div>
+              <div>
+                <p style={S.sectionTitle}>Recent Reports</p>
+                <p style={{ fontSize: 11, color: "#64748B", margin: 0 }}>Your latest evaluations</p>
+              </div>
+            </div>
+            <div style={{ padding: 14, flex: 1, overflowY: "auto", maxHeight: 320 }}>
+              {reportsLoading ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: "30px 0" }}>
+                  <div style={{ width: 24, height: 24, border: "3px solid #E2E8F0", borderTopColor: "#2563EB", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                 </div>
-             )}
+              ) : reports.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {reports.map((r, idx) => {
+                    const avg = r.parameters?.reduce((s, p) => s + Number(p.score || 0), 0) / (r.parameters?.length || 1);
+                    const scoreColor = getBarColor(avg);
+                    return (
+                      <div key={r._id || idx} style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "10px 12px", border: "1.5px solid #F1F5F9",
+                        borderLeft: `3px solid ${scoreColor}`,
+                        borderRadius: 8, background: "#F8FAFC",
+                      }}>
+                        <div>
+                          <p style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 12, margin: "0 0 3px" }}>
+                            Report #{reports.length - idx}
+                          </p>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#94A3B8", fontSize: 11 }}>
+                            <Calendar size={11} />
+                            {r.auditDate ? new Date(r.auditDate).toLocaleDateString() : "N/A"}
+                          </div>
+                        </div>
+                        <div style={{ background: scoreColor, borderRadius: 8, padding: "6px 12px", textAlign: "center", minWidth: 50 }}>
+                          <p style={{ fontSize: 10, color: "rgba(255,255,255,0.75)", margin: "0 0 1px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Score</p>
+                          <p style={{ fontSize: 14, fontWeight: 800, color: "#fff", margin: 0 }}>{avg.toFixed(1)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "30px 0", color: "#94A3B8" }}>
+                  <FileText size={32} style={{ marginBottom: 8, opacity: 0.4 }} />
+                  <p style={{ fontSize: 13, margin: 0 }}>No reports found.</p>
+                </div>
+              )}
+            </div>
           </div>
-        </motion.div>
+
+        </div>
       </div>
     </div>
   );
