@@ -34,7 +34,7 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
         >
           {sidebarOpen ? (
             <div>
-
+              
               {/* Menu toggle row */}
               <div className="flex justify-end px-2 py-1">
                 <button

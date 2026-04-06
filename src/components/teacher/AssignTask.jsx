@@ -10,8 +10,8 @@ const S = {
   label: { fontSize: 11, fontWeight: 600, marginBottom: 8, display: "block" },
   input: { border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px", width: "100%" },
   select: { border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px", width: "100%" },
-  primaryBtn: { background: "#2563EB", color: "#fff", borderRadius: 8, padding: "10px 20px", cursor: "pointer" },
-  secondaryBtn: { border: "1px solid #ccc", borderRadius: 8, padding: "8px 12px", cursor: "pointer" },
+  primaryBtn: { background: "#2563EB", color: "#fff", borderRadius: 8, padding: "10px 20px", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 },
+  secondaryBtn: { border: "1px solid #ccc", borderRadius: 8, padding: "8px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 },
   sectionTitle: { fontWeight: 700, marginBottom: 10, display: "flex", gap: 8, alignItems: "center" },
 };
 
@@ -35,7 +35,6 @@ export default function AssignTask() {
   const [student, setStudent] = useState("");
 
   const [batches, setBatches] = useState([]);
-  const [students, setStudents] = useState([]);
   const [batchStudents, setBatchStudents] = useState([]);
   const [batchStudentsLoading, setBatchStudentsLoading] = useState(false);
   const [parameters, setParameters] = useState([{ name: "", score: "" }]);
@@ -44,20 +43,19 @@ export default function AssignTask() {
 
   useEffect(() => {
     API.get("/batches/public").then((r) => setBatches(r.data || []));
-    API.get("/students/list").then((r) => setStudents(r.data?.students || []));
   }, []);
 
   const clean = (str) => str?.replace(/\s+/g, "").toUpperCase();
 
   const uniqueBatchNames = [...new Set(batches.map((b) => clean(b.batch_name)))];
-
   const filteredBatches = batches.filter((b) => clean(b.batch_name) === batchName);
   const uniqueBatchNumbers = [...new Set(filteredBatches.map((b) => b.batch_no))];
 
-  // When both batch name + number are selected, fetch the enrolled students
+  // Fetch students when batch name + number are selected
   useEffect(() => {
     if (!batchName || !batchNumber) {
       setBatchStudents([]);
+      setStudent("");
       return;
     }
     const found = filteredBatches.find((b) => String(b.batch_no) === String(batchNumber));
@@ -85,38 +83,55 @@ export default function AssignTask() {
 
   const handleAssign = async () => {
     if (!batchName) return toast.error("Select batch name");
+    if (!batchNumber) return toast.error("Select batch number");
+    if (!date) return toast.error("Select a date");
 
     if (assignMode === "individual" && !student) {
       return toast.error("Select a student");
     }
 
+    // Validate parameters — skip empty ones
+    const cleanParams = parameters
+      .filter((p) => p.name.trim() !== "")
+      .map((p) => ({ name: p.name.trim(), score: Number(p.score) || 0 }));
+
     try {
       setLoading(true);
 
-      await API.post("/assignment/create", {
+      const payload = {
         batchName,
         batchNumber,
-        student: assignMode === "individual" ? student : "assign to batch",
-        parameters,
+        parameters: cleanParams,
         date,
         mode: assignMode,
         comment,
-      });
+      };
 
+      // Only send student field in individual mode
+      if (assignMode === "individual") {
+        payload.student = student;
+      }
 
-      toast.success("Assigned successfully");
+      await API.post("/assignment/create", payload);
 
+      toast.success(
+        assignMode === "batch"
+          ? `Assigned to all students in ${batchName} - Batch ${batchNumber}`
+          : "Assigned to student successfully"
+      );
+
+      // Reset form
       setBatchName("");
       setBatchNumber("");
       setStudent("");
       setDate("");
       setParameters([{ name: "", score: "" }]);
+      setComment("");
+      setBatchStudents([]);
     } catch (err) {
-
-      console.log(err.response);
+      console.error("Assignment error:", err.response?.data);
       toast.error(err.response?.data?.message || "Assignment failed");
     } finally {
-
       setLoading(false);
     }
   };
@@ -128,7 +143,7 @@ export default function AssignTask() {
 
       <h1 style={S.pageTitle}>Assign Project</h1>
 
-      {/* Batch */}
+      {/* Batch Info */}
       <div style={S.card}>
         <div style={S.sectionTitle}>
           <Users size={16} /> Batch Info
@@ -142,6 +157,7 @@ export default function AssignTask() {
               setBatchName(e.target.value);
               setBatchNumber("");
               setBatchStudents([]);
+              setStudent("");
             }}
           >
             <option value="">Select Batch</option>
@@ -163,7 +179,12 @@ export default function AssignTask() {
           </SelectField>
         </div>
 
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...S.input, marginTop: 10 }} />
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          style={{ ...S.input, marginTop: 10 }}
+        />
       </div>
 
       {/* Enrolled Students Preview */}
@@ -225,40 +246,57 @@ export default function AssignTask() {
         </div>
       )}
 
-      {/* Mode */}
+      {/* Assignment Mode */}
       <div style={S.card}>
         <div style={S.sectionTitle}>Assignment Mode</div>
-
         <label>
-          <input type="radio" value="batch" checked={assignMode === "batch"} onChange={(e) => setAssignMode(e.target.value)} />
-          Assign to Batch
+          <input
+            type="radio"
+            value="batch"
+            checked={assignMode === "batch"}
+            onChange={(e) => { setAssignMode(e.target.value); setStudent(""); }}
+          />
+          {" "}Assign to Batch
         </label>
-
         <label style={{ marginLeft: 20 }}>
-          <input type="radio" value="individual" checked={assignMode === "individual"} onChange={(e) => setAssignMode(e.target.value)} />
-          Assign to Individual
+          <input
+            type="radio"
+            value="individual"
+            checked={assignMode === "individual"}
+            onChange={(e) => setAssignMode(e.target.value)}
+          />
+          {" "}Assign to Individual
         </label>
       </div>
 
-      {/* Student ONLY for individual */}
+      {/* Student Selection — only for individual, only from selected batch */}
       {assignMode === "individual" && (
         <div style={S.card}>
           <div style={S.sectionTitle}>
             <User size={16} /> Student Selection
           </div>
 
-          <SelectField
-            label="Select Student"
-            value={student}
-            onChange={(e) => setStudent(e.target.value)}
-          >
-            <option value="">Select Student</option>
-            {students.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.name}
-              </option>
-            ))}
-          </SelectField>
+          {!batchName || !batchNumber ? (
+            <p style={{ color: "#94A3B8", fontSize: 13 }}>Please select a batch first to see students.</p>
+          ) : batchStudentsLoading ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#64748B", fontSize: 13 }}>
+              <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+              Loading students...
+            </div>
+          ) : (
+            <SelectField
+              label="Select Student"
+              value={student}
+              onChange={(e) => setStudent(e.target.value)}
+            >
+              <option value="">Select Student</option>
+              {batchStudents.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {s.name}
+                </option>
+              ))}
+            </SelectField>
+          )}
         </div>
       )}
 
@@ -269,38 +307,42 @@ export default function AssignTask() {
         </div>
 
         {parameters.map((p, i) => (
-          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "center" }}>
             <input
               placeholder="Assignment Name"
               value={p.name}
               onChange={(e) => updateParameter(i, "name", e.target.value)}
               style={S.input}
             />
-
-            <button onClick={() => removeParameter(i)}>
-              <X />
+            <input
+              placeholder="Score"
+              value={p.score}
+              onChange={(e) => updateParameter(i, "score", e.target.value)}
+              style={{ ...S.input, maxWidth: 120 }}
+            />
+            <button onClick={() => removeParameter(i)} style={{ cursor: "pointer", color: "#EF4444", background: "none", border: "none" }}>
+              <X size={18} />
             </button>
           </div>
         ))}
-
 
         <button onClick={addParameter} style={S.secondaryBtn}>
           <Plus size={14} /> Add Parameter
         </button>
         <div className="mt-4">
-          <label className="text-sm text-gray-600 mb-1 block">
-            Assignment Description / Comments
-          </label>
+  <label className="text-sm text-gray-600 mb-1 block">
+    Assignment Description / Comments
+  </label>
 
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Write instructions, notes, expectations..."
-            className="border rounded-lg p-3 w-full min-h-[100px]"
-          />
-        </div>
+  <textarea
+    value={comment}
+    onChange={(e) => setComment(e.target.value)}
+    placeholder="Write instructions, notes, expectations..."
+    className="border rounded-lg p-3 w-full min-h-[100px]"
+  />
+</div>
       </div>
-
+      
 
       <button onClick={handleAssign} style={S.primaryBtn}>
         <Send size={14} />

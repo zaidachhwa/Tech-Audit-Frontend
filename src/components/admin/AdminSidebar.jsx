@@ -31,8 +31,8 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
             {sidebarOpen ? (
               <div>
                 {/* Independent White Div for Logo */}
-
-
+               
+                
                 {/* Small bar for the Menu Toggle when open */}
                 <div className="flex justify-end px-2 py-1">
                   <button
