@@ -6,6 +6,7 @@ import {
   CalendarCheck,
   Megaphone,
   TrendingUp,
+  BookOpen,
 } from "lucide-react";
 
 export const teacherSidebarItems = [
@@ -38,6 +39,11 @@ export const teacherSidebarItems = [
     name: "Assign Task",
     icon: ClipboardList,
     path: "/teacher/assign-task",
+  },
+  {
+    name: "Assign Syllabus",
+    icon: BookOpen,
+    path: "/teacher/assign-syllabus",
   },
   {
     name: "Profile",

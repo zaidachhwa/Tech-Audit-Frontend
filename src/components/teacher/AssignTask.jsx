@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
-import { ClipboardList, Plus, X, ChevronDown, User, Users, Calendar, Send } from "lucide-react";
+import { ClipboardList, Plus, X, User, Users, Send, Loader2, CheckCircle, Clock } from "lucide-react";
 
 const S = {
   page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px" },
@@ -36,6 +36,8 @@ export default function AssignTask() {
 
   const [batches, setBatches] = useState([]);
   const [students, setStudents] = useState([]);
+  const [batchStudents, setBatchStudents] = useState([]);
+  const [batchStudentsLoading, setBatchStudentsLoading] = useState(false);
   const [parameters, setParameters] = useState([{ name: "", score: "" }]);
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState("");
@@ -49,13 +51,24 @@ export default function AssignTask() {
 
   const uniqueBatchNames = [...new Set(batches.map((b) => clean(b.batch_name)))];
 
-  const uniqueBatchNumbers = [
-    ...new Set(
-      batches
-        .filter((b) => clean(b.batch_name) === batchName)
-        .map((b) => b.batch_no)
-    ),
-  ];
+  const filteredBatches = batches.filter((b) => clean(b.batch_name) === batchName);
+  const uniqueBatchNumbers = [...new Set(filteredBatches.map((b) => b.batch_no))];
+
+  // When both batch name + number are selected, fetch the enrolled students
+  useEffect(() => {
+    if (!batchName || !batchNumber) {
+      setBatchStudents([]);
+      return;
+    }
+    const found = filteredBatches.find((b) => String(b.batch_no) === String(batchNumber));
+    if (!found?._id) return;
+
+    setBatchStudentsLoading(true);
+    API.get(`/batches/${found._id}/students`)
+      .then((r) => setBatchStudents(r.data?.students || []))
+      .catch(() => setBatchStudents([]))
+      .finally(() => setBatchStudentsLoading(false));
+  }, [batchName, batchNumber]);
 
   const addParameter = () => setParameters([...parameters, { name: "", score: "" }]);
 
@@ -111,6 +124,7 @@ export default function AssignTask() {
   return (
     <div style={S.page}>
       <Toaster />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <h1 style={S.pageTitle}>Assign Project</h1>
 
@@ -127,11 +141,12 @@ export default function AssignTask() {
             onChange={(e) => {
               setBatchName(e.target.value);
               setBatchNumber("");
+              setBatchStudents([]);
             }}
           >
             <option value="">Select Batch</option>
             {uniqueBatchNames.map((name) => (
-              <option key={name}>{name}</option>
+              <option key={name} value={name}>{name}</option>
             ))}
           </SelectField>
 
@@ -143,13 +158,72 @@ export default function AssignTask() {
           >
             <option value="">Select Number</option>
             {uniqueBatchNumbers.map((num) => (
-              <option key={num}>{num}</option>
+              <option key={num} value={num}>{num}</option>
             ))}
           </SelectField>
         </div>
 
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...S.input, marginTop: 10 }} />
       </div>
+
+      {/* Enrolled Students Preview */}
+      {(batchStudentsLoading || batchStudents.length > 0) && batchName && batchNumber && (
+        <div style={S.card}>
+          <div style={{ ...S.sectionTitle, justifyContent: "space-between" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Users size={16} color="#2563EB" />
+              Enrolled Students
+            </span>
+            <span style={{
+              background: "#EFF6FF", color: "#2563EB",
+              borderRadius: 20, padding: "2px 12px",
+              fontSize: 12, fontWeight: 700,
+            }}>
+              {batchStudentsLoading ? "..." : `${batchStudents.length} students`}
+            </span>
+          </div>
+
+          {batchStudentsLoading ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#64748B", fontSize: 13 }}>
+              <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+              Loading students...
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8 }}>
+              {batchStudents.map((s, i) => (
+                <div key={s._id || i} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "8px 12px",
+                  background: "#F8FAFC",
+                  border: "1.5px solid #E2E8F0",
+                  borderRadius: 8,
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: "50%",
+                    background: "linear-gradient(135deg,#2563EB,#60A5FA)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0,
+                  }}>
+                    {(s.name || "?")[0].toUpperCase()}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "#1E293B", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {s.name}
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
+                      {s.isActive ? (
+                        <><CheckCircle size={10} color="#10B981" /><span style={{ fontSize: 10, color: "#10B981" }}>Active</span></>
+                      ) : (
+                        <><Clock size={10} color="#F59E0B" /><span style={{ fontSize: 10, color: "#F59E0B" }}>Pending</span></>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Mode */}
       <div style={S.card}>

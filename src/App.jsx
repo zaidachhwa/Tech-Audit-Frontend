@@ -42,6 +42,8 @@ import AdminAnalytics from './pages/AdminAnalytics';
 import TeacherAttendance from './components/teacher/TeacherAttendance';
 import TeacherGrades from './components/teacher/TeacherGrades';
 import TeacherAnnouncements from './components/teacher/TeacherAnnouncements';
+import AssignSyllabus from './components/teacher/AssignSyllabus';
+import AssignSyllabusDetail from './components/teacher/AssignSyllabusDetail';
 
 /* PRIVATE ROUTE */
 function PrivateRoute({ children, role }) {
@@ -126,6 +128,8 @@ export default function App() {
           <Route path="performance" element={<TeacherStudentProgress />} />
           <Route path="profile" element={<TeacherProfile />} />f
           <Route path="assign-task" element={<AssignTask />} />
+          <Route path="assign-syllabus" element={<AssignSyllabus />} />
+          <Route path="assign-syllabus/:batchId" element={<AssignSyllabusDetail />} />
           <Route path="attendance" element={<TeacherAttendance />} />
           <Route path="grades" element={<TeacherGrades />} />
           <Route path="announcements" element={<TeacherAnnouncements />} />

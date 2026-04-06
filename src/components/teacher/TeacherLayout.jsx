@@ -49,18 +49,7 @@ export default function TeacherLayout() {
           }}
           className="lg:hidden"
         >
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            style={{
-              padding: 8,
-              borderRadius: 8,
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-            }}
-          >
-            <Menu size={20} color="#1B2B4B" />
-          </button>
+
           <span
             style={{
               marginLeft: 12,
