@@ -67,20 +67,36 @@ export default function AddReport2() {
     });
 
   // ================= ACTIONS =================
+  const resetForm = () => {
+    setForm({
+      batch_name: "",
+      batch_no: "",
+      studentId: "",
+      parameters: [{ name: "", score: "" }],
+      feedbackSchema: { point1: "", point2: "", point3: "" },
+      overallRemarks: "",
+      auditDate: "",
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.studentId) return toast.error("Please select a student!");
     try {
       await API.post("/reports/create", form);
-      toast.success("Report saved");
+      toast.success("Report successfully saved!");
+      resetForm();
     } catch {
       toast.error("Save failed");
     }
   };
 
   const handleSaveDraft = async () => {
+    if (!form.studentId) return toast.error("Please select a student!");
     try {
       await API.post("/reports/draft", form);
-      toast.success("Draft saved");
+      toast.success("Draft saved!");
+      resetForm();
     } catch {
       toast.error("Draft failed");
     }

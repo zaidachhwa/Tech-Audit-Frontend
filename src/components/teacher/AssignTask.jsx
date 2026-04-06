@@ -93,7 +93,7 @@ export default function AssignTask() {
     try {
       setLoading(true);
 
-       await API.post("/assignment/create", {
+      await API.post("/assignment/create", {
         batchName,
         batchNumber,
         student: assignMode === "individual" ? student : "assign to batch",
@@ -102,7 +102,7 @@ export default function AssignTask() {
         mode: assignMode,
         comment,
       });
-      
+
 
       toast.success("Assigned successfully");
 
@@ -112,8 +112,8 @@ export default function AssignTask() {
       setDate("");
       setParameters([{ name: "", score: "" }]);
     } catch (err) {
-   
-         console.log(err.response);
+
+      console.log(err.response);
       toast.error(err.response?.data?.message || "Assignment failed");
     } finally {
 
@@ -276,36 +276,31 @@ export default function AssignTask() {
               onChange={(e) => updateParameter(i, "name", e.target.value)}
               style={S.input}
             />
-            <input
-              placeholder="Score"
-              value={p.score}
-              onChange={(e) => updateParameter(i, "score", e.target.value)}
-              style={S.input}
-            />
+
             <button onClick={() => removeParameter(i)}>
               <X />
             </button>
           </div>
         ))}
-        
+
 
         <button onClick={addParameter} style={S.secondaryBtn}>
           <Plus size={14} /> Add Parameter
         </button>
         <div className="mt-4">
-  <label className="text-sm text-gray-600 mb-1 block">
-    Assignment Description / Comments
-  </label>
+          <label className="text-sm text-gray-600 mb-1 block">
+            Assignment Description / Comments
+          </label>
 
-  <textarea
-    value={comment}
-    onChange={(e) => setComment(e.target.value)}
-    placeholder="Write instructions, notes, expectations..."
-    className="border rounded-lg p-3 w-full min-h-[100px]"
-  />
-</div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Write instructions, notes, expectations..."
+            className="border rounded-lg p-3 w-full min-h-[100px]"
+          />
+        </div>
       </div>
-      
+
 
       <button onClick={handleAssign} style={S.primaryBtn}>
         <Send size={14} />
