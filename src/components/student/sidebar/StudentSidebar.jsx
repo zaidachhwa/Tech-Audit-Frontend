@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GraduationCap, LayoutDashboard, Layers, BarChart2, User, LogOut, Menu, Mail, BookOpen } from "lucide-react";
+import { LayoutDashboard, Layers, BarChart2, User, LogOut, Menu, Mail, BookOpen } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
 const navLinks = [
@@ -58,23 +58,34 @@ export default function StudentSidebar({ currentPath, onNavigate, user }) {
         className={`student-sidebar${mobileOpen ? " mobile-open" : ""}`}
       >
         {/* Header */}
-        <div style={{ height: 72, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
-          {!collapsed && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 36, height: 36, background: "#2563EB", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <GraduationCap size={20} color="#fff" />
+        <div style={{ borderBottom: "1px solid #243452", flexShrink: 0 }}>
+          {!collapsed ? (
+            <div>
+              {/* White logo container matching admin/teacher panels */}
+              <div style={{ width: "100%", background: "#fff", height: 160, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+                <img src="/logo.png" alt="NexCore Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
               </div>
-              <div>
-                <p style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0, letterSpacing: "-0.02em" }}>NexCore</p>
-                <p style={{ color: "#94A3B8", fontSize: 11, margin: 0 }}>Student Portal</p>
+              {/* Menu toggle row */}
+              <div style={{ display: "flex", justifyContent: "flex-end", padding: "4px 8px" }}>
+                <button onClick={() => setCollapsed(!collapsed)}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", padding: 6, borderRadius: 6 }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#243452")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                  <Menu size={18} color="#94A3B8" />
+                </button>
               </div>
             </div>
+          ) : (
+            /* Collapsed — just the toggle button */
+            <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={() => setCollapsed(!collapsed)}
+                style={{ background: "transparent", border: "none", cursor: "pointer", padding: 8, borderRadius: 8 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#243452")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                <Menu size={20} color="#94A3B8" />
+              </button>
+            </div>
           )}
-          <button onClick={() => setCollapsed(!collapsed)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 6, borderRadius: 6, marginLeft: collapsed ? "auto" : 0, marginRight: collapsed ? "auto" : 0 }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-            <Menu size={18} color="#94A3B8" />
-          </button>
         </div>
 
         {/* User info */}

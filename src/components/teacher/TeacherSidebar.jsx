@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Menu, LogOut, GraduationCap } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { teacherSidebarItems } from "./TeacherSidebarItems";
 
@@ -30,56 +30,47 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
       >
         {/* HEADER */}
         <div
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
-          className="h-20 flex items-center justify-between px-4 shrink-0"
+          className="flex flex-col border-b shrink-0"
+          style={{ borderColor: "#243452" }}
         >
-          {sidebarOpen && (
-            <div className="flex items-center gap-3">
-              <div
-                style={{
-                  background: "#2563EB",
-                  borderRadius: "10px",
-                  width: 36,
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <GraduationCap size={20} color="white" />
+          {sidebarOpen ? (
+            <div>
+              {/* White logo container matching admin panel */}
+              <div className="w-full bg-white h-40 flex items-center justify-center p-6">
+                <img
+                  src="/logo.png"
+                  alt="NexCore Logo"
+                  className="w-full h-full object-contain"
+                />
               </div>
-              <div>
-                <p
-                  style={{
-                    color: "#fff",
-                    fontWeight: 700,
-                    fontSize: 15,
-                    letterSpacing: "-0.02em",
-                    lineHeight: 1.2,
-                  }}
+              {/* Menu toggle row */}
+              <div className="flex justify-end px-2 py-1">
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="p-1.5 rounded-md transition hidden lg:block hover:bg-[#243452]"
                 >
-                  NexCore
-                </p>
-                <p style={{ color: "#94A3B8", fontSize: 11, fontWeight: 500 }}>
-                  Teacher Portal
-                </p>
+                  <Menu size={18} style={{ color: "#94A3B8" }} />
+                </button>
               </div>
             </div>
+          ) : (
+            /* Collapsed — just the toggle button */
+            <div className="h-20 flex items-center justify-center">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 rounded-lg transition hidden lg:block"
+                style={{ backgroundColor: "transparent" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#243452")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                <Menu size={20} style={{ color: "#94A3B8" }} />
+              </button>
+            </div>
           )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            style={{
-              borderRadius: 8,
-              padding: "6px",
-              transition: "background 0.15s",
-              marginLeft: sidebarOpen ? 0 : "auto",
-              marginRight: sidebarOpen ? 0 : "auto",
-            }}
-            className="hidden lg:flex items-center justify-center hover:bg-white/10"
-          >
-            <Menu size={18} color="#94A3B8" />
-          </button>
         </div>
 
         {/* Teacher mini-profile */}

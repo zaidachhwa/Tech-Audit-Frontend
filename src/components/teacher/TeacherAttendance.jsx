@@ -34,12 +34,8 @@ export default function TeacherAttendance() {
     if (!selectedBatch) { setStudents([]); setAttendance({}); return; }
     setLoading(true);
 
-    const batchObj = batches.find((b) => b._id === selectedBatch);
-    const query = batchObj
-      ? `batchName=${encodeURIComponent(batchObj.batch_name)}&batchNumber=${encodeURIComponent(batchObj.batch_no)}`
-      : `batchId=${encodeURIComponent(selectedBatch)}`;
-
-    API.get(`/students/list?${query}`)
+    // Fetch the batch directly — it has a students array we can populate
+    API.get(`/batches/${selectedBatch}/students`)
       .then((r) => {
         const all = r.data?.students || [];
         setStudents(all);
@@ -47,9 +43,12 @@ export default function TeacherAttendance() {
         all.forEach((s) => { init[s._id] = STATUS.Present; });
         setAttendance(init);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error("Failed to load students:", err);
+        setStudents([]);
+      })
       .finally(() => setLoading(false));
-  }, [selectedBatch, batches]);
+  }, [selectedBatch]);
 
   const markAll = (status) => {
     const updated = {};
