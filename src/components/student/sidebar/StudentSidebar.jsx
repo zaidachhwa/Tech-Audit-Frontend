@@ -62,10 +62,7 @@ export default function StudentSidebar({ currentPath, onNavigate, user }) {
         <div style={{ borderBottom: "1px solid #243452", flexShrink: 0 }}>
           {!collapsed ? (
             <div>
-              {/* White logo container matching admin/teacher panels */}
-              <div style={{ width: "100%", background: "#fff", height: 160, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-                <img src="/logo.png" alt="NexCore Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-              </div>
+
               {/* Menu toggle row */}
               <div style={{ display: "flex", justifyContent: "flex-end", padding: "4px 8px" }}>
                 <button onClick={() => setCollapsed(!collapsed)}

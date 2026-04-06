@@ -35,14 +35,7 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
         >
           {sidebarOpen ? (
             <div>
-              {/* White logo container matching admin panel */}
-              <div className="w-full bg-white h-40 flex items-center justify-center p-6">
-                <img
-                  src="/logo.png"
-                  alt="NexCore Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
+              
               {/* Menu toggle row */}
               <div className="flex justify-end px-2 py-1">
                 <button
