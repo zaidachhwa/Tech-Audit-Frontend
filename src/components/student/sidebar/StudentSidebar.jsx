@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { LayoutDashboard, Layers, BarChart2, User, LogOut, Menu, Mail, BookOpen } from "lucide-react";
+import { LayoutDashboard, Layers, BarChart2, User, LogOut, Menu, Mail, BookOpen, ClipboardList } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
 const navLinks = [
   { name: "Dashboard", path: "/student/dashboard", icon: LayoutDashboard },
+  { name: "My Tasks", path: "/student/assignments", icon: ClipboardList },
   { name: "Projects", path: "/student/projects", icon: Layers },
   { name: "Reports", path: "/student/reports", icon: BarChart2 },
   { name: "Profile", path: "/student/profile", icon: User },

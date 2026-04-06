@@ -31,7 +31,7 @@ export default function TeacherLayout() {
           minHeight: "100vh",
           transition: "margin-left 0.3s",
           marginLeft: sidebarOpen ? 256 : 64,
-        }}
+        }}      
         className="teacher-main-content"
       >
         {/* Mobile topbar */}
