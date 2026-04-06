@@ -1,6 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { API } from "../../api/axios";
-import { toast } from "react-hot-toast";
+import { toast, Toaster } from "react-hot-toast";
+
+const S = {
+  page: { minHeight: "100vh", background: "#F8FAFC", padding: "24px 32px" },
+  pageTitle: { fontSize: 20, fontWeight: 500, color: "#0F172A", marginBottom: 2 },
+  pageSubtitle: { fontSize: 13, color: "#64748B", marginBottom: 20 },
+  card: { background: "#fff", border: "0.5px solid #E2E8F0", borderRadius: 12, padding: 20, marginBottom: 16 },
+  sectionHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: "0.5px solid #E2E8F0" },
+  sectionHeaderRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 12, borderBottom: "0.5px solid #E2E8F0" },
+  dot: { width: 8, height: 8, borderRadius: "50%", background: "#2563EB", flexShrink: 0 },
+  sectionTitle: { fontSize: 13, fontWeight: 500, color: "#0F172A" },
+  label: { fontSize: 11, fontWeight: 500, color: "#64748B", marginBottom: 5, display: "block", textTransform: "uppercase", letterSpacing: "0.4px" },
+  input: { width: "100%", border: "0.5px solid #CBD5E1", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#0F172A", outline: "none", background: "#fff" },
+  select: { width: "100%", border: "0.5px solid #CBD5E1", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#0F172A", outline: "none", background: "#fff" },
+  textarea: { width: "100%", border: "0.5px solid #CBD5E1", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#0F172A", outline: "none", background: "#fff", minHeight: 80, resize: "vertical", lineHeight: 1.5 },
+  grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 },
+  paramRow: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 },
+  scoreInput: { width: 90, border: "0.5px solid #CBD5E1", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#0F172A", outline: "none", background: "#fff", flexShrink: 0 },
+  removeBtn: { width: 28, height: 28, borderRadius: 8, border: "0.5px solid #E2E8F0", background: "#F8FAFC", color: "#94A3B8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 },
+  addParamBtn: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#2563EB", background: "none", border: "none", cursor: "pointer", padding: "4px 0", fontWeight: 500 },
+  previewBtn: { fontSize: 12, padding: "5px 14px", borderRadius: 8, border: "0.5px solid #BFDBFE", background: "#EFF6FF", color: "#1D4ED8", cursor: "pointer", fontWeight: 500 },
+  btnRow: { display: "flex", gap: 10, marginTop: 4 },
+  btnDraft: { padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "0.5px solid #FDE68A", background: "#FEF9C3", color: "#92400E" },
+  btnSave: { padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "0.5px solid #BBF7D0", background: "#DCFCE7", color: "#166534" },
+  btnPdf: { padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none", background: "#2563EB", color: "#fff" },
+};
 
 export default function AddReport2() {
   const [students, setStudents] = useState([]);
@@ -17,12 +42,9 @@ export default function AddReport2() {
     auditDate: "",
   });
 
-  // ================= FETCH =================
   useEffect(() => {
     API.get("/students/list")
-      .then((res) => {
-        setStudents(res.data?.students || []);
-      })
+      .then((res) => setStudents(res.data?.students || []))
       .catch(() => toast.error("Failed to load students"));
 
     API.get("/batches/public")
@@ -39,14 +61,9 @@ export default function AddReport2() {
     setFilteredStudents(filtered);
   }, [form.batch_name, form.batch_no, students]);
 
-  // ================= HELPERS =================
-  const getBatchNames = () =>
-    [...new Set(batches.map((b) => b.batch_name))];
-
+  const getBatchNames = () => [...new Set(batches.map((b) => b.batch_name))];
   const getBatchNos = () =>
-    batches
-      .filter((b) => b.batch_name === form.batch_name)
-      .map((b) => b.batch_no);
+    batches.filter((b) => b.batch_name === form.batch_name).map((b) => b.batch_no);
 
   const handleParamChange = (i, field, value) => {
     const updated = [...form.parameters];
@@ -55,212 +72,235 @@ export default function AddReport2() {
   };
 
   const addParameter = () =>
-    setForm({
-      ...form,
-      parameters: [...form.parameters, { name: "", score: "" }],
-    });
+    setForm({ ...form, parameters: [...form.parameters, { name: "", score: "" }] });
 
   const removeParameter = (i) =>
-    setForm({
-      ...form,
-      parameters: form.parameters.filter((_, index) => index !== i),
-    });
+    setForm({ ...form, parameters: form.parameters.filter((_, idx) => idx !== i) });
 
-  // ================= ACTIONS =================
+  // Validation helper
+  const validate = () => {
+    if (!form.studentId) { toast.error("Please select a student"); return false; }
+    if (!form.auditDate) { toast.error("Please select audit date"); return false; }
+    const validParams = form.parameters.filter((p) => p.name.trim());
+    if (!validParams.length) { toast.error("Add at least one parameter"); return false; }
+    return true;
+  };
+
+  // Get selected student object for preview
+  const getSelectedStudent = () => {
+    return filteredStudents.find((s) => s._id === form.studentId) || null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
     try {
-      await API.post("/reports/create", form);
-      toast.success("Report saved");
-    } catch {
-      toast.error("Save failed");
+      await API.post("/reports/create", {
+        studentId: form.studentId,
+        parameters: form.parameters.filter((p) => p.name.trim()),
+        feedbackSchema: form.feedbackSchema,
+        overallRemarks: form.overallRemarks,
+        auditDate: form.auditDate,
+      });
+      toast.success("Report saved successfully");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save report");
     }
   };
 
   const handleSaveDraft = async () => {
+    if (!form.studentId) { toast.error("Please select a student"); return; }
     try {
-      await API.post("/reports/draft", form);
+      await API.post("/reports/draft", {
+        studentId: form.studentId,
+        parameters: form.parameters.filter((p) => p.name.trim()),
+        feedbackSchema: form.feedbackSchema,
+        overallRemarks: form.overallRemarks,
+        auditDate: form.auditDate,
+      });
       toast.success("Draft saved");
-    } catch {
-      toast.error("Draft failed");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save draft");
     }
   };
 
+  // Save first then download PDF
   const handleDownload = async () => {
+    if (!validate()) return;
     try {
-      const res = await API.post("/reports/create", form);
-      const id = res.data?._id;
-
-      const pdf = await API.get(`/reports/${id}/pdf`, {
-        responseType: "blob",
+      const saveRes = await API.post("/reports/create", {
+        studentId: form.studentId,
+        parameters: form.parameters.filter((p) => p.name.trim()),
+        feedbackSchema: form.feedbackSchema,
+        overallRemarks: form.overallRemarks,
+        auditDate: form.auditDate,
       });
 
-      const url = window.URL.createObjectURL(new Blob([pdf.data]));
+      const id = saveRes.data?.report?._id;
+      if (!id) { toast.error("Failed to get report ID"); return; }
+
+      const pdf = await API.get(`/reports/${id}/pdf`, { responseType: "blob" });
+
+      const url = window.URL.createObjectURL(new Blob([pdf.data], { type: "application/pdf" }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = "report.pdf";
+      link.download = `report-${form.studentId}.pdf`;
       link.click();
-    } catch {
-      toast.error("Download failed");
+      window.URL.revokeObjectURL(url);
+      toast.success("PDF downloaded");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to download PDF");
     }
   };
 
-  // ================= UI =================
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+  // Preview PDF in new tab without saving
+  const handlePreview = async () => {
+    if (!validate()) return;
+    const student = getSelectedStudent();
+    if (!student) { toast.error("Student not found"); return; }
 
-      {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#1B2B4B]">
-          Add Report
-        </h1>
-        <p className="text-sm text-gray-500">
-          Create student audit reports
-        </p>
+    try {
+      toast.loading("Generating preview...", { id: "preview" });
+
+      const res = await API.post(
+        "/reports/preview",
+        {
+          student: {
+            name: student.name,
+            email: student.email,
+            batch_name: student.batch_name,
+            batch_no: student.batch_no,
+          },
+          parameters: form.parameters.filter((p) => p.name.trim()),
+          feedbackSchema: form.feedbackSchema,
+          overallRemarks: form.overallRemarks,
+          auditDate: form.auditDate,
+        },
+        { responseType: "blob" }
+      );
+
+      toast.dismiss("preview");
+      toast.success("Preview ready");
+
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      window.open(url, "_blank");
+    } catch (err) {
+      toast.dismiss("preview");
+      toast.error(err.response?.data?.message || "Preview failed");
+    }
+  };
+
+  return (
+    <div style={S.page}>
+      <Toaster />
+
+      <p style={S.pageTitle}>Add Report</p>
+      <p style={S.pageSubtitle}>Create student audit reports</p>
+
+      {/* Batch Info */}
+      <div style={S.card}>
+        <div style={S.sectionHeader}>
+          <div style={S.dot} />
+          <span style={S.sectionTitle}>Batch Information</span>
+        </div>
+
+        <div style={S.grid3}>
+          <div>
+            <label style={S.label}>Batch Name</label>
+            <select style={S.select} value={form.batch_name} onChange={(e) => setForm({ ...form, batch_name: e.target.value, batch_no: "", studentId: "" })}>
+              <option value="">Select Batch</option>
+              {getBatchNames().map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={S.label}>Batch No</label>
+            <select style={{ ...S.select, opacity: !form.batch_name ? 0.5 : 1 }} value={form.batch_no} onChange={(e) => setForm({ ...form, batch_no: e.target.value, studentId: "" })} disabled={!form.batch_name}>
+              <option value="">Batch No</option>
+              {getBatchNos().map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={S.label}>Audit Date</label>
+            <input type="date" style={S.input} value={form.auditDate} onChange={(e) => setForm({ ...form, auditDate: e.target.value })} />
+          </div>
+        </div>
+
+        <div>
+          <label style={S.label}>Student</label>
+          <select style={{ ...S.select, opacity: !form.batch_no ? 0.5 : 1 }} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} disabled={!form.batch_no}>
+            <option value="">Select Student</option>
+            {filteredStudents.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
+          </select>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-
-        <form className="space-y-6" onSubmit={handleSubmit}>
-
-          {/* Batch */}
-          <div className="grid grid-cols-3 gap-4">
-            <select
-              value={form.batch_name}
-              onChange={(e) =>
-                setForm({ ...form, batch_name: e.target.value })
-              }
-              className="border p-2 rounded"
-            >
-              <option>Select Batch</option>
-              {getBatchNames().map((b) => (
-                <option key={b}>{b}</option>
-              ))}
-            </select>
-
-            <select
-              value={form.batch_no}
-              onChange={(e) =>
-                setForm({ ...form, batch_no: e.target.value })
-              }
-              className="border p-2 rounded"
-            >
-              <option>Batch No</option>
-              {getBatchNos().map((n) => (
-                <option key={n}>{n}</option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              value={form.auditDate}
-              onChange={(e) =>
-                setForm({ ...form, auditDate: e.target.value })
-              }
-              className="border p-2 rounded"
-            />
+      {/* Parameters */}
+      <div style={S.card}>
+        <div style={S.sectionHeaderRow}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={S.dot} />
+            <span style={S.sectionTitle}>Parameters</span>
           </div>
-
-          {/* Student */}
-          <select
-            value={form.studentId}
-            onChange={(e) =>
-              setForm({ ...form, studentId: e.target.value })
-            }
-            className="w-full border p-2 rounded"
-          >
-            <option>Select Student</option>
-            {filteredStudents.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Parameters */}
-          <div>
-            <div className="flex justify-between mb-2">
-              <h2 className="font-semibold">Parameters</h2>
-              <button type="button" onClick={addParameter}>
-                + Add
-              </button>
-            </div>
-
-            {form.parameters.map((p, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <input
-                  value={p.name}
-                  onChange={(e) =>
-                    handleParamChange(i, "name", e.target.value)
-                  }
-                  className="flex-1 border p-2 rounded"
-                  placeholder="Name"
-                />
-                <input
-                  value={p.score}
-                  onChange={(e) =>
-                    handleParamChange(i, "score", e.target.value)
-                  }
-                  className="w-20 border p-2 rounded"
-                  placeholder="Score"
-                />
-                <button onClick={() => removeParameter(i)}>X</button>
-              </div>
-            ))}
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button style={S.previewBtn} onClick={handlePreview}>Preview PDF</button>
+            <button style={{ ...S.addParamBtn, border: "0.5px solid #E2E8F0", padding: "5px 12px", borderRadius: 8 }} onClick={addParameter}>+ Add</button>
           </div>
+        </div>
 
-          {/* Feedback */}
-          <textarea
-            placeholder="Point 1"
-            value={form.feedbackSchema.point1}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                feedbackSchema: {
-                  ...form.feedbackSchema,
-                  point1: e.target.value,
-                },
-              })
-            }
-            className="w-full border p-2 rounded"
-          />
-
-          {/* Remarks */}
-          <textarea
-            placeholder="Remarks"
-            value={form.overallRemarks}
-            onChange={(e) =>
-              setForm({ ...form, overallRemarks: e.target.value })
-            }
-            className="w-full border p-2 rounded"
-          />
-
-          {/* Buttons */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              className="bg-yellow-500 text-white px-4 py-2 rounded"
-            >
-              Draft
-            </button>
-
-            <button
-              type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded"
-            >
-              Save
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-            >
-              PDF
-            </button>
+        {form.parameters.map((p, i) => (
+          <div key={i} style={S.paramRow}>
+            <input style={S.input} placeholder="Name" value={p.name} onChange={(e) => handleParamChange(i, "name", e.target.value)} />
+            <input style={S.scoreInput} placeholder="Score" value={p.score} onChange={(e) => handleParamChange(i, "score", e.target.value)} />
+            <button style={S.removeBtn} onClick={() => removeParameter(i)}>✕</button>
           </div>
-        </form>
+        ))}
+      </div>
+
+      {/* Feedback */}
+      <div style={S.card}>
+        <div style={S.sectionHeader}>
+          <div style={S.dot} />
+          <span style={S.sectionTitle}>Feedback Points</span>
+        </div>
+        <textarea
+          style={{ ...S.textarea, marginBottom: 10 }}
+          placeholder="Point 1"
+          value={form.feedbackSchema.point1}
+          onChange={(e) => setForm({ ...form, feedbackSchema: { ...form.feedbackSchema, point1: e.target.value } })}
+        />
+        <textarea
+          style={{ ...S.textarea, marginBottom: 10 }}
+          placeholder="Point 2"
+          value={form.feedbackSchema.point2}
+          onChange={(e) => setForm({ ...form, feedbackSchema: { ...form.feedbackSchema, point2: e.target.value } })}
+        />
+        <textarea
+          style={S.textarea}
+          placeholder="Point 3"
+          value={form.feedbackSchema.point3}
+          onChange={(e) => setForm({ ...form, feedbackSchema: { ...form.feedbackSchema, point3: e.target.value } })}
+        />
+      </div>
+
+      {/* Remarks */}
+      <div style={S.card}>
+        <div style={S.sectionHeader}>
+          <div style={S.dot} />
+          <span style={S.sectionTitle}>Overall Remarks & Summary</span>
+        </div>
+        <textarea
+          style={S.textarea}
+          placeholder="Remarks"
+          value={form.overallRemarks}
+          onChange={(e) => setForm({ ...form, overallRemarks: e.target.value })}
+        />
+      </div>
+
+      {/* Buttons */}
+      <div style={S.btnRow}>
+        <button style={S.btnDraft} onClick={handleSaveDraft}>Draft</button>
+        <button style={S.btnSave} onClick={handleSubmit}>Save</button>
+        <button style={S.btnPdf} onClick={handleDownload}>PDF</button>
       </div>
     </div>
   );

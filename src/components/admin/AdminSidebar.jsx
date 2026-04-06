@@ -33,13 +33,7 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
               <div>
                 {/* Independent White Div for Logo */}
                
-                <div className="w-full bg-white h-40 flex items-center justify-center p-6">
-                  <img
-                    src="/logo.png"
-                    alt="Logo"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+                
                 {/* Small bar for the Menu Toggle when open */}
                 <div className="flex justify-end px-2 py-1">
                   <button
