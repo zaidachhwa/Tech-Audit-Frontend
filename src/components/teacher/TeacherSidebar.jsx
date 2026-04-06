@@ -22,11 +22,10 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
           background: "#1B2B4B",
           fontFamily: "'DM Sans', sans-serif",
         }}
-        className={`fixed left-0 top-0 h-screen transition-all duration-300 z-40 flex flex-col ${
-          sidebarOpen
-            ? "w-64"
-            : "w-0 -translate-x-full lg:translate-x-0 lg:w-16"
-        }`}
+        className={`fixed left-0 top-0 h-screen transition-all duration-300 z-40 flex flex-col ${sidebarOpen
+          ? "w-64"
+          : "w-0 -translate-x-full lg:translate-x-0 lg:w-16"
+          }`}
       >
         {/* HEADER */}
         <div
@@ -35,14 +34,7 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
         >
           {sidebarOpen ? (
             <div>
-              {/* White logo container matching admin panel */}
-              <div className="w-full bg-white h-40 flex items-center justify-center p-6">
-                <img
-                  src="/logo.png"
-                  alt="NexCore Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
+
               {/* Menu toggle row */}
               <div className="flex justify-end px-2 py-1">
                 <button

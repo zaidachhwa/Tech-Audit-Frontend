@@ -13,9 +13,8 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
       `}</style>
       <aside
-        className={`fixed left-0 top-0 h-screen transition-all duration-300 z-40 ${
-          sidebarOpen ? "w-64" : "w-0 -translate-x-full lg:translate-x-0 lg:w-16"
-        }`}
+        className={`fixed left-0 top-0 h-screen transition-all duration-300 z-40 ${sidebarOpen ? "w-64" : "w-0 -translate-x-full lg:translate-x-0 lg:w-16"
+          }`}
         style={{
           backgroundColor: "#1B2B4B",
           borderRight: "1px solid #ffffff",
@@ -32,14 +31,8 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
             {sidebarOpen ? (
               <div>
                 {/* Independent White Div for Logo */}
-               
-                <div className="w-full bg-white h-40 flex items-center justify-center p-6">
-                  <img
-                    src="/logo.png"
-                    alt="Logo"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+
+
                 {/* Small bar for the Menu Toggle when open */}
                 <div className="flex justify-end px-2 py-1">
                   <button
@@ -50,7 +43,7 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
                   </button>
                 </div>
               </div>
-              
+
             ) : (
               /* Collapsed State Logo/Menu Area */
               <div className="h-20 flex items-center justify-center">
@@ -97,7 +90,7 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
                     <Icon
                       size={20}
                       style={{
-                            color: isActive ? "#FFFFFF" : "#94A3B8",
+                        color: isActive ? "#FFFFFF" : "#94A3B8",
                       }}
                     />
 
