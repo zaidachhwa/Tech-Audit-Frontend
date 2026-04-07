@@ -32,15 +32,15 @@ export default function TeacherStudentProgress() {
       const res = await API.get("/syllabus/assigned-syllabi");
       const fetched = res.data?.batches || [];
       setBatchesWithSyllabi(fetched);
-      
+
       // FIX: Map distinct course names and batch numbers separately
-      const simple = fetched.map((b) => ({ 
-        _id: b._id, 
-        courseName: b.batch_name || "Batch", 
-        batchNumber: b.batch_no || "N/A", 
-        studentsCount: b.students?.length || 0 
+      const simple = fetched.map((b) => ({
+        _id: b._id,
+        courseName: b.batch_name || "Batch",
+        batchNumber: b.batch_no || "N/A",
+        studentsCount: b.students?.length || 0
       }));
-      
+
       setBatches(simple);
       if (simple.length === 1) setSelectedBatchId(simple[0]._id);
     } catch { toast.error("Unable to load assigned batches"); }
@@ -130,7 +130,7 @@ export default function TeacherStudentProgress() {
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Batch Selection</p>
           </div>
           <p style={{ color: "#64748B", fontSize: 12, margin: "0 0 16px" }}>Choose a batch to view topic status.</p>
-          
+
           {loading ? (
             <div style={{ textAlign: "center", padding: "30px 0", color: "#94A3B8", fontSize: 13 }}>Loading batches…</div>
           ) : (
