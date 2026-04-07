@@ -128,10 +128,12 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<TeacherSyllabusDashboard />} />
           <Route path="performance" element={<TeacherStudentProgress />} />
-          <Route path="profile" element={<TeacherProfile />} />f
+          <Route path="profile" element={<TeacherProfile />} />
           <Route path="assign-task" element={<AssignTask />} />
           <Route path="assign-syllabus" element={<AssignSyllabus />} />
           <Route path="assign-syllabus/:batchId" element={<AssignSyllabusDetail />} />
+          <Route path="add-reports" element={<AddReport2 />} />
+          <Route path="drafts" element={<Drafts />} />
           <Route path="attendance" element={<TeacherAttendance />} />
           <Route path="grades" element={<TeacherGrades />} />
           <Route path="announcements" element={<TeacherAnnouncements />} />

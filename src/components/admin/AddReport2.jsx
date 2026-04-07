@@ -77,6 +77,26 @@ export default function AddReport2() {
   const removeParameter = (i) =>
     setForm({ ...form, parameters: form.parameters.filter((_, idx) => idx !== i) });
 
+  const saveParametersToLocal = () => {
+    localStorage.setItem("savedParameters", JSON.stringify(form.parameters));
+    toast.success("Parameters saved locally");
+  };
+
+  const loadParametersFromLocal = () => {
+    const saved = localStorage.getItem("savedParameters");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setForm({ ...form, parameters: parsed });
+        toast.success("Parameters loaded");
+      } catch(e) {
+        toast.error("Failed to load parameters");
+      }
+    } else {
+      toast.error("No saved parameters found");
+    }
+  };
+
   // Validation helper
   const validate = () => {
     if (!form.studentId) { toast.error("Please select a student"); return false; }
@@ -242,6 +262,8 @@ export default function AddReport2() {
             <span style={S.sectionTitle}>Parameters</span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button style={{ ...S.previewBtn, background: "#fff", color: "#64748B", border: "0.5px solid #E2E8F0" }} onClick={saveParametersToLocal}>Save Preset</button>
+            <button style={{ ...S.previewBtn, background: "#fff", color: "#64748B", border: "0.5px solid #E2E8F0" }} onClick={loadParametersFromLocal}>Load Preset</button>
             <button style={S.previewBtn} onClick={handlePreview}>Preview PDF</button>
             <button style={{ ...S.addParamBtn, border: "0.5px solid #E2E8F0", padding: "5px 12px", borderRadius: 8 }} onClick={addParameter}>+ Add</button>
           </div>

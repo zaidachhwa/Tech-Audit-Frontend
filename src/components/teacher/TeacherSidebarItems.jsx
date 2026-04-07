@@ -7,6 +7,8 @@ import {
   Megaphone,
   TrendingUp,
   BookOpen,
+  Notebook,
+  FileText,
 } from "lucide-react";
 
 export const teacherSidebarItems = [
@@ -44,6 +46,16 @@ export const teacherSidebarItems = [
     name: "Assign Syllabus",
     icon: BookOpen,
     path: "/teacher/assign-syllabus",
+  },
+  {
+    name: "Add Reports",
+    icon: Notebook,
+    path: "/teacher/add-reports",
+  },
+  {
+    name: "Drafts",
+    icon: FileText,
+    path: "/teacher/drafts",
   },
   {
     name: "Profile",
