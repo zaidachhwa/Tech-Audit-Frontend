@@ -19,7 +19,7 @@ import AdminLogin from './components/admin/AdminLogin';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ProjectTracking from './components/admin/ProjectTracking';
-import BatchStudentsView from './components/admin/BatchStudentsView';
+import AdminBatchDetail from './components/admin/AdminBatchDetail';
 import StudentProjectsView from './components/admin/StudentProjectsView';
 import AdminSyllabusManagement from './components/admin/AdminSyllabusManagement';
 import AllReports from './components/admin/AllReports';
@@ -98,7 +98,7 @@ export default function App() {
           <Route path="project-tracking" element={<ProjectTracking />} />
           <Route
             path="project-tracking/batch/:batchId"
-            element={<BatchStudentsView />}
+            element={<AdminBatchDetail />}
           />
           <Route
             path="project-tracking/student/:studentId"

@@ -15,7 +15,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import { useNavigate } from "react-router-dom";
+
 export default function AdminBatches() {
+  const navigate = useNavigate();
   const [batches, setBatches] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -226,7 +229,9 @@ export default function AdminBatches() {
           <tbody>
             {filteredBatches.map((b, i) => (
               <tr key={b._id} className={`${i % 2 === 0 ? "" : "bg-[#F8FAFC]"}`}>
-                <td className="px-6 py-4 text-[14px] text-[#1B2B4B]">{b.batch_name}</td>
+                <td className="px-6 py-4 text-[14px] font-bold text-[#2563EB] cursor-pointer hover:underline" onClick={() => navigate(`/admin/project-tracking/batch/${b._id}`)}>
+                  {b.batch_name}
+                </td>
                 <td className="px-6 py-4 text-[14px] text-[#64748B]">#{b.batch_no}</td>
                 <td className="px-6 py-4 text-[14px] text-[#64748B]">
                   {b.students?.length || 0}
