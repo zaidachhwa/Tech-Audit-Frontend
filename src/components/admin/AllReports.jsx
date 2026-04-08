@@ -10,6 +10,7 @@ export default function ReportsList() {
 
   const [selectedReport, setSelectedReport] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteBatchTarget, setDeleteBatchTarget] = useState(null);
 
   const groupedReports = useMemo(() => {
     const groups = {};
@@ -47,6 +48,20 @@ export default function ReportsList() {
       fetchReports();
     } catch {
       toast.error('Delete failed');
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    try {
+      if (!deleteBatchTarget || deleteBatchTarget.length === 0) return;
+      setLoading(true);
+      await Promise.all(deleteBatchTarget.map(r => API.delete(`/reports/${r._id}`)));
+      toast.success(`Deleted ${deleteBatchTarget.length} reports`);
+      setDeleteBatchTarget(null);
+      fetchReports();
+    } catch {
+      toast.error('Batch delete failed');
+      setLoading(false);
     }
   };
 
@@ -108,6 +123,7 @@ export default function ReportsList() {
               reports={batchReports}
               onSelectedReport={setSelectedReport}
               onDeleteTarget={setDeleteTarget}
+              onDeleteBatch={() => setDeleteBatchTarget(batchReports)}
             />
           ))
         )}
@@ -217,7 +233,11 @@ export default function ReportsList() {
               />
               <Info
                 label="Audit Date"
-                value={new Date(selectedReport.auditDate).toLocaleDateString()}
+                value={new Date(selectedReport.auditDate).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric"
+                })}
               />
             </div>
 
@@ -341,13 +361,43 @@ export default function ReportsList() {
           </Modal>
         )}
       </AnimatePresence>
+
+      {/* ================= BATCH DELETE MODAL ================= */}
+      <AnimatePresence>
+        {deleteBatchTarget && (
+          <Modal onClose={() => setDeleteBatchTarget(null)}>
+            <h2 className="font-semibold mb-3" style={{ color: "#EF4444", fontSize: "18px", fontWeight: "700" }}>
+              Delete All Reports
+            </h2>
+            <p className="text-sm mb-6" style={{ color: "#64748B" }}>
+              Are you sure you want to delete all {deleteBatchTarget.length} reports for this batch? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteBatchTarget(null)}
+                className="px-4 py-2 rounded-lg font-medium transition"
+                style={{ backgroundColor: "#FFFFFF", border: "1.5px solid #E2E8F0", color: "#1B2B4B", borderRadius: "8px" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBatchDelete}
+                className="px-4 py-2 rounded-lg text-white font-medium transition disabled:opacity-50"
+                style={{ backgroundColor: "#EF4444", borderRadius: "8px" }}
+              >
+                Delete All
+              </button>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 /* ================= REUSABLE COMPONENTS ================= */
 
-function BatchAccordion({ batchName, reports, onSelectedReport, onDeleteTarget }) {
+function BatchAccordion({ batchName, reports, onSelectedReport, onDeleteTarget, onDeleteBatch }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -360,8 +410,7 @@ function BatchAccordion({ batchName, reports, onSelectedReport, onDeleteTarget }
         boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
       }}
     >
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
+      <div 
         className="w-full flex items-center justify-between p-4 transition"
         style={{
           backgroundColor: "#F8FAFC",
@@ -374,7 +423,10 @@ function BatchAccordion({ batchName, reports, onSelectedReport, onDeleteTarget }
           e.currentTarget.style.backgroundColor = "#F8FAFC";
         }}
       >
-        <div className="flex items-center gap-3">
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex flex-1 items-center gap-3 text-left focus:outline-none"
+        >
           {isOpen ? (
             <ChevronDown className="w-5 h-5" style={{ color: "#94A3B8" }} />
           ) : (
@@ -396,8 +448,23 @@ function BatchAccordion({ batchName, reports, onSelectedReport, onDeleteTarget }
           >
             {reports.length} report{reports.length !== 1 ? 's' : ''}
           </span>
-        </div>
-      </button>
+        </button>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onDeleteBatch(); }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition ml-4"
+          style={{
+            backgroundColor: "#FEF2F2",
+            color: "#EF4444",
+            border: "1px solid #FCA5A5"
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#FEE2E2"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#FEF2F2"; }}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Delete All
+        </button>
+      </div>
 
       <AnimatePresence>
         {isOpen && (
@@ -483,7 +550,11 @@ function BatchAccordion({ batchName, reports, onSelectedReport, onDeleteTarget }
                         {r.student?.email}
                       </td>
                       <td className="px-4 py-3" style={{ color: "#64748B" }}>
-                        {new Date(r.auditDate).toLocaleDateString()}
+                        {new Date(r.auditDate).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric"
+                        })}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center gap-2">
