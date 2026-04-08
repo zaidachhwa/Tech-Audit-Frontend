@@ -105,6 +105,7 @@ export default function App() {
             element={<StudentProjectsView />}
           />
           <Route path="add-reports" element={<AddReport2 />} />
+          <Route path="assign-task" element={<AssignTask />} />
           <Route path="syllabus" element={<AdminSyllabusManagement />} />
           <Route path="all-reports" element={<AllReports />} />
           <Route path="drafts" element={<Drafts />} />

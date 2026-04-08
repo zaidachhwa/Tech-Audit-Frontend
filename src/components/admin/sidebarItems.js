@@ -8,6 +8,7 @@ import {
   Notebook,
   FileText,
   BarChart3,
+  ClipboardList
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -35,6 +36,11 @@ export const adminSidebarItems = [
     name: "Syllabus Tracker",
     path: "/admin/syllabus",
     icon: BookOpen,
+  },
+  {
+    name: "Assign Task",
+    path: "/admin/assign-task",
+    icon: ClipboardList,
   },
   {
     name: "Project Tracking",
