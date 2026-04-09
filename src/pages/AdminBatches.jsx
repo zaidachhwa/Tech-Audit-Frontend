@@ -63,7 +63,7 @@ export default function AdminBatches() {
     try {
       const res = await API.get("/students/list");
       setStudents(res.data?.students || []);
-    } catch {}
+    } catch { }
   };
 
   const handleCreate = async (e) => {
@@ -79,7 +79,7 @@ export default function AdminBatches() {
       setShowCreate(false);
       fetchBatches();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed");
+      toast.error(err?.response?.data?.message || "Batch already exists");
     }
   };
 
@@ -152,9 +152,9 @@ export default function AdminBatches() {
     avgStudents:
       batches.length > 0
         ? Math.round(
-            batches.reduce((s, b) => s + (b.students?.length || 0), 0) /
-              batches.length
-          )
+          batches.reduce((s, b) => s + (b.students?.length || 0), 0) /
+          batches.length
+        )
         : 0,
   };
 
@@ -237,8 +237,8 @@ export default function AdminBatches() {
                   {b.students?.length || 0}
                 </td>
                 <td className="px-6 py-4 text-right flex justify-end gap-2">
-                  <button onClick={()=>openEdit(b)} className="text-[#2563EB] hover:bg-[#EFF6FF] p-2 rounded"> <Edit2 size={14}/> </button>
-                  <button onClick={()=>handleDelete(b._id)} className="text-[#EF4444] hover:bg-[#FEE2E2] p-2 rounded"> <Trash2 size={14}/> </button>
+                  <button onClick={() => openEdit(b)} className="text-[#2563EB] hover:bg-[#EFF6FF] p-2 rounded"> <Edit2 size={14} /> </button>
+                  <button onClick={() => handleDelete(b._id)} className="text-[#EF4444] hover:bg-[#FEE2E2] p-2 rounded"> <Trash2 size={14} /> </button>
                 </td>
               </tr>
             ))}

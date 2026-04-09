@@ -484,65 +484,97 @@ function BatchAccordion({
         {isOpen && (
           <motion.div
             initial={{ height: 0 }}
-            animate={{ height: 'auto' }}
+            animate={{ height: "auto" }}
             exit={{ height: 0 }}
             className="overflow-hidden"
           >
-            <div className="p-4 overflow-x-auto">
+            <div className="p-4 space-y-3 bg-[#F8FAFC]">
+              {Object.entries(
+                reports.reduce((acc, r) => {
+                  const studentId = r.student?._id || "unknown";
+                  if (!acc[studentId]) acc[studentId] = [];
+                  acc[studentId].push(r);
+                  return acc;
+                }, {})
+              ).map(([studentId, studentReports]) => (
+                <StudentAccordion
+                  key={studentId}
+                  student={studentReports[0].student}
+                  reports={studentReports}
+                  onSelectedReport={onSelectedReport}
+                  onDeleteTarget={onDeleteTarget}
+                  navigate={navigate}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function StudentAccordion({
+  student,
+  reports,
+  onSelectedReport,
+  onDeleteTarget,
+  navigate,
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #E2E8F0",
+        borderRadius: 8,
+        overflow: "hidden",
+      }}
+    >
+      {/* Student Row */}
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between px-4 py-2.5 cursor-pointer bg-white hover:bg-gray-50 transition"
+      >
+        <div className="flex items-center gap-3">
+          {isOpen ? (
+            <ChevronDown size={14} className="text-[#94A3B8]" />
+          ) : (
+            <ChevronRight size={14} className="text-[#94A3B8]" />
+          )}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center text-xs font-bold">
+              {student?.name?.charAt(0)}
+            </div>
+            <span className="font-bold text-[#2563EB] hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/admin/student/${student?._id}`); }}>
+              {student?.name}
+            </span>
+          </div>
+          <span className="text-[11px] text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-full font-medium">
+            {reports.length} {reports.length === 1 ? "report" : "reports"}
+          </span>
+        </div>
+        <div className="text-xs text-[#94A3B8]">{student?.email}</div>
+      </div>
+
+      {/* Reports Table under Student */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: "auto" }}
+            exit={{ height: 0 }}
+            className="overflow-hidden border-t border-[#F1F5F9]"
+          >
+            <div className="p-3">
               <table className="w-full text-sm">
-                <thead
-                  style={{
-                    backgroundColor: '#F8FAFC',
-                    borderBottom: '1px solid #F1F5F9',
-                  }}
-                >
+                <thead className="bg-[#F8FAFC]">
                   <tr>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
-                      style={{
-                        color: '#64748B',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Student
-                    </th>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
-                      style={{
-                        color: '#64748B',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Email
-                    </th>
-                    <th
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
-                      style={{
-                        color: '#64748B',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
+                    <th className="px-4 py-2 text-left text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
                       Audit Date
                     </th>
-                    <th
-                      className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide"
-                      style={{
-                        color: '#64748B',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
+                    <th className="px-4 py-2 text-center text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -551,78 +583,31 @@ function BatchAccordion({
                   {reports.map((r, idx) => (
                     <tr
                       key={r._id}
-                      style={{
-                        backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC',
-                        borderBottom: '1px solid #F1F5F9',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#F1F5F9';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
-                      }}
+                      className="border-b border-[#F1F5F9] last:border-0"
                     >
-                      <td
-                        className="px-4 py-3 font-bold"
-                        style={{ color: '#2563EB' }}
-                      >
-                        <button 
-                          onClick={() => navigate(`/admin/student/${r.student?._id}`)}
-                          className="hover:underline text-left"
-                        >
-                          {r.student?.name}
-                        </button>
+                      <td className="px-4 py-2.5 text-[#1B2B4B] font-medium">
+                        <div className="flex items-center gap-2">
+                          <FileText size={14} className="text-[#94A3B8]" />
+                          {new Date(r.auditDate).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </div>
                       </td>
-                      <td className="px-4 py-3" style={{ color: '#94A3B8' }}>
-                        {r.student?.email}
-                      </td>
-                      <td className="px-4 py-3" style={{ color: '#64748B' }}>
-                        {new Date(r.auditDate).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-2.5">
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => onSelectedReport(r)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-xs font-medium transition"
-                            style={{
-                              backgroundColor: '#2563EB',
-                              borderRadius: '6px',
-                              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#1E40AF';
-                              e.currentTarget.style.boxShadow =
-                                '0 4px 12px rgba(37, 99, 235, 0.4)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#2563EB';
-                              e.currentTarget.style.boxShadow =
-                                '0 2px 8px rgba(37, 99, 235, 0.3)';
-                            }}
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold bg-[#2563EB] hover:bg-[#1E40AF] transition"
                           >
-                            <Eye className="w-4 h-4" /> View
+                            <Eye size={13} /> View
                           </button>
                           <button
                             onClick={() => onDeleteTarget(r)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-                            style={{
-                              backgroundColor: '#FEF2F2',
-                              color: '#EF4444',
-                              borderRadius: '6px',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#FEE2E2';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#FEF2F2';
-                            }}
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-md text-[#EF4444] text-xs font-semibold bg-[#FEF2F2] hover:bg-[#FEE2E2] transition"
                           >
-                            <Trash2 className="w-4 h-4" /> Delete
+                            <Trash2 size={13} /> Delete
                           </button>
                         </div>
                       </td>

@@ -1,4 +1,4 @@
-import axios from "axios";
+import { API } from "../api/axios";
 import { useEffect, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -193,9 +193,12 @@ const AdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`${VITE_API_URL}/analytics`)
+    API.get("/analytics")
       .then(res => { setData(res.data); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch((err) => { 
+        console.error("Analytics Error:", err);
+        setLoading(false); 
+      });
   }, []);
 
   return (
