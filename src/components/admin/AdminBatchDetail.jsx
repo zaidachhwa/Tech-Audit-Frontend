@@ -257,7 +257,7 @@ export default function AdminBatchDetail() {
                     </div>
                   </div>
 
-                  <h3 className="font-bold mb-2 text-[#1B2B4B] text-[18px]">
+                  <h3 className="font-bold mb-2 text-[#2563EB] text-[18px] group-hover:underline">
                     {student.name}
                   </h3>
 

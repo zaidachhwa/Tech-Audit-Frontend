@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
 import { TrendingUp, Users, Award, ChevronDown, Save, RefreshCw, Star, Search } from "lucide-react";
@@ -25,6 +26,7 @@ function getGrade(score, max) {
 }
 
 export default function TeacherGrades() {
+  const navigate = useNavigate();
   const [batches, setBatches] = useState([]);
   const [selectedBatch, setSelectedBatch] = useState("");
   const [students, setStudents] = useState([]);
@@ -211,7 +213,13 @@ export default function TeacherGrades() {
                       <td style={{ padding: "10px 18px", whiteSpace: "nowrap" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{(s.name || "?")[0]}</div>
-                          <span style={{ fontWeight: 600, color: "#1B2B4B" }}>{s.name}</span>
+                          <button 
+                            onClick={() => navigate(`/teacher/student-profile/${s._id}`)}
+                            style={{ fontWeight: 700, color: "#2563EB", border: "none", background: "none", padding: 0, cursor: "pointer", fontSize: 13 }}
+                            className="hover:underline"
+                          >
+                            {s.name}
+                          </button>
                         </div>
                       </td>
                       {assignments.map((a) => (

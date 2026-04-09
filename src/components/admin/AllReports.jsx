@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API } from '../../api/axios';
 import {
   FileText,
@@ -13,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function ReportsList() {
+  const navigate = useNavigate();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -140,6 +142,7 @@ export default function ReportsList() {
                 onSelectedReport={setSelectedReport}
                 onDeleteTarget={setDeleteTarget}
                 onDeleteBatch={() => setDeleteBatchTarget(batchReports)}
+                navigate={navigate}
               />
             ))
         )}
@@ -400,6 +403,7 @@ function BatchAccordion({
   onSelectedReport,
   onDeleteTarget,
   onDeleteBatch,
+  navigate,
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -560,10 +564,15 @@ function BatchAccordion({
                       }}
                     >
                       <td
-                        className="px-4 py-3 font-medium"
-                        style={{ color: '#1B2B4B' }}
+                        className="px-4 py-3 font-bold"
+                        style={{ color: '#2563EB' }}
                       >
-                        {r.student?.name}
+                        <button 
+                          onClick={() => navigate(`/admin/student/${r.student?._id}`)}
+                          className="hover:underline text-left"
+                        >
+                          {r.student?.name}
+                        </button>
                       </td>
                       <td className="px-4 py-3" style={{ color: '#94A3B8' }}>
                         {r.student?.email}

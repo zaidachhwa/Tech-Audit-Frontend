@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { API } from "../../api/axios";
 import { Calendar, Eye, Trash2, Layers, ChevronRight, Users, Hash, Search } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Drafts() {
+  const navigate = useNavigate();
   const [drafts, setDrafts] = useState([]);
   const [previewPdfUrl, setPreviewPdfUrl] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -342,8 +344,13 @@ export default function Drafts() {
                                           e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC";
                                         }}
                                       >
-                                        <td className="px-4 py-3 font-medium text-sm" style={{ color: "#1B2B4B" }}>
-                                          {d.student?.name}
+                                        <td className="px-4 py-3 font-bold text-sm" style={{ color: "#2563EB" }}>
+                                          <button 
+                                            onClick={() => navigate(`/admin/student/${d.student?._id}`)}
+                                            className="hover:underline text-left"
+                                          >
+                                            {d.student?.name}
+                                          </button>
                                         </td>
                                         <td className="px-4 py-3 text-sm" style={{ color: "#94A3B8" }}>
                                           <div className="flex items-center gap-1">

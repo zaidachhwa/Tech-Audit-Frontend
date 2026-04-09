@@ -235,7 +235,7 @@ export default function AdminStudents() {
                   <div className="w-8 h-8 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-sm font-bold">
                     {s.name.charAt(0)}
                   </div>
-                  <Link to={`/admin/student/${s._id}`} className="text-[14px] text-[#1B2B4B] font-medium">
+                  <Link to={`/admin/student/${s._id}`} className="text-[14px] text-[#2563EB] font-bold hover:underline">
                     {s.name}
                   </Link>
                 </td>

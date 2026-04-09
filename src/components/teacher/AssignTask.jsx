@@ -4,15 +4,15 @@ import toast, { Toaster } from "react-hot-toast";
 import { ClipboardList, Plus, X, User, Users, Send, Loader2, CheckCircle, Clock } from "lucide-react";
 
 const S = {
-  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px" },
-  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, padding: "22px 24px", marginBottom: 20 },
-  pageTitle: { fontSize: 20, fontWeight: 700 },
-  label: { fontSize: 11, fontWeight: 600, marginBottom: 8, display: "block" },
-  input: { border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px", width: "100%" },
-  select: { border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px", width: "100%" },
-  primaryBtn: { background: "#2563EB", color: "#fff", borderRadius: 8, padding: "10px 20px", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 },
-  secondaryBtn: { border: "1px solid #ccc", borderRadius: 8, padding: "8px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 },
-  sectionTitle: { fontWeight: 700, marginBottom: 10, display: "flex", gap: 8, alignItems: "center" },
+  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
+  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, padding: "22px 24px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
+  pageTitle: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 },
+  label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B", marginBottom: 8, display: "block" },
+  input: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#1B2B4B", width: "100%", outline: "none", fontFamily: "'DM Sans', sans-serif" },
+  select: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#1B2B4B", width: "100%", outline: "none", fontFamily: "'DM Sans', sans-serif" },
+  primaryBtn: { background: "#2563EB", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "'DM Sans', sans-serif" },
+  secondaryBtn: { background: "#fff", color: "#1B2B4B", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "8px 12px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "'DM Sans', sans-serif" },
+  sectionTitle: { fontSize: 14, fontWeight: 700, color: "#1B2B4B", marginBottom: 12, display: "flex", gap: 8, alignItems: "center" },
 };
 
 function SelectField({ label, value, onChange, children, disabled }) {
@@ -141,7 +141,16 @@ export default function AssignTask() {
       <Toaster />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      <h1 style={S.pageTitle}>Assign Project</h1>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <div style={{ width: 4, height: 20, background: "#2563EB", borderRadius: 4 }} />
+            <h1 style={S.pageTitle}>Assign Project</h1>
+          </div>
+          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Assign new projects or tasks to your batches or individual students.</p>
+        </div>
+      </div>
 
       {/* Batch Info */}
       <div style={S.card}>
@@ -330,17 +339,16 @@ export default function AssignTask() {
           <Plus size={14} /> Add Parameter
         </button>
         <div className="mt-4">
-  <label className="text-sm text-gray-600 mb-1 block">
-    Assignment Description / Comments
-  </label>
-
-  <textarea
-    value={comment}
-    onChange={(e) => setComment(e.target.value)}
-    placeholder="Write instructions, notes, expectations..."
-    className="border rounded-lg p-3 w-full min-h-[100px]"
-  />
-</div>
+          <label style={S.label}>
+            Assignment Description / Comments
+          </label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Write instructions, notes, expectations..."
+            style={{ ...S.input, minHeight: 100, textAlign: "left" }}
+          />
+        </div>
       </div>
       
 

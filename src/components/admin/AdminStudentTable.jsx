@@ -1,5 +1,6 @@
 // src/components/admin/AdminStudentTable.jsx
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { API } from "../../api/axios";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
@@ -11,6 +12,7 @@ import {
 } from "../../api/student.api";
 
 export default function AdminStudentTable({ onRefresh, batches = [] }) {
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -224,7 +226,12 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
               filtered.map((s) => (
                 <tr key={s._id} className="border-b border-white/30">
                   <td className="p-3">
-                    <div className="font-medium text-gray-800">{s.name}</div>
+                    <div 
+                      className="font-bold text-[#2563EB] cursor-pointer hover:underline"
+                      onClick={() => navigate(`/admin/student/${s._id}`)}
+                    >
+                      {s.name}
+                    </div>
                     <div className="text-xs text-gray-500">ID: {s._id}</div>
                   </td>
 
