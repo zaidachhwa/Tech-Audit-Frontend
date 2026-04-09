@@ -265,7 +265,7 @@ export default function AdminLogin() {
                 disabled={loading}
                 style={{
                   width: "100%", padding: "11px",
-                  backgroundColor: "#eb2525", color: "#FFFFFF",
+                  backgroundColor: "#2563EB", color: "#FFFFFF",
                   border: "none", borderRadius: "8px",
                   fontWeight: "600", fontSize: "14px",
                   cursor: loading ? "not-allowed" : "pointer",
