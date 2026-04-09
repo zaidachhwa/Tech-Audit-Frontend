@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
-import { TrendingUp, Users, Award, ChevronDown, Save, RefreshCw, Star } from "lucide-react";
+import { TrendingUp, Users, Award, ChevronDown, Save, RefreshCw, Star, Search } from "lucide-react";
 
 const S = {
   page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
@@ -34,6 +34,7 @@ export default function TeacherGrades() {
   const [grades, setGrades] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     API.get("/batches/public").then((r) => setBatches(r.data || [])).catch(console.error);
@@ -90,6 +91,8 @@ export default function TeacherGrades() {
     const vals = students.map((s) => parseFloat(grades[s._id]?.[assignment])).filter((v) => !isNaN(v));
     return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : "—";
   };
+
+  const filteredStudents = students.filter(s => (s.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div style={S.page}>
@@ -152,9 +155,23 @@ export default function TeacherGrades() {
 
       {/* Grades Table */}
       <div style={S.card}>
-        <div style={{ padding: "16px 22px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
-          <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Grade Sheet</p>
+        <div style={{ padding: "14px 22px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
+            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Grade Sheet</p>
+          </div>
+          {students.length > 0 && (
+            <div style={{ position: "relative", width: 260 }}>
+              <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
+              <input
+                type="text"
+                placeholder="Search student by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ ...S.input, width: "100%", textAlign: "left", padding: "8px 12px 8px 34px", border: "1px solid #E2E8F0" }}
+              />
+            </div>
+          )}
         </div>
         <div style={{ overflowX: "auto", padding: 0 }}>
           {!selectedBatch ? (
@@ -179,7 +196,14 @@ export default function TeacherGrades() {
                 </tr>
               </thead>
               <tbody>
-                {students.map((s, i) => {
+                {filteredStudents.length === 0 && students.length > 0 ? (
+                  <tr>
+                    <td colSpan={assignments.length + 2} style={{ textAlign: "center", padding: "40px", color: "#64748B", fontSize: 13 }}>
+                      No students found matching "{searchQuery}"
+                    </td>
+                  </tr>
+                ) : (
+                filteredStudents.map((s, i) => {
                   const avg = avgScore(s._id);
                   const gd = getGrade(avg, 100);
                   return (
@@ -208,7 +232,7 @@ export default function TeacherGrades() {
                       </td>
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
             </table>
           )}
