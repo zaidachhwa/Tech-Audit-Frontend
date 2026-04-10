@@ -180,9 +180,10 @@ export default function AdminBatches() {
 
           <button
             onClick={() => setShowCreate(true)}
-            className="bg-[#2563EB] text-white px-4 py-2 rounded-lg text-sm font-medium"
+            className="bg-[#2563EB] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 whitespace-nowrap shadow-sm hover:bg-[#1E40AF] transition-colors"
           >
-            <Plus size={14} /> Create
+            <Plus size={16} strokeWidth={3} />
+            <span>Create</span>
           </button>
         </div>
       </div>
