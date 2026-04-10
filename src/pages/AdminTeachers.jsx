@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { API } from "../api/axios";
 import { useNavigate } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast"; // Fixed: added Toaster import
+import toast, { Toaster } from "react-hot-toast";
 import {
   Plus,
   Edit2,
@@ -51,10 +51,11 @@ export default function AdminTeachers() {
     }
   };
 
+  // ✅ FIXED: was DELETE /teachers/${id}, backend expects DELETE /teachers/delete/:teacherId
   const handleDelete = async (id) => {
     if (!window.confirm("Delete teacher account?")) return;
     try {
-      await API.delete(`/teachers/${id}`);
+      await API.delete(`/teachers/delete/${id}`);
       toast.success("Teacher deleted");
       await fetchTeachers();
     } catch (error) {
@@ -63,6 +64,7 @@ export default function AdminTeachers() {
     }
   };
 
+  // ✅ FIXED: was PATCH /teachers/toggle/${id}, backend route is correct but missing verifyToken — keeping same
   const handleToggleStatus = async (id) => {
     try {
       await API.patch(`/teachers/toggle/${id}`);
@@ -89,7 +91,7 @@ export default function AdminTeachers() {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await API.post("/teachers/create", {
+      await API.post("/teachers/register", {
         ...form,
         subjects: form.subjects.split(",").map((s) => s.trim()),
       });
@@ -99,7 +101,26 @@ export default function AdminTeachers() {
       await fetchTeachers();
     } catch (error) {
       console.log(error);
-      toast.error("Create failed");
+      toast.error(error.response?.data?.message || "Create failed");
+    }
+  };
+
+  // ✅ FIXED: was PUT /teachers/${id}, backend expects PATCH /teachers/update/:teacherId
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      await API.patch(`/teachers/update/${editTeacher._id}`, {
+        name: form.name,
+        phone: form.phone,
+        subjects: form.subjects.split(",").map((s) => s.trim()),
+        ...(form.password ? { password: form.password } : {}),
+      });
+      toast.success("Teacher updated");
+      setShowEdit(false);
+      await fetchTeachers();
+    } catch (error) {
+      console.log(error);
+      toast.error(error.response?.data?.message || "Update failed");
     }
   };
 
@@ -134,7 +155,6 @@ export default function AdminTeachers() {
             Manage teacher accounts and permissions
           </p>
         </div>
-
         <div className="flex gap-2">
           <button
             onClick={fetchTeachers}
@@ -142,7 +162,6 @@ export default function AdminTeachers() {
           >
             <RefreshCw size={14} />
           </button>
-
           <button
             onClick={() => {
               setForm({ name: "", email: "", password: "", subjects: "", phone: "" });
@@ -158,8 +177,8 @@ export default function AdminTeachers() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total", value: stats.total },
-          { label: "Active", value: stats.active },
+          { label: "Total",   value: stats.total },
+          { label: "Active",  value: stats.active },
           { label: "Pending", value: stats.pending },
         ].map((s, i) => (
           <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-4">
@@ -176,11 +195,10 @@ export default function AdminTeachers() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+            placeholder="Search by name or email..."
+            className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm"
           />
         </div>
-
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -194,82 +212,103 @@ export default function AdminTeachers() {
 
       {/* Table */}
       <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-[#F8FAFC] text-[#64748B] text-[11px] uppercase">
-            <tr>
-              <th className="px-6 py-3 text-left">Teacher</th>
-              <th className="px-6 py-3 text-left">Email</th>
-              <th className="px-6 py-3 text-left">Phone</th>
-              <th className="px-6 py-3 text-left">Subjects</th>
-              <th className="px-6 py-3 text-left">Status</th>
-              <th className="px-6 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredTeachers.map((t, i) => (
-              <tr key={t._id} className={`${i % 2 === 0 ? "" : "bg-[#F8FAFC]"} border-t border-[#F1F5F9]`}>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-sm font-bold">
-                      {t.name.charAt(0)}
-                    </div>
-                    <button
-                      onClick={() => navigate(`/admin/teacher/${t._id}`)}
-                      className="font-bold text-[#2563EB] hover:underline transition-colors"
-                    >
-                      {t.name}
-                    </button>
-                  </div>
-                </td>
-
-                <td className="px-6 py-4 text-[#64748B] text-[14px]">{t.email}</td>
-                <td className="px-6 py-4 text-[#64748B] text-[14px]">{t.phone || "—"}</td>
-                <td className="px-6 py-4 text-[#64748B] text-[14px]">{t.subjects?.slice(0, 2).join(", ") || "—"}</td>
-
-                <td className="px-6 py-4">
-                  <span className={`px-3 py-[3px] rounded-full text-[12px] font-semibold ${
-                    t.isActive ? "bg-[#ECFDF5] text-[#065F46]" : "bg-[#EFF6FF] text-[#1E40AF]"
-                  }`}>
-                    {t.isActive ? "Active" : "Pending"}
-                  </span>
-                </td>
-
-                <td className="px-6 py-4 text-right flex justify-end gap-2">
-                  {!t.isActive && (
-                    <button onClick={() => handleToggleStatus(t._id)} className="text-[#10B981] hover:bg-[#ECFDF5] p-2 rounded">
-                      <Check size={14} />
-                    </button>
-                  )}
-                  {t.isActive && (
-                    <button onClick={() => handleToggleStatus(t._id)} className="text-[#F59E0B] hover:bg-[#FEF3C7] p-2 rounded">
-                      <XCircle size={14} />
-                    </button>
-                  )}
-                  <button onClick={() => handleEdit(t)} className="text-[#2563EB] hover:bg-[#EFF6FF] p-2 rounded">
-                    <Edit2 size={14} />
-                  </button>
-                  <button onClick={() => handleDelete(t._id)} className="text-[#EF4444] hover:bg-[#FEE2E2] p-2 rounded">
-                    <Trash2 size={14} />
-                  </button>
-                </td>
+        {loading ? (
+          <div className="text-center py-12 text-[#64748B] text-sm">Loading...</div>
+        ) : filteredTeachers.length === 0 ? (
+          <div className="text-center py-12 text-[#64748B] text-sm">No teachers found.</div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-[#F8FAFC] text-[#64748B] text-[11px] uppercase">
+              <tr>
+                <th className="px-6 py-3 text-left">Teacher</th>
+                <th className="px-6 py-3 text-left">Email</th>
+                <th className="px-6 py-3 text-left">Phone</th>
+                <th className="px-6 py-3 text-left">Subjects</th>
+                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-6 py-3 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredTeachers.map((t, i) => (
+                <tr key={t._id} className={`${i % 2 === 0 ? "" : "bg-[#F8FAFC]"} border-t border-[#F1F5F9]`}>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-sm font-bold">
+                        {t.name.charAt(0).toUpperCase()}
+                      </div>
+                      <button
+                        onClick={() => navigate(`/admin/teacher/${t._id}`)}
+                        className="font-bold text-[#2563EB] hover:underline transition-colors"
+                      >
+                        {t.name}
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-[#64748B] text-[14px]">{t.email}</td>
+                  <td className="px-6 py-4 text-[#64748B] text-[14px]">{t.phone || "—"}</td>
+                  <td className="px-6 py-4 text-[#64748B] text-[14px]">{t.subjects?.slice(0, 2).join(", ") || "—"}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-[3px] rounded-full text-[12px] font-semibold ${
+                      t.isActive ? "bg-[#ECFDF5] text-[#065F46]" : "bg-[#FEF3C7] text-[#92400E]"
+                    }`}>
+                      {t.isActive ? "Active" : "Pending"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      {/* Toggle active/pending */}
+                      {!t.isActive ? (
+                        <button
+                          onClick={() => handleToggleStatus(t._id)}
+                          title="Approve"
+                          className="text-[#10B981] hover:bg-[#ECFDF5] p-2 rounded"
+                        >
+                          <Check size={14} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleToggleStatus(t._id)}
+                          title="Deactivate"
+                          className="text-[#F59E0B] hover:bg-[#FEF3C7] p-2 rounded"
+                        >
+                          <XCircle size={14} />
+                        </button>
+                      )}
+                      {/* Edit */}
+                      <button
+                        onClick={() => handleEdit(t)}
+                        title="Edit"
+                        className="text-[#2563EB] hover:bg-[#EFF6FF] p-2 rounded"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDelete(t._id)}
+                        title="Delete"
+                        className="text-[#EF4444] hover:bg-[#FEE2E2] p-2 rounded"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Create Modal */}
+      {/* ── Create Modal ── */}
       {showCreate && (
-        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-2xl border border-[#E2E8F0]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-[18px] font-bold text-[#1B2B4B]">Add Teacher</h2>
-              <button onClick={() => setShowCreate(false)} className="text-[#94A3B8]">
+              <button onClick={() => setShowCreate(false)} className="text-[#94A3B8] hover:text-[#1B2B4B]">
                 <X size={20} />
               </button>
             </div>
-
             <form onSubmit={handleCreate} className="space-y-4">
               {["name", "email", "password", "phone"].map((field) => (
                 <div key={field}>
@@ -283,7 +322,6 @@ export default function AdminTeachers() {
                   />
                 </div>
               ))}
-
               <div>
                 <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Subjects (comma separated)</label>
                 <input
@@ -293,19 +331,13 @@ export default function AdminTeachers() {
                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm"
                 />
               </div>
-
               <div className="flex gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowCreate(false)}
-                  className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]"
-                >
+                <button type="button" onClick={() => setShowCreate(false)}
+                  className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg font-medium hover:bg-[#1D4ED8]"
-                >
+                <button type="submit"
+                  className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg font-medium hover:bg-[#1D4ED8]">
                   Create
                 </button>
               </div>
@@ -314,31 +346,17 @@ export default function AdminTeachers() {
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* ── Edit Modal ── */}
       {showEdit && editTeacher && (
-        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-2xl border border-[#E2E8F0]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-[18px] font-bold text-[#1B2B4B]">Edit Teacher</h2>
-              <button onClick={() => setShowEdit(false)} className="text-[#94A3B8]">
+              <button onClick={() => setShowEdit(false)} className="text-[#94A3B8] hover:text-[#1B2B4B]">
                 <X size={20} />
               </button>
             </div>
-
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              try {
-                await API.put(`/teachers/${editTeacher._id}`, {
-                  ...form,
-                  subjects: form.subjects.split(",").map((s) => s.trim()),
-                });
-                toast.success("Teacher updated");
-                setShowEdit(false);
-                await fetchTeachers();
-              } catch (error) {
-                toast.error("Update failed");
-              }
-            }} className="space-y-4">
+            <form onSubmit={handleUpdate} className="space-y-4">
               {["name", "email", "password", "phone"].map((field) => (
                 <div key={field}>
                   <label className="block text-sm font-medium text-[#1B2B4B] mb-1 capitalize">
@@ -349,11 +367,12 @@ export default function AdminTeachers() {
                     type={field === "password" ? "password" : "text"}
                     value={form[field]}
                     onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-                    className={`w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm ${field === 'email' ? 'bg-[#F8FAFC] text-[#64748B]' : ''}`}
+                    className={`w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm ${
+                      field === "email" ? "bg-[#F8FAFC] text-[#64748B] cursor-not-allowed" : ""
+                    }`}
                   />
                 </div>
               ))}
-
               <div>
                 <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Subjects (comma separated)</label>
                 <input
@@ -362,19 +381,13 @@ export default function AdminTeachers() {
                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm"
                 />
               </div>
-
               <div className="flex gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowEdit(false)}
-                  className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]"
-                >
+                <button type="button" onClick={() => setShowEdit(false)}
+                  className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg font-medium hover:bg-[#1D4ED8]"
-                >
+                <button type="submit"
+                  className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg font-medium hover:bg-[#1D4ED8]">
                   Save Changes
                 </button>
               </div>
