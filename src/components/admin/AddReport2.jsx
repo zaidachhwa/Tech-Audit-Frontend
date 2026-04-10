@@ -40,6 +40,8 @@ export default function AddReport2() {
     feedbackSchema: { point1: "", point2: "", point3: "" },
     overallRemarks: "",
     auditDate: "",
+    isAutoFilled: false,
+    existingStatus: ""
   });
 
   useEffect(() => {
@@ -60,6 +62,41 @@ export default function AddReport2() {
     );
     setFilteredStudents(filtered);
   }, [form.batch_name, form.batch_no, students]);
+
+  // 🔥 AUTO-FILL LOGIC: Fetch existing report/draft when student + date are selected
+  useEffect(() => {
+    if (!form.studentId || !form.auditDate) return;
+
+    const autoFill = async () => {
+      try {
+        const res = await API.get(`/reports/lookup?studentId=${form.studentId}&auditDate=${form.auditDate}`);
+        if (res.data) {
+          const existing = res.data;
+          setForm(prev => ({
+            ...prev,
+            parameters: existing.parameters?.length ? existing.parameters : prev.parameters,
+            feedbackSchema: existing.feedbackSchema || prev.feedbackSchema,
+            overallRemarks: existing.overallRemarks || prev.overallRemarks,
+            isAutoFilled: true,
+            existingStatus: existing.status
+          }));
+          toast.success(`Found existing ${existing.status}. Data auto-filled.`, {
+            duration: 4000,
+            icon: '📋'
+          });
+        } else {
+          // Reset autoFilled flag if no report exists for this combo
+          if (form.isAutoFilled) {
+             setForm(prev => ({ ...prev, isAutoFilled: false, existingStatus: "" }));
+          }
+        }
+      } catch (err) {
+        console.error("Lookup error:", err);
+      }
+    };
+
+    autoFill();
+  }, [form.studentId, form.auditDate]);
 
   const getBatchNames = () => [...new Set(batches.map((b) => b.batch_name))];
   const getBatchNos = () =>
@@ -216,6 +253,34 @@ export default function AddReport2() {
 
       <p style={S.pageTitle}>Add Report</p>
       <p style={S.pageSubtitle}>Create student audit reports</p>
+
+      {/* Auto-fill Alert */}
+      {form.isAutoFilled && (
+        <div style={{
+          background: "#EFF6FF",
+          border: "1.5px solid #BFDBFE",
+          borderRadius: 12,
+          padding: "12px 16px",
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          color: "#1E40AF",
+          fontSize: 13,
+          fontWeight: 500
+        }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563EB" }} />
+          <span>
+            Showing data from an existing <strong>{form.existingStatus}</strong> for this student on this date. You can add more parameters or update existing ones.
+          </span>
+          <button 
+            onClick={() => setForm({...form, isAutoFilled: false, parameters: [{name: "", score: ""}], feedbackSchema: {point1: "", point2: "", point3: ""}, overallRemarks: ""})}
+            style={{ marginLeft: "auto", background: "none", border: "none", color: "#2563EB", cursor: "pointer", fontWeight: 600, fontSize: 12 }}
+          >
+            Clear Form
+          </button>
+        </div>
+      )}
 
       {/* Batch Info */}
       <div style={S.card}>
