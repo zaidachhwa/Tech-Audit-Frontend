@@ -13,6 +13,7 @@ import Projects from './components/student/Projects';
 import Reports from './components/student/Reports';
 import StudentProfile from './components/student/StudentProfile';
 import StudentAssignments from './components/student/StudentAssignments';
+import StudentAnnouncements from './components/student/StudentAnnouncements';
 
 /* ADMIN */
 import AdminLogin from './components/admin/AdminLogin';
@@ -75,6 +76,7 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="assignments" element={<StudentAssignments />} />
+          <Route path="announcements" element={<StudentAnnouncements />} />
           <Route path="projects" element={<Projects />} />
           <Route path="reports" element={<Reports />} />
           <Route path="profile" element={<StudentProfile />} />
