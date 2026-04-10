@@ -1,18 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { API } from "../../api/axios";
-import { Calendar, Eye, Trash2, Layers, ChevronRight, Users, Hash, Search } from "lucide-react";
+import { Calendar, Eye, Trash2, Layers, ChevronRight, Users, Hash } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Drafts() {
-  const navigate = useNavigate();
   const [drafts, setDrafts] = useState([]);
   const [previewPdfUrl, setPreviewPdfUrl] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [openCourses, setOpenCourses] = useState({});
   const [openBatches, setOpenBatches] = useState({});
-  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchDrafts = async () => {
     const res = await API.get("/reports/drafts");
@@ -21,12 +18,8 @@ export default function Drafts() {
 
   useEffect(() => { fetchDrafts(); }, []);
 
-  const filteredDrafts = drafts.filter((d) =>
-    (d.student?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   // Group: { FSD: { 1: [...drafts], 2: [...drafts] }, BVOC: { ... } }
-  const grouped = filteredDrafts.reduce((acc, draft) => {
+  const grouped = drafts.reduce((acc, draft) => {
     const course = draft.student?.batch_name || "Unknown";
     const batchNo = draft.student?.batch_no || "?";
     if (!acc[course]) acc[course] = {};
@@ -108,31 +101,6 @@ export default function Drafts() {
             <p className="text-sm" style={{ color: "#94A3B8" }}>
               {drafts.length} total drafts across all batches
             </p>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div style={{ marginTop: 20 }}>
-          <div style={{ position: "relative", maxWidth: 400 }}>
-            <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }} />
-            <input
-              type="text"
-              placeholder="Search reports by student name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 14px 10px 38px",
-                borderRadius: 10,
-                border: "1.5px solid #E2E8F0",
-                fontSize: 14,
-                outline: "none",
-                fontFamily: "'DM Sans', sans-serif",
-                color: "#1B2B4B"
-              }}
-              onFocus={(e) => e.target.style.borderColor = "#2563EB"}
-              onBlur={(e) => e.target.style.borderColor = "#E2E8F0"}
-            />
           </div>
         </div>
       </div>
@@ -344,13 +312,8 @@ export default function Drafts() {
                                           e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC";
                                         }}
                                       >
-                                        <td className="px-4 py-3 font-bold text-sm" style={{ color: "#2563EB" }}>
-                                          <button 
-                                            onClick={() => navigate(`/admin/student/${d.student?._id}`)}
-                                            className="hover:underline text-left"
-                                          >
-                                            {d.student?.name}
-                                          </button>
+                                        <td className="px-4 py-3 font-medium text-sm" style={{ color: "#1B2B4B" }}>
+                                          {d.student?.name}
                                         </td>
                                         <td className="px-4 py-3 text-sm" style={{ color: "#94A3B8" }}>
                                           <div className="flex items-center gap-1">

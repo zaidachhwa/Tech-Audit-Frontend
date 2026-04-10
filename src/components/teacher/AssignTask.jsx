@@ -98,9 +98,12 @@ export default function AssignTask() {
     try {
       setLoading(true);
 
+      const foundBatch = filteredBatches.find((b) => String(b.batch_no) === String(batchNumber));
+
       const payload = {
         batchName,
         batchNumber,
+        batchId: foundBatch?._id, // 🔥 ADDED BATCH ID
         parameters: cleanParams,
         date,
         mode: assignMode,
@@ -323,12 +326,7 @@ export default function AssignTask() {
               onChange={(e) => updateParameter(i, "name", e.target.value)}
               style={S.input}
             />
-            <input
-              placeholder="Score"
-              value={p.score}
-              onChange={(e) => updateParameter(i, "score", e.target.value)}
-              style={{ ...S.input, maxWidth: 120 }}
-            />
+
             <button onClick={() => removeParameter(i)} style={{ cursor: "pointer", color: "#EF4444", background: "none", border: "none" }}>
               <X size={18} />
             </button>
@@ -350,7 +348,7 @@ export default function AssignTask() {
           />
         </div>
       </div>
-      
+
 
       <button onClick={handleAssign} style={S.primaryBtn}>
         <Send size={14} />

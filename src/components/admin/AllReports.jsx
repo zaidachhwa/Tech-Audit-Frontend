@@ -221,15 +221,19 @@ export default function ReportsList() {
             <div className="overflow-y-auto px-4 sm:px-6 py-4 space-y-6">
               {/* STUDENT INFO */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <Info
-                  label="Student Name"
-                  value={selectedReport.student?.name}
-                />
-                <Info label="Email" value={selectedReport.student?.email} />
-                <Info
-                  label="Batch"
-                  value={`${selectedReport.student?.batch_name} - ${selectedReport.student?.batch_no}`}
-                />
+                  <Info
+                    label="Student Name"
+                    value={selectedReport.student?.name || "Missing Name"}
+                  />
+                  <Info label="Email" value={selectedReport.student?.email || "Missing Email"} />
+                  <Info
+                    label="Batch"
+                    value={
+                      selectedReport.student?.batch_name 
+                        ? `${selectedReport.student.batch_name} - ${selectedReport.student.batch_no || '?'}`
+                        : "Unassigned"
+                    }
+                  />
                 <Info
                   label="Audit Date"
                   value={new Date(selectedReport.auditDate).toLocaleDateString(
@@ -545,17 +549,20 @@ function StudentAccordion({
           )}
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center text-xs font-bold">
-              {student?.name?.charAt(0)}
+              {(student?.name || "S").charAt(0)}
             </div>
-            <span className="font-bold text-[#2563EB] hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/admin/student/${student?._id}`); }}>
-              {student?.name}
+            <span className="font-bold text-[#2563EB] hover:underline" onClick={(e) => { 
+                e.stopPropagation(); 
+                if (student?._id) navigate(`/admin/student/${student._id}`); 
+              }}>
+              {student?.name || "Unknown Student"}
             </span>
           </div>
           <span className="text-[11px] text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-full font-medium">
             {reports.length} {reports.length === 1 ? "report" : "reports"}
           </span>
         </div>
-        <div className="text-xs text-[#94A3B8]">{student?.email}</div>
+        <div className="text-xs text-[#94A3B8]">{student?.email || "No email"}</div>
       </div>
 
       {/* Reports Table under Student */}
