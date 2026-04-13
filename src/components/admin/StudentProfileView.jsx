@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getStudent, uploadStudentPhoto, updateStudent } from "../../api/student.api";
 import { getReportsByStudent } from "../../api/report.api";
-import { getStudentProjects } from "../../api/project.api";
+import { getStudentProjects, deleteProject } from "../../api/project.api";
 import { getAssignmentsByStudent } from "../../api/assignment.api";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
@@ -30,7 +30,8 @@ import {
   Phone,
   CheckSquare,
   Briefcase,
-  Layers
+  Layers,
+  Trash2
 } from "lucide-react";
 
 export default function StudentProfileView() {
@@ -127,6 +128,25 @@ export default function StudentProfileView() {
     } catch (err) {
       toast.error("Failed to process image");
       setUploadingPhoto(false);
+    }
+  };
+
+  const handleDeleteProject = async (e, projectId) => {
+    e.stopPropagation(); // Prevent opening the modal
+    if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
+
+    try {
+      await deleteProject(projectId);
+      toast.success("Project deleted successfully");
+      // Refetch projects
+      setReportsLoading(true);
+      const projectsRes = await getStudentProjects(studentId);
+      setProjects(projectsRes.projects || projectsRes.data || projectsRes || []);
+    } catch (err) {
+      toast.error("Failed to delete project");
+      console.error(err);
+    } finally {
+      setReportsLoading(false);
     }
   };
 
@@ -819,18 +839,27 @@ export default function StudentProfileView() {
                     }}
                   >
                     <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-semibold text-sm" style={{ color: "#1B2B4B" }}>
-                        {proj.title}
-                      </h4>
-                      <span
-                        className="px-2 py-0.5 text-xs font-semibold rounded-full"
-                        style={{
-                          backgroundColor: proj.overallStatus === "Approved" ? "#DCFCE7" : proj.overallStatus === "Submitted" ? "#DBEAFE" : "#F1F5F9",
-                          color: proj.overallStatus === "Approved" ? "#166534" : proj.overallStatus === "Submitted" ? "#1E40AF" : "#475569",
-                        }}
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-sm" style={{ color: "#1B2B4B" }}>
+                          {proj.title}
+                        </h4>
+                        <span
+                          className="px-2 py-0.5 text-[10px] font-semibold rounded-full"
+                          style={{
+                            backgroundColor: proj.overallStatus === "Approved" ? "#DCFCE7" : proj.overallStatus === "Submitted" ? "#DBEAFE" : "#F1F5F9",
+                            color: proj.overallStatus === "Approved" ? "#166534" : proj.overallStatus === "Submitted" ? "#1E40AF" : "#475569",
+                          }}
+                        >
+                          {proj.overallStatus || "Pending"}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => handleDeleteProject(e, proj._id)}
+                        className="text-[#EF4444] hover:bg-[#FEE2E2] p-1.5 rounded-md transition"
+                        title="Delete Project"
                       >
-                        {proj.overallStatus || "Pending"}
-                      </span>
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                     <p className="text-xs line-clamp-2" style={{ color: "#64748B", marginBottom: "8px" }}>
                       {proj.description}

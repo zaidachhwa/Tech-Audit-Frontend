@@ -40,6 +40,26 @@ export const assignTopicToTeacher = async (data) => {
   }
 };
 
+export const assignTeacherToSyllabus = async (syllabusId, teacherId) => {
+  try {
+    const res = await API.patch(`/syllabus/${syllabusId}/assign-teacher`, { teacherId });
+    return res.data;
+  } catch (error) {
+    console.error("Error assigning teacher to syllabus:", error);
+    throw error;
+  }
+};
+
+export const unassignTeacherFromSyllabus = async (syllabusId, teacherId) => {
+  try {
+    const res = await API.patch(`/syllabus/${syllabusId}/unassign-teacher`, { teacherId });
+    return res.data;
+  } catch (error) {
+    console.error("Error unassigning teacher from syllabus:", error);
+    throw error;
+  }
+};
+
 // Get syllabus with progress
 export const getSyllabusProgress = async (syllabusId) => {
   try {

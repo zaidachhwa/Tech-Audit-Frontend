@@ -23,7 +23,11 @@ import {
   Zap,
   GraduationCap,
   RefreshCw,
+  Trash2,
+  Plus,
+  X
 } from "lucide-react";
+// Syllabus assignment APIs removed as per user request
 
 export default function TeacherProfileView() {
   const { teacherId } = useParams();
@@ -114,7 +118,6 @@ export default function TeacherProfileView() {
     };
     reader.readAsDataURL(file);
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
@@ -253,6 +256,59 @@ export default function TeacherProfileView() {
             </div>
           </div>
         )}
+
+        {/* Assigned Syllabus Breakdown */}
+        <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+          <div className="p-6 border-b border-[#E2E8F0] flex justify-between items-center bg-[#F8FAFC]">
+            <div>
+              <h2 className="text-lg font-bold text-[#1B2B4B]">Assigned Syllabi</h2>
+              <p className="text-sm text-[#64748B]">Topics progress per syllabus</p>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {syllabusBreakdown.length === 0 ? (
+              <div className="text-center py-8 text-[#64748B]">
+                <BookOpen size={40} className="mx-auto mb-3 opacity-20" />
+                <p>No syllabus assigned yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {syllabusBreakdown.map((sb, i) => (
+                  <div key={i} className="border border-[#E2E8F0] rounded-lg p-5">
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="font-bold text-[#1B2B4B]">{sb.syllabusName}</h4>
+                    </div>
+                    
+                    <div className="flex justify-between text-sm text-[#64748B] mb-2">
+                      <span>Progress: {sb.completionRate}%</span>
+                      <span>{sb.completed} / {sb.total} topics</span>
+                    </div>
+
+                    <div className="h-1.5 bg-[#F1F5F9] rounded-full mb-4">
+                      <div
+                        className="h-1.5 bg-[#10B981] rounded-full"
+                        style={{ width: `${sb.completionRate}%` }}
+                      />
+                    </div>
+
+                    <div className="flex justify-between mt-auto">
+                      <div className="text-xs">
+                        <span className="font-bold text-[#1B2B4B]">{sb.completed}</span> <span className="text-[#64748B]">Done</span>
+                      </div>
+                      <div className="text-xs">
+                        <span className="font-bold text-[#1B2B4B]">{sb.inProgress}</span> <span className="text-[#64748B]">In Progress</span>
+                      </div>
+                      <div className="text-xs">
+                        <span className="font-bold text-[#1B2B4B]">{sb.pending}</span> <span className="text-[#64748B]">Pending</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
       </div>
     </div>
