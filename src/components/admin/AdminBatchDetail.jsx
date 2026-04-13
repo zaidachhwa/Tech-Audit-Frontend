@@ -18,8 +18,10 @@ import {
   AlertCircle,
   TrendingUp,
   Calendar,
+  Trash2
 } from "lucide-react";
 import BulkAssignProjectModal from "./BulkAssignProjectModal";
+import { getProjectsByBatch, deleteProject } from "../../api/project.api";
 
 export default function AdminBatchDetail() {
   const { batchId } = useParams();
@@ -34,6 +36,9 @@ export default function AdminBatchDetail() {
   const [selectedSyllabus, setSelectedSyllabus] = useState("");
   const [topics, setTopics] = useState([]);
   const [loadingTopics, setLoadingTopics] = useState(false);
+
+  // Batch Projects
+  const [groupedProjects, setGroupedProjects] = useState([]);
 
   const fetchBatchDetails = async () => {
     try {
@@ -52,9 +57,35 @@ export default function AdminBatchDetail() {
       if (syllabi.length > 0) {
         setSelectedSyllabus(syllabi[0].syllabus?._id || syllabi[0].syllabus);
       }
+
+      // Fetch batch projects
+      const projsReq = await getProjectsByBatch(batchId);
+      const grouped = Object.values(
+        (projsReq.projects || []).reduce((acc, p) => {
+          if (!acc[p.title]) acc[p.title] = { title: p.title, description: p.description, ids: [] };
+          acc[p.title].ids.push(p._id);
+          return acc;
+        }, {})
+      );
+      setGroupedProjects(grouped);
+      
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch batch details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteGroupProject = async (ids) => {
+    if (!window.confirm("Are you sure you want to delete this project for ALL students in this batch?")) return;
+    try {
+      setLoading(true);
+      await Promise.all(ids.map(id => deleteProject(id)));
+      toast.success("Project deleted successfully from the batch.");
+      fetchBatchDetails();
+    } catch (err) {
+      toast.error("Failed to delete project");
     } finally {
       setLoading(false);
     }
@@ -211,8 +242,42 @@ export default function AdminBatchDetail() {
             )}
           </div>
 
+          {/* Assigned Batch Projects */}
+          <div className="p-5 rounded-lg border border-[#E2E8F0] bg-white shadow-sm mt-5">
+            <div className="flex items-center justify-between mb-4 text-[#1B2B4B]">
+              <div className="flex items-center gap-2">
+                <FolderGit2 size={20} className="text-[#2563EB]"/>
+                <h2 className="text-lg font-bold">Assigned Projects</h2>
+              </div>
+            </div>
+            {groupedProjects.length > 0 ? (
+              <div className="space-y-3">
+                {groupedProjects.map((group, i) => (
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-[#E2E8F0] rounded-lg">
+                    <div>
+                      <h4 className="font-bold text-[#1B2B4B]">{group.title}</h4>
+                      <p className="text-xs text-[#64748B] mt-1">{group.description}</p>
+                      <p className="text-xs text-[#94A3B8] mt-2">Assigned to {group.ids.length} students</p>
+                    </div>
+                    <div className="mt-3 sm:mt-0 flex items-center">
+                      <button
+                        onClick={() => handleDeleteGroupProject(group.ids)}
+                        className="text-[#EF4444] hover:bg-[#FEE2E2] p-2 rounded-md transition"
+                        title="Delete project for all students"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[#64748B] text-sm py-4 text-center">No projects assigned to this batch.</p>
+            )}
+          </div>
+
           {/* Students Section */}
-          <div className="flex items-center justify-between pt-4">
+          <div className="flex items-center justify-between pt-4 mt-1">
             <h2 className="text-lg font-bold text-[#1B2B4B] flex items-center gap-2">
               <Users size={20} className="text-[#2563EB]" />
               Enrolled Students ({students.length})
