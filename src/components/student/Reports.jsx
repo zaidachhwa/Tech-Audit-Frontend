@@ -87,7 +87,7 @@ export default function Reports() {
     <>
       <style>{style}</style>
       <Toaster position="top-right" />
-      <div className="rp-wrap" style={{ minHeight: "100vh", background: "#F8FAFC", padding: "28px 24px" }}>
+      <div className="rp-wrap" style={{ minHeight: "100vh", background: "#F8FAFC", padding: "clamp(16px, 4vw, 32px)", width: "100%", boxSizing: "border-box", overflowX: "hidden" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
 
           {/* Header */}
@@ -124,7 +124,7 @@ export default function Reports() {
           </motion.div>
 
           {/* Stat Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 20 }}>
             {statCards.map((card, i) => (
               <motion.div
                 key={i}
@@ -136,6 +136,7 @@ export default function Reports() {
                   background: "#fff", border: "1.5px solid #E2E8F0",
                   borderRadius: 12, padding: "18px 20px",
                   boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                  flex: "1 1 calc(25% - 14px)", minWidth: "140px"
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -213,12 +214,12 @@ function ReportCard({ report, index, expanded, onToggleExpand, calculateAverage,
     >
       {/* Card Header */}
       <div style={{ padding: "20px 22px", borderBottom: "1px solid #F1F5F9" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{
               width: 44, height: 44, borderRadius: 12,
               background: "#EFF6FF", display: "flex",
-              alignItems: "center", justifyContent: "center", color: "#2563EB",
+              alignItems: "center", justifyContent: "center", color: "#2563EB", flexShrink: 0
             }}>
               <BarChart2 size={20} />
             </div>
@@ -244,7 +245,7 @@ function ReportCard({ report, index, expanded, onToggleExpand, calculateAverage,
 
         {/* Avg Score bar */}
         <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
+          display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12,
           background: "#F8FAFC", border: "1px solid #F1F5F9", borderRadius: 8, padding: "12px 16px",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

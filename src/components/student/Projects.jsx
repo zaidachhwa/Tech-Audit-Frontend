@@ -6,7 +6,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Send, CheckCircle2, Clock, AlertCircle, Target, Award, GitBranch, ExternalLink, ChevronDown, ChevronUp, TrendingUp, Layers, RefreshCw, Calendar, User } from "lucide-react";
 
 const S = {
-  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
+  page: { 
+    minHeight: "100vh", 
+    background: "#F8FAFC", 
+    padding: "clamp(16px, 4vw, 32px)", 
+    fontFamily: "'DM Sans', sans-serif",
+    width: "100%",
+    boxSizing: "border-box",
+    overflowX: "hidden" 
+  },
   card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
   label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },
   primaryBtn: { background: "#2563EB", color: "#fff", border: "none", borderRadius: 8, padding: "9px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "'DM Sans', sans-serif" },
@@ -108,7 +116,7 @@ export default function Projects() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 14, marginBottom: 20 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 20 }}>
         {[
           { label: "Total", value: stats.total, tint: "#EFF6FF", ic: "#2563EB", icon: <Layers size={17} /> },
           { label: "In Progress", value: stats.inProgress, tint: "#FEF3C7", ic: "#F59E0B", icon: <Clock size={17} /> },
@@ -116,7 +124,7 @@ export default function Projects() {
           { label: "Submitted", value: stats.submitted, tint: "#F5F3FF", ic: "#8B5CF6", icon: <Send size={17} /> },
           { label: "Approved", value: stats.approved, tint: "#ECFDF5", ic: "#10B981", icon: <Award size={17} /> },
         ].map((s) => (
-          <div key={s.label} style={{ ...S.card, padding: "16px 18px" }}>
+          <div key={s.label} style={{ ...S.card, padding: "16px 18px", flex: "1 1 calc(20% - 12px)", minWidth: "140px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <p style={S.label}>{s.label}</p>
               <div style={{ width: 32, height: 32, borderRadius: 8, background: s.tint, display: "flex", alignItems: "center", justifyContent: "center", color: s.ic }}>{s.icon}</div>
@@ -132,7 +140,7 @@ export default function Projects() {
           <div style={{ width: 36, height: 36, border: "3px solid #E2E8F0", borderTopColor: "#2563EB", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         </div>
       ) : projects.length === 0 ? (
-        <div style={{ ...S.card, padding: "60px 0", textAlign: "center" }}>
+        <div style={{ ...S.card, padding: "60px 0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
           <Layers size={52} style={{ color: "#CBD5E1", marginBottom: 14 }} />
           <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 16, margin: "0 0 6px" }}>No Projects Yet</p>
           <p style={{ color: "#94A3B8", fontSize: 13, margin: 0 }}>Projects assigned to you will appear here</p>
@@ -175,7 +183,7 @@ export default function Projects() {
                   </div>
 
                   {/* Info badges */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {[
                       { label: "Batch", value: project.batch?.batch_name || "-" },
                       { label: "Batch No", value: `#${project.batch?.batch_no || "-"}` },
@@ -183,7 +191,7 @@ export default function Projects() {
                       { label: "Created", value: project.createdAt ? new Date(project.createdAt).toLocaleDateString() : "-" },
                       { label: "Due Date", value: project.dueDate ? new Date(project.dueDate).toLocaleDateString() : "-" },
                     ].map((b) => (
-                      <div key={b.label} style={{ background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 7, padding: "8px 10px" }}>
+                      <div key={b.label} style={{ background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 7, padding: "8px 10px", flex: "1 1 calc(20% - 8px)", minWidth: "110px" }}>
                         <p style={{ fontSize: 10, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 3px" }}>{b.label}</p>
                         <p style={{ fontSize: 12, fontWeight: 700, color: "#1B2B4B", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.value}</p>
                       </div>
@@ -268,7 +276,7 @@ export default function Projects() {
                 </AnimatePresence>
 
                 {/* Footer */}
-                <div style={{ padding: "12px 22px", background: "#F8FAFC", borderTop: "1.5px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ padding: "12px 22px", background: "#F8FAFC", borderTop: "1.5px solid #F1F5F9", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                   <button onClick={() => toggleExpanded(project._id)}
                     style={{ display: "flex", alignItems: "center", gap: 6, color: "#64748B", fontWeight: 600, fontSize: 13, background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
                     {expandedProjects.has(project._id) ? <><ChevronUp size={16} /> Show Less</> : <><ChevronDown size={16} /> Show Details</>}

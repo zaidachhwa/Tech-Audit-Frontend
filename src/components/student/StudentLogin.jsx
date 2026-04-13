@@ -41,10 +41,20 @@ export default function StudentLogin() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", fontFamily: "'DM Sans', sans-serif", background: "#F8FAFC" }}>
       <Toaster position="top-center" />
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); @keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); 
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media (max-width: 900px) {
+          .desktop-branding { display: none !important; }
+          .form-container { padding: 24px !important; }
+        }
+        @media (min-width: 901px) {
+          .mobile-logo { display: none !important; }
+        }
+      `}</style>
 
       {/* Left branding */}
-      <div style={{ width: "50%", background: "#1B2B4B", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 56px", position: "relative", overflow: "hidden" }} className="hidden lg:flex">
+      <div className="desktop-branding" style={{ width: "50%", background: "#1B2B4B", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 56px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -80, right: -80, width: 280, height: 280, borderRadius: "50%", background: "rgba(37,99,235,0.12)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(37,99,235,0.08)", pointerEvents: "none" }} />
 
@@ -77,12 +87,12 @@ export default function StudentLogin() {
       </div>
 
       {/* Right form */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 32px" }}>
+      <div className="form-container" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 32px" }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           style={{ width: "100%", maxWidth: 440, background: "#fff", borderRadius: 16, border: "1.5px solid #E2E8F0", boxShadow: "0 4px 24px rgba(0,0,0,0.08)", padding: 36 }}>
 
           {/* Mobile logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }} className="lg:hidden">
+          <div className="mobile-logo" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
             <div style={{ width: 40, height: 40, background: "#1B2B4B", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <GraduationCap size={20} color="#fff" />
             </div>

@@ -10,8 +10,16 @@ import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const S = {
-  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
-  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
+  page: { 
+    minHeight: "100vh", 
+    background: "#F8FAFC", 
+    padding: "clamp(16px, 4vw, 32px)", 
+    fontFamily: "'DM Sans', sans-serif",
+    width: "100%",
+    boxSizing: "border-box",
+    overflowX: "hidden"
+  },
+  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", boxSizing: "border-box" },
   pageTitle: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 },
   label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },
   secondaryBtn: { background: "#fff", color: "#1B2B4B", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "'DM Sans', sans-serif" },
@@ -322,9 +330,9 @@ export default function StudentDashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 20 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
         {statCards.map((s) => (
-          <div key={s.label} style={{ ...S.card, padding: "18px 20px" }}>
+          <div key={s.label} style={{ ...S.card, padding: "18px 20px", flex: "1 1 calc(25% - 16px)", minWidth: "160px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <p style={S.label}>{s.label}</p>
               <div style={{ width: 38, height: 38, borderRadius: 10, background: s.tint, display: "flex", alignItems: "center", justifyContent: "center", color: s.ic }}>{s.icon}</div>
@@ -350,9 +358,9 @@ export default function StudentDashboard() {
       </div>
 
       {/* Two-column grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, marginBottom: 20 }}>
         {/* Upcoming Deadlines */}
-        <div style={S.card}>
+        <div style={{...S.card, flex: "1 1 320px"}}>
           <div style={{ padding: "16px 20px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Upcoming Deadlines</p>
@@ -380,7 +388,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div style={S.card}>
+        <div style={{...S.card, flex: "1 1 320px"}}>
           <div style={{ padding: "16px 20px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Recent Activity</p>
