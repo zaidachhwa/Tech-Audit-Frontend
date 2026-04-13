@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getStudent, uploadStudentPhoto } from "../../api/student.api";
+import { getStudent, uploadStudentPhoto, updateStudent } from "../../api/student.api";
 import { getReportsByStudent } from "../../api/report.api";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
@@ -22,7 +22,10 @@ import {
   FileText,
   Calendar,
   GraduationCap,
-  Camera
+  Camera,
+  Edit,
+  X,
+  Phone
 } from "lucide-react";
 
 export default function StudentProfileView() {
@@ -35,6 +38,9 @@ export default function StudentProfileView() {
   const [reportsLoading, setReportsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({ name: "", email: "", phoneNo: "", password: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
   const fileInputRef = useRef(null);
 
   const fetchData = async () => {
@@ -106,6 +112,34 @@ export default function StudentProfileView() {
       toast.error("Failed to process image");
       setUploadingPhoto(false);
     }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setSavingEdit(true);
+      const payload = { ...editFormData };
+      if (!payload.password) delete payload.password; // Don't send empty password
+
+      await updateStudent(student._id, payload);
+      toast.success("Student updated successfully");
+      setShowEditModal(false);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update student");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const openEditModal = () => {
+    setEditFormData({
+      name: student.name || "",
+      email: student.email || "",
+      phoneNo: student.phoneNo || "",
+      password: "",
+    });
+    setShowEditModal(true);
   };
 
   // Calculate average per parameter overall
@@ -349,7 +383,7 @@ export default function StudentProfileView() {
                     </p>
                   </div>
                   <div
-                    className="flex items-center gap-4 px-4 py-2 rounded-lg"
+                    className="flex items-center gap-4 px-4 py-2 rounded-lg relative"
                     style={{
                       backgroundColor: "#F8FAFC",
                       border: "1.5px solid #E2E8F0",
@@ -378,9 +412,40 @@ export default function StudentProfileView() {
               </div>
             </div>
             
-            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#64748B" }}>
-              <Mail size={16} style={{ color: "#94A3B8" }} />
-              {student.email}
+            <div className="flex flex-wrap items-center justify-between gap-4 mt-2">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#64748B" }}>
+                  <Mail size={16} style={{ color: "#94A3B8" }} />
+                  {student.email}
+                </div>
+                {student.phoneNo && (
+                  <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#64748B" }}>
+                    <Phone size={16} style={{ color: "#94A3B8" }} />
+                    {student.phoneNo}
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={openEditModal}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  color: "#1B2B4B",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#F8FAFC";
+                  e.currentTarget.style.borderColor = "#CBD5E1";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#FFFFFF";
+                  e.currentTarget.style.borderColor = "#E2E8F0";
+                }}
+              >
+                <Edit size={16} style={{ color: "#2563EB" }} />
+                Edit Credentials
+              </button>
             </div>
           </div>
         </motion.div>
@@ -570,6 +635,107 @@ export default function StudentProfileView() {
         </div>
 
       </div>
+
+      {/* EDIT MODAL */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)" }}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden"
+            style={{ border: "1px solid #E2E8F0" }}
+          >
+            <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: "#E2E8F0", backgroundColor: "#F8FAFC" }}>
+              <h3 className="font-bold text-lg" style={{ color: "#1B2B4B" }}>Edit Student Credentials</h3>
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="p-1 rounded-md transition-colors"
+                style={{ color: "#64748B" }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#E2E8F0"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1" style={{ color: "#475569" }}>Full Name</label>
+                <input 
+                  type="text" 
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                  className="w-full px-3 py-2 rounded-lg outline-none transition-shadow"
+                  style={{ border: "1.5px solid #E2E8F0", color: "#1B2B4B" }}
+                  onFocus={(e) => { e.target.style.borderColor = "#2563EB"; e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#E2E8F0"; e.target.style.boxShadow = "none"; }}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1" style={{ color: "#475569" }}>Email Address</label>
+                <input 
+                  type="email" 
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                  className="w-full px-3 py-2 rounded-lg outline-none transition-shadow"
+                  style={{ border: "1.5px solid #E2E8F0", color: "#1B2B4B" }}
+                  onFocus={(e) => { e.target.style.borderColor = "#2563EB"; e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#E2E8F0"; e.target.style.boxShadow = "none"; }}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1" style={{ color: "#475569" }}>Phone Number</label>
+                <input 
+                  type="text" 
+                  value={editFormData.phoneNo}
+                  onChange={(e) => setEditFormData({...editFormData, phoneNo: e.target.value})}
+                  className="w-full px-3 py-2 rounded-lg outline-none transition-shadow"
+                  style={{ border: "1.5px solid #E2E8F0", color: "#1B2B4B" }}
+                  onFocus={(e) => { e.target.style.borderColor = "#2563EB"; e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#E2E8F0"; e.target.style.boxShadow = "none"; }}
+                  placeholder="Optional"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1" style={{ color: "#475569" }}>New Password</label>
+                <input 
+                  type="password" 
+                  value={editFormData.password}
+                  onChange={(e) => setEditFormData({...editFormData, password: e.target.value})}
+                  className="w-full px-3 py-2 rounded-lg outline-none transition-shadow"
+                  style={{ border: "1.5px solid #E2E8F0", color: "#1B2B4B" }}
+                  onFocus={(e) => { e.target.style.borderColor = "#2563EB"; e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#E2E8F0"; e.target.style.boxShadow = "none"; }}
+                  placeholder="Leave empty to keep current password"
+                />
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 font-medium rounded-lg text-sm transition"
+                  style={{ color: "#475569", backgroundColor: "#F1F5F9" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#E2E8F0"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#F1F5F9"; }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="px-4 py-2 font-medium rounded-lg text-sm text-white transition flex items-center justify-center min-w-[100px] disabled:opacity-70"
+                  style={{ backgroundColor: "#2563EB" }}
+                  onMouseEnter={(e) => { if(!savingEdit) e.currentTarget.style.backgroundColor = "#1D4ED8"; }}
+                  onMouseLeave={(e) => { if(!savingEdit) e.currentTarget.style.backgroundColor = "#2563EB"; }}
+                >
+                  {savingEdit ? <RefreshCw size={16} className="animate-spin" /> : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
