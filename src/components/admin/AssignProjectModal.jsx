@@ -20,6 +20,7 @@ export default function AssignProjectModal({ batch, onClose, onAssigned }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [repo, setRepo] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,18 +46,19 @@ export default function AssignProjectModal({ batch, onClose, onAssigned }) {
           title,
           description,
           repo,
+          dueDate, // pass dueDate to backend
           studentId,
           batchId: batch._id,
         });
       }
       toast.success("Projects assigned");
       if (onAssigned) onAssigned();
+      onClose?.();
     } catch (err) {
       console.error(err);
       toast.error("Failed to assign projects");
     } finally {
       setLoading(false);
-      onClose?.();
     }
   };
 
@@ -130,6 +132,25 @@ export default function AssignProjectModal({ batch, onClose, onAssigned }) {
             placeholder="Repository URL (optional)"
             value={repo}
             onChange={(e) => setRepo(e.target.value)}
+            className="w-full p-3 rounded-lg outline-none transition"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "8px",
+              color: "#1B2B4B",
+              fontSize: "14px",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#2563EB";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "#E2E8F0";
+            }}
+          />
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
             className="w-full p-3 rounded-lg outline-none transition"
             style={{
               backgroundColor: "#FFFFFF",
