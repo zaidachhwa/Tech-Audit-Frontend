@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getStudent, uploadStudentPhoto, updateStudent } from "../../api/student.api";
 import { getReportsByStudent } from "../../api/report.api";
+import { getStudentProjects } from "../../api/project.api";
+import { getAssignmentsByStudent } from "../../api/assignment.api";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
 import {
@@ -25,7 +27,10 @@ import {
   Camera,
   Edit,
   X,
-  Phone
+  Phone,
+  CheckSquare,
+  Briefcase,
+  Layers
 } from "lucide-react";
 
 export default function StudentProfileView() {
@@ -34,6 +39,8 @@ export default function StudentProfileView() {
 
   const [student, setStudent] = useState(null);
   const [reports, setReports] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reportsLoading, setReportsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,6 +48,8 @@ export default function StudentProfileView() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({ name: "", email: "", phoneNo: "", password: "" });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
   const fileInputRef = useRef(null);
 
   const fetchData = async () => {
@@ -51,13 +60,20 @@ export default function StudentProfileView() {
       const s = res.student || res;
       setStudent(s);
 
-      // Fetch Reports
+      // Fetch Reports, Tasks, and Projects
       setReportsLoading(true);
       try {
-        const reportRes = await getReportsByStudent(s._id);
-        setReports(reportRes?.reports || []);
+        const [reportRes, tasksRes, projectsRes] = await Promise.allSettled([
+          getReportsByStudent(s._id),
+          getAssignmentsByStudent(s._id),
+          getStudentProjects(s._id)
+        ]);
+
+        if (reportRes.status === "fulfilled") setReports(reportRes.value?.reports || []);
+        if (tasksRes.status === "fulfilled") setTasks(tasksRes.value?.assignments || []);
+        if (projectsRes.status === "fulfilled") setProjects(projectsRes.value?.projects || []);
       } catch (rErr) {
-        console.error("Failed to fetch reports:", rErr);
+        console.error("Failed to fetch related data:", rErr);
       } finally {
         setReportsLoading(false);
       }
@@ -248,7 +264,7 @@ export default function StudentProfileView() {
   const avatarLetter = student.name?.charAt(0).toUpperCase() ?? "S";
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto w-full px-2 sm:px-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="space-y-6" style={{ backgroundColor: "#F8FAFC", fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", padding: "24px" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
       `}</style>
@@ -580,7 +596,8 @@ export default function StudentProfileView() {
                   return (
                     <div
                       key={r._id || idx}
-                      className="p-4 rounded-lg flex items-center justify-between transition-colors"
+                      onClick={() => setSelectedReport(r)}
+                      className="p-4 rounded-lg flex items-center justify-between transition-colors cursor-pointer hover:shadow-sm"
                       style={{
                         backgroundColor: "#F8FAFC",
                         border: "1.5px solid #E2E8F0",
@@ -627,6 +644,210 @@ export default function StudentProfileView() {
                   <FileText size={40} style={{ color: "#CBD5E1", marginBottom: "8px" }} />
                   <p className="text-sm" style={{ color: "#94A3B8" }}>
                     No recent reports found.
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* TASKS & PROJECTS ROW */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
+          {/* Assigned Tasks */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="rounded-lg p-6 flex flex-col h-[400px]"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div
+                  style={{
+                    backgroundColor: "#E0E7FF",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid #C7D2FE",
+                  }}
+                >
+                  <CheckSquare size={20} style={{ color: "#4F46E5" }} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold" style={{ color: "#1B2B4B", fontWeight: "700" }}>
+                    Assigned Tasks
+                  </h3>
+                  <p className="text-sm" style={{ color: "#64748B" }}>
+                    Track assignment progress
+                  </p>
+                </div>
+              </div>
+              <div
+                className="text-sm font-semibold px-2.5 py-1 rounded"
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  color: "#64748B",
+                  borderRadius: "6px",
+                }}
+              >
+                {tasks.length} Total
+              </div>
+            </div>
+
+            <div className="space-y-3 flex-1 overflow-y-auto pr-2">
+              {reportsLoading ? (
+                <div className="py-12 flex justify-center">
+                  <RefreshCw size={24} className="animate-spin" style={{ color: "#CBD5E1" }} />
+                </div>
+              ) : tasks.length > 0 ? (
+                tasks.map((task, idx) => (
+                  <div
+                    key={task._id || idx}
+                    className="p-4 rounded-lg transition-colors border"
+                    style={{
+                      backgroundColor: "#F8FAFC",
+                      borderColor: "#E2E8F0",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-semibold text-sm" style={{ color: "#1B2B4B" }}>
+                        Task #{tasks.length - idx}
+                      </h4>
+                      <span
+                        className="px-2 py-0.5 text-xs font-semibold rounded-full"
+                        style={{
+                          backgroundColor: task.status === "Done" ? "#DCFCE7" : "#FEF3C7",
+                          color: task.status === "Done" ? "#166534" : "#92400E",
+                        }}
+                      >
+                        {task.status || "Pending"}
+                      </span>
+                    </div>
+                    {task.parameters?.map((p, i) => (
+                      <div key={i} className="text-sm" style={{ color: "#475569" }}>
+                        <span className="font-medium">{p.name || "Task"}</span>: {p.score || 0}
+                      </div>
+                    ))}
+                    {task.date && (
+                      <div className="flex items-center gap-1.5 mt-2 text-xs" style={{ color: "#94A3B8" }}>
+                        <Calendar size={12} />
+                        {new Date(task.date).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="py-12 flex flex-col items-center justify-center text-center h-full">
+                  <CheckSquare size={40} style={{ color: "#CBD5E1", marginBottom: "8px" }} />
+                  <p className="text-sm" style={{ color: "#94A3B8" }}>
+                    No assigned tasks.
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Assigned Projects */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="rounded-lg p-6 flex flex-col h-[400px]"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div
+                  style={{
+                    backgroundColor: "#ECFEFF",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid #A5F3FC",
+                  }}
+                >
+                  <Briefcase size={20} style={{ color: "#0891B2" }} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold" style={{ color: "#1B2B4B", fontWeight: "700" }}>
+                    Assigned Projects
+                  </h3>
+                  <p className="text-sm" style={{ color: "#64748B" }}>
+                    Ongoing project work
+                  </p>
+                </div>
+              </div>
+              <div
+                className="text-sm font-semibold px-2.5 py-1 rounded"
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  color: "#64748B",
+                  borderRadius: "6px",
+                }}
+              >
+                {projects.length} Total
+              </div>
+            </div>
+
+            <div className="space-y-3 flex-1 overflow-y-auto pr-2">
+              {reportsLoading ? (
+                <div className="py-12 flex justify-center">
+                  <RefreshCw size={24} className="animate-spin" style={{ color: "#CBD5E1" }} />
+                </div>
+              ) : projects.length > 0 ? (
+                projects.map((proj, idx) => (
+                  <div
+                    key={proj._id || idx}
+                    onClick={() => setSelectedProject(proj)}
+                    className="p-4 rounded-lg flex flex-col transition-colors border cursor-pointer hover:bg-white hover:shadow-sm"
+                    style={{
+                      backgroundColor: "#F8FAFC",
+                      borderColor: "#E2E8F0",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-semibold text-sm" style={{ color: "#1B2B4B" }}>
+                        {proj.title}
+                      </h4>
+                      <span
+                        className="px-2 py-0.5 text-xs font-semibold rounded-full"
+                        style={{
+                          backgroundColor: proj.overallStatus === "Approved" ? "#DCFCE7" : proj.overallStatus === "Submitted" ? "#DBEAFE" : "#F1F5F9",
+                          color: proj.overallStatus === "Approved" ? "#166534" : proj.overallStatus === "Submitted" ? "#1E40AF" : "#475569",
+                        }}
+                      >
+                        {proj.overallStatus || "Pending"}
+                      </span>
+                    </div>
+                    <p className="text-xs line-clamp-2" style={{ color: "#64748B", marginBottom: "8px" }}>
+                      {proj.description}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs" style={{ color: "#94A3B8" }}>
+                      <div className="flex items-center gap-1.5">
+                        <Layers size={12} />
+                        {proj.modules?.length || 0} Modules
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-12 flex flex-col items-center justify-center text-center h-full">
+                  <Briefcase size={40} style={{ color: "#CBD5E1", marginBottom: "8px" }} />
+                  <p className="text-sm" style={{ color: "#94A3B8" }}>
+                    No assigned projects.
                   </p>
                 </div>
               )}
@@ -733,6 +954,159 @@ export default function StudentProfileView() {
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* REPORT DETAILS MODAL */}
+      {selectedReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)" }}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-lg bg-white rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
+            style={{ border: "1px solid #E2E8F0" }}
+          >
+            <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: "#E2E8F0", backgroundColor: "#F8FAFC" }}>
+              <div className="flex items-center gap-3">
+                <div style={{ backgroundColor: "#FEF3C7", padding: "8px", borderRadius: "8px", border: "1px solid #FCD34D" }}>
+                  <FileText size={18} style={{ color: "#F59E0B" }} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight" style={{ color: "#1B2B4B" }}>Audit Report</h3>
+                  <p className="text-xs" style={{ color: "#64748B" }}>
+                    {selectedReport.auditDate ? new Date(selectedReport.auditDate).toLocaleDateString() : "N/A"}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedReport(null)}
+                className="p-1 rounded-md transition-colors"
+                style={{ color: "#64748B" }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#E2E8F0"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div>
+                <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "#94A3B8" }}>Parameters</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {selectedReport.parameters?.map((p, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 rounded-lg border" style={{ backgroundColor: "#F8FAFC", borderColor: "#E2E8F0" }}>
+                      <span className="text-sm font-medium" style={{ color: "#1B2B4B" }}>{p.name}</span>
+                      <span className="text-sm font-bold px-2 py-0.5 rounded bg-white border" style={{ color: "#2563EB", borderColor: "#E2E8F0" }}>{p.score}/10</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {selectedReport.feedbackSchema && selectedReport.feedbackSchema.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "#94A3B8" }}>Feedback</h4>
+                  <div className="space-y-2">
+                    {selectedReport.feedbackSchema.map((f, i) => (
+                      <div key={i} className="text-sm p-3 rounded-lg border" style={{ backgroundColor: "#F8FAFC", borderColor: "#E2E8F0", color: "#475569" }}>
+                        {f.point1 && <p>• {f.point1}</p>}
+                        {f.point2 && <p>• {f.point2}</p>}
+                        {f.point3 && <p>• {f.point3}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedReport.overallRemarks && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2 uppercase tracking-wider" style={{ color: "#94A3B8" }}>Overall Remarks</h4>
+                  <p className="text-sm p-3 rounded-lg border" style={{ backgroundColor: "#F8FAFC", borderColor: "#E2E8F0", color: "#475569" }}>
+                    {selectedReport.overallRemarks}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t" style={{ borderColor: "#E2E8F0", backgroundColor: "#F8FAFC" }}>
+              <button
+                onClick={() => setSelectedReport(null)}
+                className="w-full py-2.5 rounded-lg text-sm font-bold transition"
+                style={{ backgroundColor: "#2563EB", color: "#FFFFFF" }}
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* PROJECT DETAILS MODAL */}
+      {selectedProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)" }}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-lg bg-white rounded-xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
+            style={{ border: "1px solid #E2E8F0" }}
+          >
+            <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: "#E2E8F0", backgroundColor: "#F8FAFC" }}>
+              <div className="flex items-center gap-3">
+                <div style={{ backgroundColor: "#ECFEFF", padding: "8px", borderRadius: "8px", border: "1px solid #A5F3FC" }}>
+                  <Briefcase size={18} style={{ color: "#0891B2" }} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight" style={{ color: "#1B2B4B" }}>{selectedProject.title}</h3>
+                  <p className="text-xs" style={{ color: "#64748B" }}>
+                    Status: <span className="font-semibold">{selectedProject.overallStatus}</span>
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedProject(null)}
+                className="p-1 rounded-md transition-colors"
+                style={{ color: "#64748B" }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#E2E8F0"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div>
+                <h4 className="text-sm font-semibold mb-2 uppercase tracking-wider" style={{ color: "#94A3B8" }}>Description</h4>
+                <p className="text-sm text-gray-700 p-3 rounded-lg" style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+                  {selectedProject.description || "No description provided."}
+                </p>
+              </div>
+
+              {selectedProject.modules && selectedProject.modules.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: "#94A3B8" }}>Modules</h4>
+                  <div className="space-y-3">
+                    {selectedProject.modules.map((m, i) => (
+                      <div key={i} className="p-3 rounded-lg border" style={{ backgroundColor: "#FFFFFF", borderColor: "#E2E8F0" }}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-bold text-gray-800">{m.name}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{
+                            backgroundColor: m.status === "Completed" ? "#DCFCE7" : m.status === "In Progress" ? "#FEF3C7" : "#F1F5F9",
+                            color: m.status === "Completed" ? "#166534" : m.status === "In Progress" ? "#92400E" : "#475569"
+                          }}>{m.status}</span>
+                        </div>
+                        {m.notes && <p className="text-xs text-gray-500 mt-1">{m.notes}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t" style={{ borderColor: "#E2E8F0", backgroundColor: "#F8FAFC" }}>
+              <button
+                onClick={() => setSelectedProject(null)}
+                className="w-full py-2.5 rounded-lg text-sm font-bold transition"
+                style={{ backgroundColor: "#2563EB", color: "#FFFFFF" }}
+              >
+                Close
+              </button>
+            </div>
           </motion.div>
         </div>
       )}
