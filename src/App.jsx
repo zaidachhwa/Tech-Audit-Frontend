@@ -40,6 +40,7 @@ import TeacherSyllabusDashboard from './components/teacher/TeacherSyllabusDashbo
 import TeacherProfile from './components/teacher/TeacherProfile';
 import TeacherStudentProgress from './components/teacher/TeacherStudentProgress';
 import AssignTask from './components/teacher/AssignTask';
+import AssignProject from './components/teacher/AssignProject';
 import AdminAnalytics from './pages/AdminAnalytics';
 import TeacherAttendance from './components/teacher/TeacherAttendance';
 import TeacherGrades from './components/teacher/TeacherGrades';
@@ -133,6 +134,7 @@ export default function App() {
           <Route path="performance" element={<TeacherStudentProgress />} />
           <Route path="profile" element={<TeacherProfile />} />
           <Route path="assign-task" element={<AssignTask />} />
+          <Route path="assign-project" element={<AssignProject />} />
           <Route path="assign-syllabus" element={<AssignSyllabus />} />
           <Route path="assign-syllabus/:batchId" element={<AssignSyllabusDetail />} />
           <Route path="add-reports" element={<AddReport2 />} />

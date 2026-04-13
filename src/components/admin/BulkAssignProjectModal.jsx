@@ -38,6 +38,7 @@ export default function BulkAssignProjectModal({
   const [outcomes, setOutcomes] = useState([{ title: "", description: "" }]);
   const [skills, setSkills] = useState([{ name: "", level: "Intermediate" }]);
   const [overallStatus, setOverallStatus] = useState("Pending");
+  const [dueDate, setDueDate] = useState("");
 
   const toggleStudent = (id) => {
     setSelected((prev) =>
@@ -129,6 +130,7 @@ export default function BulkAssignProjectModal({
           skills: validSkills,
           overallStatus,
           assignedTo: studentId,
+          ...(dueDate ? { dueDate } : {}),
         })
       );
       await Promise.all(promises);
@@ -309,6 +311,26 @@ export default function BulkAssignProjectModal({
 
             <div>
               <label className="block text-sm font-semibold mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                Due Date (Optional)
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg outline-none transition"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  color: "#1B2B4B",
+                  borderRadius: "8px",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#2563EB"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                 Overall Status
               </label>
               <select
@@ -321,12 +343,8 @@ export default function BulkAssignProjectModal({
                   color: "#1B2B4B",
                   borderRadius: "8px",
                 }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "#2563EB";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "#E2E8F0";
-                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#2563EB"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; }}
               >
                 <option value="Pending">Pending</option>
                 <option value="In Progress">In Progress</option>

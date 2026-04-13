@@ -19,8 +19,11 @@ const isSunday       = (y, m, d) => getDayOfWeek(y,m,d) === 0;
 const pad2           = (n) => String(n).padStart(2,"0");
 
 /* ── get batch display name from any API shape ── */
-const getBatchName = (b) =>
-  b?.name || b?.batchName || b?.title || b?.batch_name || b?.label || b?._id || "Unnamed";
+const getBatchName = (b) => {
+  const name = b?.name || b?.batchName || b?.title || b?.batch_name || b?.label || "Unnamed";
+  if (b?.batch_no || b?.batchNo) return `${name} #${b.batch_no || b.batchNo}`;
+  return b?._id || name;
+};
 
 const STATUS_META = {
   P:  { label:"P",  full:"Present",  bg:"#E8F5E9", color:"#2E7D32", border:"#A5D6A7" },

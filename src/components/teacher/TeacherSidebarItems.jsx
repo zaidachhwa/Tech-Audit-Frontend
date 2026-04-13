@@ -9,6 +9,7 @@ import {
   BookOpen,
   Notebook,
   FileText,
+  FolderGit2,
 } from "lucide-react";
 
 export const teacherSidebarItems = [
@@ -42,6 +43,11 @@ export const teacherSidebarItems = [
     name: "Assign Task",
     icon: ClipboardList,
     path: "/teacher/assign-task",
+  },
+  {
+    name: "Assign Project",
+    icon: FolderGit2,
+    path: "/teacher/assign-project",
   },
   {
     name: "Assign Syllabus",
