@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { API } from "../../api/axios";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -25,6 +26,7 @@ import { getProjectsByBatch, deleteProject } from "../../api/project.api";
 
 export default function AdminBatchDetail() {
   const { batchId } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [batch, setBatch] = useState(null);
   const [students, setStudents] = useState([]);
@@ -306,9 +308,10 @@ export default function AdminBatchDetail() {
                     borderRadius: "12px",
                     boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                   }}
-                  onClick={() =>
-                    navigate(`/admin/project-tracking/student/${student._id}`)
-                  }
+                  onClick={() => {
+                    const base = user?.role === "teacher" ? "/teacher" : "/admin";
+                    navigate(`${base}/project-tracking/student/${student._id}`);
+                  }}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="text-white rounded-full p-3 bg-[#2563EB] shadow-[#2563eb4d]">

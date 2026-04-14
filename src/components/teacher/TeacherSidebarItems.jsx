@@ -10,6 +10,7 @@ import {
   Notebook,
   FileText,
   FolderGit2,
+  GraduationCap
 } from "lucide-react";
 
 export const teacherSidebarItems = [
@@ -17,6 +18,11 @@ export const teacherSidebarItems = [
     name: "Dashboard",
     icon: LayoutDashboard,
     path: "/teacher/dashboard",
+  },
+  {
+    name: "Students",
+    icon: GraduationCap,
+    path: "/teacher/student-management",
   },
   {
     name: "Topic Progress",
@@ -48,6 +54,11 @@ export const teacherSidebarItems = [
     name: "Assign Project",
     icon: FolderGit2,
     path: "/teacher/assign-project",
+  },
+  {
+    name: "Project Tracking",
+    icon: FolderGit2,
+    path: "/teacher/project-tracking",
   },
   {
     name: "Assign Syllabus",

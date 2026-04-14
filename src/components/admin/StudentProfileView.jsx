@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { getStudent, uploadStudentPhoto, updateStudent } from "../../api/student.api";
 import { getReportsByStudent } from "../../api/report.api";
-import { getStudentProjects, deleteProject } from "../../api/project.api";
+import { getStudentProjects, deleteProject, approveProject } from "../../api/project.api";
 import { getAssignmentsByStudent } from "../../api/assignment.api";
 import toast, { Toaster } from "react-hot-toast";
 import { motion } from "framer-motion";
@@ -36,6 +37,7 @@ import {
 
 export default function StudentProfileView() {
   const { studentId } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [student, setStudent] = useState(null);
@@ -147,6 +149,18 @@ export default function StudentProfileView() {
       console.error(err);
     } finally {
       setReportsLoading(false);
+    }
+  };
+
+  const handleApproveProject = async (projectId) => {
+    if (!window.confirm("Are you sure you want to approve this project?")) return;
+    try {
+      await approveProject(projectId);
+      toast.success("Project approved successfully!");
+      setSelectedProject(null);
+      fetchData(); // This refreshes everything including projects
+    } catch {
+      toast.error("Failed to approve project");
     }
   };
 
@@ -1127,14 +1141,25 @@ export default function StudentProfileView() {
                 </div>
               )}
             </div>
-            <div className="px-6 py-4 border-t" style={{ borderColor: "#E2E8F0", backgroundColor: "#F8FAFC" }}>
+            <div className="px-6 py-4 border-t flex gap-3" style={{ borderColor: "#E2E8F0", backgroundColor: "#F8FAFC" }}>
               <button
                 onClick={() => setSelectedProject(null)}
-                className="w-full py-2.5 rounded-lg text-sm font-bold transition"
-                style={{ backgroundColor: "#2563EB", color: "#FFFFFF" }}
+                className="flex-1 py-2.5 rounded-lg text-sm font-bold transition"
+                style={{ backgroundColor: "#F1F5F9", color: "#475569" }}
               >
                 Close
               </button>
+              {(user?.role === "admin" || user?.role === "teacher") && selectedProject.overallStatus === "Submitted" && (
+                <button
+                  onClick={() => handleApproveProject(selectedProject._id)}
+                  className="flex-[2] py-2.5 rounded-lg text-sm font-bold transition text-white shadow-lg shadow-blue-200"
+                  style={{ backgroundColor: "#2563EB" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#1D4ED8"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#2563EB"; }}
+                >
+                  Approve Project
+                </button>
+              )}
             </div>
           </motion.div>
         </div>

@@ -14,6 +14,7 @@ import {
   Search,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import MultiBatchProjectAssign from "./MultiBatchProjectAssign";
 
 export default function ProjectTracking() {
@@ -22,6 +23,7 @@ export default function ProjectTracking() {
   const [showMultiBatchModal, setShowMultiBatchModal] = useState(false);
   const [openCourses, setOpenCourses] = useState({});
   const [search, setSearch] = useState("");
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   /* group batches by course name */
@@ -347,11 +349,10 @@ export default function ProjectTracking() {
                               key={batch._id}
                               whileHover={{ scale: 1.02, y: -1 }}
                               whileTap={{ scale: 0.98 }}
-                              onClick={() =>
-                                navigate(
-                                  `/admin/project-tracking/batch/${batch._id}`
-                                )
-                              }
+                              onClick={() => {
+                                const base = user?.role === "teacher" ? "/teacher" : "/admin";
+                                navigate(`${base}/project-tracking/batch/${batch._id}`);
+                              }}
                               className="flex items-center justify-between rounded-lg px-4 py-3 text-left transition group"
                               style={{
                                 backgroundColor: "#FFFFFF",
