@@ -1,10 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
 import TeacherSidebar from "./TeacherSidebar";
 
 export default function TeacherLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+    handleResize(); // Initialize on mount
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div
@@ -34,7 +47,6 @@ export default function TeacherLayout() {
         }}      
         className="teacher-main-content"
       >
-        {/* Mobile topbar */}
         <div
           style={{
             background: "#fff",
@@ -49,7 +61,20 @@ export default function TeacherLayout() {
           }}
           className="lg:hidden"
         >
-
+          <button 
+            onClick={() => setSidebarOpen(true)}
+            style={{ 
+              background: "transparent", 
+              border: "none", 
+              padding: "8px", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              cursor: "pointer"
+            }}
+          >
+            <Menu size={20} color="#1B2B4B" />
+          </button>
           <span
             style={{
               marginLeft: 12,

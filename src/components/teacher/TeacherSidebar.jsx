@@ -22,9 +22,9 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
           background: "#1B2B4B",
           fontFamily: "'DM Sans', sans-serif",
         }}
-        className={`fixed left-0 top-0 h-screen transition-all duration-300 z-40 flex flex-col ${sidebarOpen
-          ? "w-64"
-          : "w-0 -translate-x-full lg:translate-x-0 lg:w-16"
+        className={`fixed left-0 top-0 h-screen transition-all duration-300 z-40 flex flex-col overflow-x-hidden ${sidebarOpen
+          ? "translate-x-0 w-64"
+          : "-translate-x-full w-64 lg:translate-x-0 lg:w-16"
           }`}
       >
         {/* HEADER */}
@@ -137,6 +137,7 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}
                   style={{
                     display: "flex",
                     alignItems: "center",

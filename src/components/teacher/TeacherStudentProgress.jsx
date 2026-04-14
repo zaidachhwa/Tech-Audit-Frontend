@@ -104,7 +104,7 @@ export default function TeacherStudentProgress() {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 20 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         {[
           { label: "Assigned Batches", value: batches.length, icon: <Users size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
           { label: "Students in Batch", value: selectedBatch?.studentsCount ?? "—", icon: <Users size={20} />, tint: "#ECFDF5", iconColor: "#10B981" },
@@ -122,9 +122,9 @@ export default function TeacherStudentProgress() {
       </div>
 
       {/* Main grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20 }}>
+      <div className="flex flex-col lg:flex-row gap-5">
         {/* Batch selector */}
-        <div style={{ ...S.card, padding: "20px" }}>
+        <div className="flex-1 w-full" style={{ ...S.card, padding: "24px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Batch Selection</p>
@@ -219,7 +219,7 @@ export default function TeacherStudentProgress() {
               <div style={{ textAlign: "center", padding: "40px 0", color: "#94A3B8", fontSize: 13 }}>Pick a batch to view topic progress.</div>
             ) : (
               <>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
                   {[
                     { label: "Completed", val: completed, bg: "#ECFDF5", color: "#065F46", icon: <CheckCircle2 size={14} /> },
                     { label: "In Progress", val: inProgress, bg: "#EFF6FF", color: "#1E40AF", icon: <Clock size={14} /> },

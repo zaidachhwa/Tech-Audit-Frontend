@@ -226,7 +226,7 @@ export default function AssignSyllabusDetail() {
       </div>
 
       {/* Batch Info + Syllabus Selector */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
         {/* Batch card */}
         <div style={{ ...S.card, padding: "18px 22px", display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 50, height: 50, borderRadius: 12, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -271,7 +271,7 @@ export default function AssignSyllabusDetail() {
 
       {/* Stat cards */}
       {topics.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 20 }}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           {[
             { label: "Total Topics", value: stats.total, icon: <BookOpen size={18} />, tint: "#EFF6FF", color: "#2563EB" },
             { label: "Completed", value: stats.completed, icon: <CheckCircle2 size={18} />, tint: "#ECFDF5", color: "#10B981" },

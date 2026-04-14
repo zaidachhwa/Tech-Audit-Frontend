@@ -337,7 +337,7 @@ export default function TeacherSyllabusDashboard() {
 
       {/* BATCH SELECTORS */}
       <div style={{ ...S.card, padding: "20px 24px", marginBottom: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label style={{ ...S.label, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <Users size={13} color="#2563EB" /> Select Batch
@@ -370,7 +370,7 @@ export default function TeacherSyllabusDashboard() {
       </div>
 
       {/* STAT CARDS */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 20 }}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         {[
           { label: "Total Topics", value: stats.total, icon: <BookOpen size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
           { label: "Completed", value: stats.completed, icon: <CheckCircle2 size={20} />, tint: "#ECFDF5", iconColor: "#10B981" },
@@ -477,7 +477,7 @@ export default function TeacherSyllabusDashboard() {
             <AlertTriangle size={18} color="#EF4444" />
             <p style={{ fontWeight: 700, color: "#7F1D1D", fontSize: 15, margin: 0 }}>Red Flags - Immediate Attention</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: lowAttendanceStudents.length > 0 && pendingGradesList.length > 0 ? "1fr 1fr" : "1fr", gap: 16 }}>
+          <div className={`grid gap-4 ${lowAttendanceStudents.length > 0 && pendingGradesList.length > 0 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
             {lowAttendanceStudents.length > 0 && (
               <div style={{ padding: "16px", background: "#FEF2F2", borderRadius: 8, border: "1.5px solid #FECACA" }}>
                 <p style={{ fontWeight: 600, color: "#991B1B", fontSize: 13, margin: "0 0 12px" }}>Low Attendance (&lt;75%)</p>
@@ -520,7 +520,7 @@ export default function TeacherSyllabusDashboard() {
       )}
 
       {/* TWO-COLUMN LAYOUT: MY TOPICS + ACTIVITY FEED */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* LEFT: MY TOPICS */}
         <div style={S.card}>
         <div style={{ padding: "18px 24px", borderBottom: "1.5px solid #F1F5F9", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, background: "#F8FAFC", borderRadius: "12px 12px 0 0" }}>

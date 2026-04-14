@@ -165,7 +165,7 @@ export default function AssignProject() {
             <label style={S.label}>Description *</label>
             <textarea placeholder="Provide project details, requirements, and deliverables..." value={description} onChange={(e) => setDescription(e.target.value)} rows={4} style={{ ...S.input, minHeight: 80, resize: "vertical" }} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label style={S.label}>Repository URL (Optional)</label>
               <input type="text" placeholder="https://github.com/..." value={repo} onChange={(e) => setRepo(e.target.value)} style={S.input} />
@@ -193,7 +193,7 @@ export default function AssignProject() {
         <div style={S.sectionTitle}>
           <Users size={16} /> Assignment Target
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           <SelectField label="Batch Name" value={batchName} onChange={(e) => { setBatchName(e.target.value); setBatchNumber(""); setBatchStudents([]); setStudent(""); }}>
             <option value="">Select Batch</option>
             {uniqueBatchNames.map((name) => (<option key={name} value={name}>{name}</option>))}
@@ -265,7 +265,7 @@ export default function AssignProject() {
       </div>
 
       {/* Outcomes & Skills */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div style={S.card}>
           <div style={{ ...S.sectionTitle, justifyContent: "space-between" }}>
             <span style={{ display: "flex", gap: 8, alignItems: "center" }}><Target size={16} /> Learning Outcomes</span>

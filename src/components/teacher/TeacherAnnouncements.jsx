@@ -126,7 +126,7 @@ export default function TeacherAnnouncements() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
         {[
           { label: "Total Announcements", value: announcements.length, tint: "#EFF6FF", iconColor: "#2563EB", icon: <Megaphone size={18} /> },
           { label: "This Week", value: announcements.filter((a) => Date.now() - new Date(a.createdAt).getTime() < 604800000).length, tint: "#ECFDF5", iconColor: "#10B981", icon: <Clock size={18} /> },
@@ -161,7 +161,7 @@ export default function TeacherAnnouncements() {
               <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Message</label>
               <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Write your announcement here..." rows={4} style={{ ...S.input, resize: "vertical" }} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Target Batch</label>
                 <div style={{ position: "relative" }}>

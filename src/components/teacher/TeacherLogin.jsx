@@ -39,7 +39,7 @@ export default function TeacherLogin() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
 
       {/* LEFT BRANDING PANEL */}
-      <div style={{ width: "50%", background: "#1B2B4B", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 56px", position: "relative", overflow: "hidden" }} className="hidden lg:flex">
+      <div style={{ width: "50%", background: "#1B2B4B", flexDirection: "column", justifyContent: "center", padding: "60px 56px", position: "relative", overflow: "hidden" }} className="hidden lg:flex flex-col">
         {/* Decorative circles */}
         <div style={{ position: "absolute", top: -80, right: -80, width: 280, height: 280, borderRadius: "50%", background: "rgba(37,99,235,0.12)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(37,99,235,0.08)", pointerEvents: "none" }} />

@@ -7,7 +7,7 @@ const S = {
   page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
   heading: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 },
   sub: { fontSize: 13, color: "#64748B", margin: "4px 0 24px" },
-  statsRow: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 24 },
+  statsRow: { display: "grid", gap: 16, marginBottom: 24, gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" },
   statCard: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, padding: "18px 22px", display: "flex", alignItems: "center", gap: 14 },
   accordion: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, overflow: "hidden" },
 };

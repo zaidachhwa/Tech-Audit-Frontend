@@ -118,7 +118,7 @@ export default function TeacherGrades() {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
         {[
           { label: "Total Students", value: students.length, tint: "#EFF6FF", iconColor: "#2563EB", icon: <Users size={18} /> },
           { label: "Assignments", value: assignments.length, tint: "#ECFDF5", iconColor: "#10B981", icon: <Award size={18} /> },
@@ -136,7 +136,7 @@ export default function TeacherGrades() {
 
       {/* Controls */}
       <div style={{ ...S.card, padding: "20px 24px", marginBottom: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, alignItems: "flex-end" }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div>
             <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Select Batch</label>
             <div style={{ position: "relative" }}>
