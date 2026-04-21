@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
-import { Lock, Mail, Loader2, GraduationCap, BookOpen, BarChart2, Layers, LogIn } from "lucide-react";
+import { Lock, Mail, Loader2, GraduationCap, BookOpen, BarChart2, Layers, LogIn, Shield, UserCircle } from "lucide-react";
 
 const S = {
   input: { width: "100%", padding: "11px 14px 11px 36px", border: "1.5px solid #E2E8F0", borderRadius: 8, fontSize: 13, color: "#1B2B4B", fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box", background: "#fff" },
@@ -41,6 +41,38 @@ export default function StudentLogin() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", fontFamily: "'DM Sans', sans-serif", background: "#F8FAFC" }}>
       <Toaster position="top-center" />
+
+      {/* Role Selection Buttons */}
+
+      <div style={{ position: "fixed", top: 24, right: 24, display: "flex", alignItems: "center", gap: 12, zIndex: 100 }}>
+        <span style={{ fontSize: 17, fontWeight: 900, color: "#1B2B4B", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.02em" }}>Sign in as:</span>
+        <Link to="/admin/login" style={{ textDecoration: "none" }}>
+          <motion.button
+            whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+            whileTap={{ scale: 0.98 }}
+            style={{
+              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+              border: "1px solid #1B2B4B", background: "#1B2B4B", color: "#fff",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+              fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
+            }}>
+            <Shield size={16} /> Admin
+          </motion.button>
+        </Link>
+        <Link to="/teacher/login" style={{ textDecoration: "none" }}>
+          <motion.button
+            whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+            whileTap={{ scale: 0.98 }}
+            style={{
+              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+              border: "1px solid #E2E8F0", background: "#1B2B4B", color: "#fff",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+              fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
+            }}>
+            <UserCircle size={16} /> Teacher
+          </motion.button>
+        </Link>
+      </div>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); 
         @keyframes spin{to{transform:rotate(360deg)}}

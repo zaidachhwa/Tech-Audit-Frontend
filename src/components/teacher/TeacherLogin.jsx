@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
-import { GraduationCap, Mail, Lock, LogIn, RefreshCw, BookOpen, BarChart3, Users } from "lucide-react";
+import { GraduationCap, Mail, Lock, LogIn, RefreshCw, BookOpen, BarChart3, Users, Shield } from "lucide-react";
 import { loginTeacher } from "../../api/syllabus.api";
 import { useAuth } from "../../context/AuthContext";
 
@@ -36,6 +36,37 @@ export default function TeacherLogin() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", fontFamily: "'DM Sans', sans-serif", background: "#F8FAFC" }}>
       <Toaster position="top-center" />
+      
+      {/* Role Selection Buttons */}
+      <div style={{ position: "fixed", top: 24, right: 24, display: "flex", alignItems: "center", gap: 12, zIndex: 100 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#64748B", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.02em" }}>Sign in as:</span>
+        <Link to="/student/login" style={{ textDecoration: "none" }}>
+          <motion.button 
+            whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+            whileTap={{ scale: 0.98 }}
+            style={{ 
+              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700, 
+              border: "1px solid #1B2B4B", background: "#1B2B4B", color: "#fff", 
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+              fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
+            }}>
+            <GraduationCap size={16} /> Student
+          </motion.button>
+        </Link>
+        <Link to="/admin/login" style={{ textDecoration: "none" }}>
+          <motion.button 
+            whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+            whileTap={{ scale: 0.98 }}
+            style={{ 
+              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700, 
+              border: "1px solid #E2E8F0", background: "#fff", color: "#1B2B4B", 
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+              fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
+            }}>
+            <Shield size={16} /> Admin
+          </motion.button>
+        </Link>
+      </div>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
 
       {/* LEFT BRANDING PANEL */}
