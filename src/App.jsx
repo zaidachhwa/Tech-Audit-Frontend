@@ -1,7 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 
-/* FORGOT PASSWORD */
+/* AUTH / SHARED */
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import PublicOnlyRoute from './components/auth/PublicOnlyRoute';
+import Unauthorized from './components/auth/Unauthorized';
 import ForgotPassword from './components/auth/ForgotPassword';
 
 /* STUDENT */
@@ -31,6 +34,7 @@ import AdminBatches from './pages/AdminBatches';
 import AdminTeachers from './pages/AdminTeachers';
 import TeacherProfileView from './components/admin/TeacherProfileView';
 import StudentProfileView from './components/admin/StudentProfileView';
+import AdminAnalytics from './pages/AdminAnalytics';
 
 /* TEACHER */
 import TeacherLogin from './components/teacher/TeacherLogin';
@@ -41,7 +45,6 @@ import TeacherProfile from './components/teacher/TeacherProfile';
 import TeacherStudentProgress from './components/teacher/TeacherStudentProgress';
 import AssignTask from './components/teacher/AssignTask';
 import AssignProject from './components/teacher/AssignProject';
-import AdminAnalytics from './pages/AdminAnalytics';
 import TeacherAttendance from './components/teacher/TeacherAttendance';
 import TeacherGrades from './components/teacher/TeacherGrades';
 import TeacherAnnouncements from './components/teacher/TeacherAnnouncements';
@@ -49,114 +52,100 @@ import AssignSyllabus from './components/teacher/AssignSyllabus';
 import AssignSyllabusDetail from './components/teacher/AssignSyllabusDetail';
 import TeacherStudents from './pages/TeacherStudents';
 
-/* PRIVATE ROUTE */
-function PrivateRoute({ children, role }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to={`/${role}/login`} replace />;
-  return children;
-}
-
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* FORGOT PASSWORD */}
+        {/* ─── PUBLIC ─────────────────────────────────────────────────────── */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* STUDENT */}
-        <Route path="/student/login" element={<StudentLogin />} />
-        <Route path="/student/signup" element={<StudentSignup />} />
+        {/* ─── STUDENT AUTH ────────────────────────────────────────────────── */}
+        <Route path="/student/login" element={<PublicOnlyRoute><StudentLogin /></PublicOnlyRoute>} />
+        <Route path="/student/signup" element={<PublicOnlyRoute><StudentSignup /></PublicOnlyRoute>} />
 
+        {/* ─── STUDENT PROTECTED ───────────────────────────────────────────── */}
         <Route
           path="/student"
           element={
-            <PrivateRoute role="student">
+            <ProtectedRoute role="student">
               <StudentLayout />
-            </PrivateRoute>
+            </ProtectedRoute>
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="assignments" element={<StudentAssignments />} />
+          <Route path="dashboard"    element={<Dashboard />} />
+          <Route path="assignments"  element={<StudentAssignments />} />
           <Route path="announcements" element={<StudentAnnouncements />} />
-          <Route path="projects" element={<Projects />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="profile" element={<StudentProfile />} />
+          <Route path="projects"     element={<Projects />} />
+          <Route path="reports"      element={<Reports />} />
+          <Route path="profile"      element={<StudentProfile />} />
         </Route>
 
-        {/* ADMIN */}
-        <Route path="/admin/login" element={<AdminLogin />} />
+        {/* ─── ADMIN AUTH ──────────────────────────────────────────────────── */}
+        <Route path="/admin/login" element={<PublicOnlyRoute><AdminLogin /></PublicOnlyRoute>} />
 
+        {/* ─── ADMIN PROTECTED ─────────────────────────────────────────────── */}
         <Route
           path="/admin"
           element={
-            <PrivateRoute role="admin">
+            <ProtectedRoute role="admin">
               <AdminLayout />
-            </PrivateRoute>
-          }
-        >
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="student-management" element={<AdminStudents />} />
-          <Route path="teacher-management" element={<AdminTeachers />} />
-          <Route path="batch-management" element={<AdminBatches />} />
-          <Route path="project-tracking" element={<ProjectTracking />} />
-          <Route
-            path="project-tracking/batch/:batchId"
-            element={<AdminBatchDetail />}
-          />
-          <Route
-            path="project-tracking/student/:studentId"
-            element={<StudentProjectsView />}
-          />
-          <Route path="add-reports" element={<AddReport2 />} />
-          <Route path="assign-task" element={<AssignTask />} />
-          <Route path="syllabus" element={<AdminSyllabusManagement />} />
-          <Route path="all-reports" element={<AllReports />} />
-          <Route path="drafts" element={<Drafts />} />
-          <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
-          <Route path="student/:studentId" element={<StudentProfileView />} />
-          <Route path="analytics" element={<AdminAnalytics />} />
-        </Route>
-
-        {/* TEACHER */}
-        <Route path="/teacher/login" element={<TeacherLogin />} />
-        <Route path="/teacher/register" element={<TeacherRegister />} />
-
-        <Route
-          path="/teacher"
-          element={
-            <PrivateRoute role="teacher">
-              <TeacherLayout />
-            </PrivateRoute>
+            </ProtectedRoute>
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<TeacherSyllabusDashboard />} />
-          <Route path="performance" element={<TeacherStudentProgress />} />
-          <Route path="profile" element={<TeacherProfile />} />
-          <Route path="assign-task" element={<AssignTask />} />
-          <Route path="assign-project" element={<AssignProject />} />
-          <Route path="assign-syllabus" element={<AssignSyllabus />} />
+          <Route path="dashboard"          element={<AdminDashboard />} />
+          <Route path="student-management" element={<AdminStudents />} />
+          <Route path="teacher-management" element={<AdminTeachers />} />
+          <Route path="batch-management"   element={<AdminBatches />} />
+          <Route path="project-tracking"   element={<ProjectTracking />} />
+          <Route path="project-tracking/batch/:batchId"     element={<AdminBatchDetail />} />
+          <Route path="project-tracking/student/:studentId" element={<StudentProjectsView />} />
+          <Route path="add-reports"  element={<AddReport2 />} />
+          <Route path="assign-task"  element={<AssignTask />} />
+          <Route path="syllabus"     element={<AdminSyllabusManagement />} />
+          <Route path="all-reports"  element={<AllReports />} />
+          <Route path="drafts"       element={<Drafts />} />
+          <Route path="analytics"    element={<AdminAnalytics />} />
+          <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
+          <Route path="student/:studentId" element={<StudentProfileView />} />
+        </Route>
+
+        {/* ─── TEACHER AUTH ────────────────────────────────────────────────── */}
+        <Route path="/teacher/login"    element={<PublicOnlyRoute><TeacherLogin /></PublicOnlyRoute>} />
+        <Route path="/teacher/register" element={<PublicOnlyRoute><TeacherRegister /></PublicOnlyRoute>} />
+
+        {/* ─── TEACHER PROTECTED ───────────────────────────────────────────── */}
+        <Route
+          path="/teacher"
+          element={
+            <ProtectedRoute role="teacher">
+              <TeacherLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"         element={<TeacherSyllabusDashboard />} />
+          <Route path="performance"       element={<TeacherStudentProgress />} />
+          <Route path="profile"           element={<TeacherProfile />} />
+          <Route path="assign-task"       element={<AssignTask />} />
+          <Route path="assign-project"    element={<AssignProject />} />
+          <Route path="assign-syllabus"   element={<AssignSyllabus />} />
           <Route path="assign-syllabus/:batchId" element={<AssignSyllabusDetail />} />
-          <Route path="add-reports" element={<AddReport2 />} />
-          <Route path="drafts" element={<Drafts />} />
+          <Route path="add-reports"       element={<AddReport2 />} />
+          <Route path="drafts"            element={<Drafts />} />
           <Route path="student-management" element={<TeacherStudents />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
-          <Route path="project-tracking" element={<ProjectTracking />} />
-          <Route
-            path="project-tracking/batch/:batchId"
-            element={<AdminBatchDetail />}
-          />
-          <Route
-            path="project-tracking/student/:studentId"
-            element={<StudentProjectsView />}
-          />
-          <Route path="attendance" element={<TeacherAttendance />} />
-          <Route path="grades" element={<TeacherGrades />} />
+          <Route path="project-tracking"   element={<ProjectTracking />} />
+          <Route path="project-tracking/batch/:batchId"     element={<AdminBatchDetail />} />
+          <Route path="project-tracking/student/:studentId" element={<StudentProjectsView />} />
+          <Route path="attendance"    element={<TeacherAttendance />} />
+          <Route path="grades"        element={<TeacherGrades />} />
           <Route path="announcements" element={<TeacherAnnouncements />} />
         </Route>
 
-        {/* DEFAULT */}
+        {/* ─── FALLBACK ────────────────────────────────────────────────────── */}
         <Route path="*" element={<Navigate to="/student/login" replace />} />
       </Routes>
     </AuthProvider>

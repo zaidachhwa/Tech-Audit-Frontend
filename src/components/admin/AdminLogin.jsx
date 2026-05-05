@@ -19,7 +19,7 @@ export default function AdminLogin() {
       const res = await API.post("/admin/login", form);
       const token = res.data.token;
       const data = res.data;
-      login(token, data);
+      login(token, data, "admin");
       toast.success("Welcome back, Admin!", { duration: 2000 });
       setTimeout(() => navigate("/admin/dashboard"), 1500);
     } catch (err) {
@@ -60,16 +60,16 @@ export default function AdminLogin() {
         * { box-sizing: border-box; }
       `}</style>
       <Toaster position="top-center" />
-      
+
       <div style={{ position: "fixed", top: 24, right: 24, display: "flex", alignItems: "center", gap: 12, zIndex: 100 }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: "#64748B", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.02em" }}>Sign in as:</span>
         <Link to="/student/login" style={{ textDecoration: "none" }}>
-          <motion.button 
+          <motion.button
             whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
             whileTap={{ scale: 0.98 }}
-            style={{ 
-              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700, 
-              border: "1px solid #1B2B4B", background: "#1B2B4B", color: "#fff", 
+            style={{
+              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+              border: "1px solid #1B2B4B", background: "#1B2B4B", color: "#fff",
               cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
               fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
             }}>
@@ -77,12 +77,12 @@ export default function AdminLogin() {
           </motion.button>
         </Link>
         <Link to="/teacher/login" style={{ textDecoration: "none" }}>
-          <motion.button 
+          <motion.button
             whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
             whileTap={{ scale: 0.98 }}
-            style={{ 
-              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700, 
-              border: "1px solid #E2E8F0", background: "#fff", color: "#1B2B4B", 
+            style={{
+              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+              border: "1px solid #E2E8F0", background: "#fff", color: "#1B2B4B",
               cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
               fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
             }}>

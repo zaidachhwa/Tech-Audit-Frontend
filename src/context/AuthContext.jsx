@@ -3,17 +3,28 @@ import { createContext, useContext, useState } from "react";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("user")) || null
-  );
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
 
-  const login = (token, data) => {
+    // Only consider logged in if BOTH user data and token exist
+    if (!savedUser || !token) return null;
+
+    try {
+      return JSON.parse(savedUser);
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const login = (token, userData, role) => {
     localStorage.setItem("token", token);
-    localStorage.setItem(
-      "user",
-      JSON.stringify(data.student || data.admin || data.teacher)
-    );
-    setUser(data.student || data.admin || data.teacher);
+    const userWithRole = {
+      ...(userData.student || userData.admin || userData.teacher || userData),
+      role,
+    };
+    localStorage.setItem("user", JSON.stringify(userWithRole));
+    setUser(userWithRole);
   };
 
   const logout = () => {

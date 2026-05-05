@@ -22,7 +22,7 @@ export default function StudentLogin() {
     setLoading(true);
     try {
       const res = await API.post("/students/login", form);
-      login(res.data.token, res.data);
+      login(res.data.token, res.data, "student");
       toast.success("Welcome back!");
       setTimeout(() => navigate("/student/dashboard"), 1000);
     } catch (err) {
