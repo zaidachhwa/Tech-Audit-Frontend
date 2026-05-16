@@ -219,7 +219,7 @@ export function TopicCard({ topic, onAssign }) {
           {topic.assignedTo && (
             <div className="flex items-center gap-1">
               <Users size={12} />
-              <span>Assigned</span>
+              <span>{topic.assignedTo.name || "Assigned"}</span>
             </div>
           )}
         </div>

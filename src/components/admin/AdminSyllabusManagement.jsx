@@ -16,6 +16,7 @@ import {
   Calendar,
   User,
   X,
+  Target,
 } from "lucide-react";
 import {
   EmptyState,
@@ -26,6 +27,7 @@ import BatchAssignmentsPanel from "./BatchAssignmentsPanel";
 export default function AdminSyllabusManagement() {
   const [syllabi, setSyllabi] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTopicModal, setShowTopicModal] = useState(false);
@@ -33,6 +35,7 @@ export default function AdminSyllabusManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showEditTopicModal, setShowEditTopicModal] = useState(false);
   const [showAssignTeacherModal, setShowAssignTeacherModal] = useState(false);
+  const [showAssignBatchModal, setShowAssignBatchModal] = useState(false);
   const [selectedSyllabus, setSelectedSyllabus] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [expandedSyllabi, setExpandedSyllabi] = useState(new Set());
@@ -41,6 +44,7 @@ export default function AdminSyllabusManagement() {
   const [topicForm, setTopicForm] = useState({ title: "", description: "", dueDate: "" });
   const [assignForm, setAssignForm] = useState({ teacherId: "" });
   const [assignTeacherForm, setAssignTeacherForm] = useState({ teacherId: "" });
+  const [assignBatchForm, setAssignBatchForm] = useState({ batchId: "", notes: "", dueDate: "" });
   const [editForm, setEditForm] = useState({ subject: "", description: "" });
   const [editTopicForm, setEditTopicForm] = useState({ title: "", description: "", dueDate: "" });
   const [activeTab, setActiveTab] = useState("templates");
@@ -50,12 +54,14 @@ export default function AdminSyllabusManagement() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [syllabusRes, teacherRes] = await Promise.all([
+      const [syllabusRes, teacherRes, batchRes] = await Promise.all([
         API.get("/syllabus/all"),
         API.get("/teachers/list"),
+        API.get("/batches/public"),
       ]);
       setSyllabi(syllabusRes.data?.syllabi || []);
       setTeachers(teacherRes.data?.teachers || []);
+      setBatches(batchRes.data?.batches || batchRes.data || []);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch data");
@@ -121,6 +127,30 @@ export default function AdminSyllabusManagement() {
     } catch (err) {
       console.error(err);
       toast.error(err?.response?.data?.message || "Failed to assign teacher");
+    }
+  };
+
+  const handleAssignToBatch = async (e) => {
+    e.preventDefault();
+    if (!assignBatchForm.batchId) {
+      toast.error("Please select a batch");
+      return;
+    }
+    try {
+      await API.post("/syllabus/assign-to-batch", {
+        syllabusId: selectedSyllabus._id,
+        batchId: assignBatchForm.batchId,
+        notes: assignBatchForm.notes,
+        dueDate: assignBatchForm.dueDate,
+      });
+      toast.success("Syllabus assigned to batch successfully!");
+      setAssignBatchForm({ batchId: "", notes: "", dueDate: "" });
+      setShowAssignBatchModal(false);
+      // No need to call fetchData since the batch assignment isn't displayed on this tab, 
+      // but we could if we wanted to show assignment counts
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Failed to assign syllabus to batch");
     }
   };
 
@@ -562,6 +592,31 @@ export default function AdminSyllabusManagement() {
                           >
                             <Users size={14} />
                             {syllabus.assignedTeacher ? "Change Teacher" : "Assign Teacher"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedSyllabus(syllabus);
+                              setShowAssignBatchModal(true);
+                            }}
+                            className="px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2"
+                            style={{
+                              backgroundColor: "#F8FAFC",
+                              color: "#64748B",
+                              border: "1px solid #E2E8F0",
+                              borderRadius: "6px",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "#EFF6FF";
+                              e.currentTarget.style.color = "#2563EB";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "#F8FAFC";
+                              e.currentTarget.style.color = "#64748B";
+                            }}
+                            title="Assign to Batch"
+                          >
+                            <Target size={14} />
+                            Assign to Batch
                           </button>
                           <button
                             onClick={() => openEditModal(syllabus)}
@@ -1333,6 +1388,126 @@ export default function AdminSyllabusManagement() {
                   }}
                 >
                   Assign Teacher
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+        {showAssignBatchModal && selectedSyllabus && (
+          <Modal title={`Assign "${selectedSyllabus.subject}" to Batch`} onClose={() => { setShowAssignBatchModal(false); setSelectedSyllabus(null); }}>
+            <form onSubmit={handleAssignToBatch} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                  Select Batch *
+                </label>
+                <select
+                  value={assignBatchForm.batchId}
+                  onChange={(e) => setAssignBatchForm({ ...assignBatchForm, batchId: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 rounded-lg outline-none text-sm transition"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    borderRadius: "8px",
+                    color: "#1B2B4B",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#2563EB";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#E2E8F0";
+                  }}
+                >
+                  <option value="">Choose a batch...</option>
+                  {batches.map((batch) => (
+                    <option key={batch._id} value={batch._id}>
+                      {batch.batch_name} (#{batch.batch_no})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  value={assignBatchForm.dueDate}
+                  onChange={(e) => setAssignBatchForm({ ...assignBatchForm, dueDate: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg outline-none text-sm transition"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    borderRadius: "8px",
+                    color: "#1B2B4B",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#2563EB";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#E2E8F0";
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                  Notes (optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={assignBatchForm.notes}
+                  onChange={(e) => setAssignBatchForm({ ...assignBatchForm, notes: e.target.value })}
+                  placeholder="Add any notes about this assignment..."
+                  className="w-full px-3 py-2 rounded-lg outline-none resize-none text-sm transition"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    borderRadius: "8px",
+                    color: "#1B2B4B",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#2563EB";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#E2E8F0";
+                  }}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowAssignBatchModal(false); setSelectedSyllabus(null); }}
+                  className="flex-1 px-4 py-2 rounded-lg font-medium transition text-sm"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    color: "#1B2B4B",
+                    borderRadius: "8px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#F8FAFC";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#FFFFFF";
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 rounded-lg text-white font-medium transition text-sm"
+                  style={{
+                    backgroundColor: "#2563EB",
+                    borderRadius: "8px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#1E40AF";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#2563EB";
+                  }}
+                >
+                  Assign to Batch
                 </button>
               </div>
             </form>
