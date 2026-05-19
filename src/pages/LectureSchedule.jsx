@@ -15,7 +15,15 @@ import {
   ChevronRight,
   RefreshCw,
   TrendingUp,
-  ListTodo
+  ListTodo,
+  FileText,
+  Lock,
+  Download,
+  AlertCircle,
+  Eye,
+  Check,
+  UploadCloud,
+  X
 } from "lucide-react";
 
 export default function LectureSchedule() {
@@ -43,6 +51,23 @@ export default function LectureSchedule() {
   const [batches, setBatches] = useState([]);
   const [teachers, setTeachers] = useState([]);
 
+  // Homework modal states
+  const [isHomeworkModalOpen, setIsHomeworkModalOpen] = useState(false);
+  const [activeHomeworkLecture, setActiveHomeworkLecture] = useState(null);
+  const [homeworkIndex, setHomeworkIndex] = useState(null);
+  
+  // Homework form states (Admin/Teacher)
+  const [homeworkTitle, setHomeworkTitle] = useState("");
+  const [homeworkDesc, setHomeworkDesc] = useState("");
+  const [homeworkDueDate, setHomeworkDueDate] = useState("");
+  const [homeworkAcceptSubmissions, setHomeworkAcceptSubmissions] = useState(true);
+  const [homeworkSubmissions, setHomeworkSubmissions] = useState([]);
+  const [savingHW, setSavingHW] = useState(false);
+
+  // Student submission states
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [submittingHW, setSubmittingHW] = useState(false);
+
   // Fetch all schedules
   const fetchSchedules = async () => {
     try {
@@ -56,18 +81,31 @@ export default function LectureSchedule() {
     }
   };
 
-  // Fetch batches and teachers (Admin only)
+  // Fetch batches and teachers (Admin/Teacher)
   const fetchDropdowns = async () => {
-    if (role !== "admin") return;
+    if (role !== "admin" && role !== "teacher") return;
     try {
-      const [batchesRes, teachersRes] = await Promise.all([
-        API.get("/batches"),
-        API.get("/teachers/list")
-      ]);
-      setBatches(batchesRes.data?.batches || []);
-      setTeachers(teachersRes.data?.teachers || []);
+      if (role === "admin") {
+        const [batchesRes, teachersRes] = await Promise.all([
+          API.get("/batches"),
+          API.get("/teachers/list")
+        ]);
+        setBatches(batchesRes.data?.batches || []);
+        setTeachers(teachersRes.data?.teachers || []);
+      } else if (role === "teacher") {
+        const batchesRes = await API.get("/batches");
+        setBatches(batchesRes.data?.batches || []);
+        // For teacher, they can only assign themselves. 
+        // We set the teachers list to just the current teacher.
+        setTeachers([{
+          _id: user?.id,
+          name: user?.name,
+          email: user?.email
+        }]);
+        setTeacherId(user?.id || "");
+      }
     } catch (err) {
-      toast.error("Failed to load batches or teachers list.");
+      toast.error("Failed to load configuration options.");
     }
   };
 
@@ -78,7 +116,9 @@ export default function LectureSchedule() {
 
   // Formatter helper for dates
   const formatDateForInput = (date) => {
+    if (!date) return "";
     const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
     let month = "" + (d.getMonth() + 1);
     let day = "" + d.getDate();
     const year = d.getFullYear();
@@ -134,7 +174,13 @@ export default function LectureSchedule() {
         title: `Lecture ${i + 1}`,
         description: "",
         date: formatDateForInput(currentDate),
-        status: "Planned"
+        status: "Planned",
+        homework: {
+          title: "",
+          description: "",
+          due_date: undefined,
+          accept_submissions: true
+        }
       });
 
       if (frequency !== "manual") {
@@ -166,7 +212,13 @@ export default function LectureSchedule() {
       title: `Lecture ${list.length + 1}`,
       description: "",
       date: formatDateForInput(nextDate),
-      status: "Planned"
+      status: "Planned",
+      homework: {
+        title: "",
+        description: "",
+        due_date: undefined,
+        accept_submissions: true
+      }
     });
 
     setLectures(list);
@@ -252,13 +304,15 @@ export default function LectureSchedule() {
       return;
     }
 
-    const csvHeaders = ["Lecture #", "Title", "Description", "Date", "Status"];
+    const csvHeaders = ["Lecture #", "Title", "Description", "Date", "Status", "Homework Title", "Homework Due Date"];
     const csvRows = lectures.map((l, index) => [
       index + 1,
       `"${(l.title || "").replace(/"/g, '""')}"`,
       `"${(l.description || "").replace(/"/g, '""')}"`,
       l.date ? new Date(l.date).toLocaleDateString() : "",
-      l.status
+      l.status,
+      `"${(l.homework?.title || "").replace(/"/g, '""')}"`,
+      l.homework?.due_date ? new Date(l.homework.due_date).toLocaleDateString() : ""
     ]);
 
     const csvContent =
@@ -295,7 +349,7 @@ export default function LectureSchedule() {
   const handleOpenCreate = () => {
     setSubject("");
     setBatchId("");
-    setTeacherId("");
+    setTeacherId(role === "teacher" ? (user?.id || "") : "");
     setNumLectures(5);
     setStartDate("");
     setFrequency("daily");
@@ -309,6 +363,170 @@ export default function LectureSchedule() {
     setSelectedSchedule(null);
     setIsCreating(false);
     fetchSchedules();
+  };
+
+  // Fetch Submissions for active Homework
+  const fetchSubmissions = async (schedId, lectId) => {
+    if (!schedId || !lectId || lectId.startsWith("temp-")) return;
+    try {
+      const res = await API.get(`/schedules/${schedId}/lectures/${lectId}/submissions`);
+      setHomeworkSubmissions(res.data || []);
+    } catch (err) {
+      toast.error("Failed to load submissions.");
+    }
+  };
+
+  // Homework Modal opening logic with dynamic pre-fill due dates
+  const openHomeworkModal = (lecture, index) => {
+    if (!selectedSchedule?._id) {
+      toast.error("Please save the schedule first before assigning homework.");
+      return;
+    }
+
+    setActiveHomeworkLecture(lecture);
+    setHomeworkIndex(index);
+    setSelectedFile(null);
+
+    setHomeworkTitle(lecture.homework?.title || "");
+    setHomeworkDesc(lecture.homework?.description || "");
+    setHomeworkAcceptSubmissions(
+      typeof lecture.homework?.accept_submissions !== "undefined"
+        ? lecture.homework.accept_submissions
+        : true
+    );
+
+    // Auto Pre-fill due date logic
+    if (lecture.homework?.due_date) {
+      setHomeworkDueDate(formatDateForInput(lecture.homework.due_date));
+    } else {
+      const nextLect = lectures[index + 1];
+      if (nextLect && nextLect.date) {
+        setHomeworkDueDate(formatDateForInput(nextLect.date));
+      } else {
+        // Last lecture row or no next lecture -> date + 7 days
+        if (lecture.date) {
+          const calcDate = new Date(lecture.date);
+          calcDate.setDate(calcDate.getDate() + 7);
+          setHomeworkDueDate(formatDateForInput(calcDate));
+        } else {
+          // Fallback to today + 7 days
+          const calcDate = new Date();
+          calcDate.setDate(calcDate.getDate() + 7);
+          setHomeworkDueDate(formatDateForInput(calcDate));
+        }
+      }
+    }
+
+    setIsHomeworkModalOpen(true);
+    fetchSubmissions(selectedSchedule._id, lecture._id);
+  };
+
+  // Admin/Teacher: Save homework changes
+  const saveHomework = async () => {
+    if (!homeworkTitle.trim()) {
+      toast.error("Homework title is required.");
+      return;
+    }
+
+    try {
+      setSavingHW(true);
+      const res = await API.post(
+        `/schedules/${selectedSchedule._id}/lectures/${activeHomeworkLecture._id}/homework`,
+        {
+          title: homeworkTitle,
+          description: homeworkDesc,
+          due_date: homeworkDueDate,
+          accept_submissions: homeworkAcceptSubmissions
+        }
+      );
+
+      // Update local grid state
+      const list = [...lectures];
+      list[homeworkIndex] = {
+        ...list[homeworkIndex],
+        homework: res.data.lecture.homework
+      };
+      setLectures(list);
+
+      toast.success("Homework saved successfully!");
+      setIsHomeworkModalOpen(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save homework.");
+    } finally {
+      setSavingHW(false);
+    }
+  };
+
+  // Student: Convert selected file to base64
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File is too large. Maximum size allowed is 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSelectedFile({
+        name: file.name,
+        base64: reader.result
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Student: submit file to backend
+  const handleHWSubmission = async () => {
+    if (!selectedFile) {
+      toast.error("Please upload a file first.");
+      return;
+    }
+
+    try {
+      setSubmittingHW(true);
+      await API.post(
+        `/schedules/${selectedSchedule._id}/lectures/${activeHomeworkLecture._id}/submissions`,
+        {
+          fileName: selectedFile.name,
+          fileUrl: selectedFile.base64
+        }
+      );
+
+      toast.success("Assignment submitted successfully!");
+      setSelectedFile(null);
+      fetchSubmissions(selectedSchedule._id, activeHomeworkLecture._id);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to submit assignment.");
+    } finally {
+      setSubmittingHW(false);
+    }
+  };
+
+  // Admin/Teacher: Toggle submission status between pending/reviewed
+  const handleToggleReview = async (subId) => {
+    try {
+      const res = await API.patch(`/schedules/submissions/${subId}/review`);
+      toast.success(res.data.message);
+      
+      // Update in submissions list immediately
+      setHomeworkSubmissions(prev =>
+        prev.map(item => item._id === subId ? res.data.submission : item)
+      );
+    } catch (err) {
+      toast.error("Failed to update status.");
+    }
+  };
+
+  // Render a clean submission download helper
+  const handleDownloadFile = (fileName, base64Url) => {
+    const link = document.createElement("a");
+    link.href = base64Url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -333,7 +551,7 @@ export default function LectureSchedule() {
           </p>
         </div>
 
-        {role === "admin" && !selectedSchedule && !isCreating && (
+        {(role === "admin" || role === "teacher") && !selectedSchedule && !isCreating && (
           <button
             onClick={handleOpenCreate}
             className="bg-[#2563EB] text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer"
@@ -343,7 +561,7 @@ export default function LectureSchedule() {
         )}
       </div>
 
-      {/* DASHBOARD GRID LIST (Only shown when not editing/creating) */}
+      {/* DASHBOARD GRID LIST */}
       {!selectedSchedule && !isCreating ? (
         loading ? (
           <div className="flex justify-center items-center py-20">
@@ -356,9 +574,9 @@ export default function LectureSchedule() {
             </div>
             <h3 className="text-base font-bold text-[#1B2B4B] mb-1">No Schedules Scheduled</h3>
             <p className="text-xs text-[#64748B] mb-6">
-              {role === "admin" ? "Create your first lecture schedule calendar and assign it to a teacher and batch." : "You do not have any lecture schedules scheduled at this moment."}
+              {(role === "admin" || role === "teacher") ? "Create your first lecture schedule calendar and assign it to a batch." : "You do not have any lecture schedules scheduled at this moment."}
             </p>
-            {role === "admin" && (
+            {(role === "admin" || role === "teacher") && (
               <button
                 onClick={handleOpenCreate}
                 className="bg-[#2563EB] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#1D4ED8] transition-all cursor-pointer"
@@ -436,8 +654,8 @@ export default function LectureSchedule() {
         /* SCHEDULER BUILDER & EDITOR WORKSPACE */
         <div className="space-y-6">
           
-          {/* SETUP BAR (Admin only during creation/edit) */}
-          {role === "admin" && (
+          {/* SETUP BAR */}
+          {(role === "admin" || role === "teacher") && (
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm">
               <h2 className="text-sm font-bold text-[#1B2B4B] mb-4 flex items-center gap-1.5 uppercase tracking-wider">
                 <BookOpen size={16} className="text-[#2563EB]" /> Configuration Setup
@@ -609,23 +827,25 @@ export default function LectureSchedule() {
                 <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[11px] font-bold uppercase text-[#64748B] tracking-wider">
                   <tr>
                     <th className="px-5 py-3 w-16 text-center">#</th>
-                    <th className="px-5 py-3 min-w-[200px]">Lecture Title</th>
-                    <th className="px-5 py-3 min-w-[300px]">Description Summary</th>
-                    <th className="px-5 py-3 w-44">Date</th>
-                    <th className="px-5 py-3 w-40">Status</th>
-                    {role === "admin" && <th className="px-5 py-3 w-16 text-center">Action</th>}
+                    <th className="px-5 py-3 min-w-[180px]">Lecture Title</th>
+                    <th className="px-5 py-3 min-w-[220px]">Description Summary</th>
+                    <th className="px-5 py-3 w-40">Date</th>
+                    <th className="px-5 py-3 w-40">Homework</th>
+                    <th className="px-5 py-3 w-36">Status</th>
+                    {(role === "admin" || role === "teacher") && <th className="px-5 py-3 w-16 text-center">Action</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F1F5F9]">
                   {lectures.length === 0 ? (
                     <tr>
-                      <td colSpan={role === "admin" ? 6 : 5} className="px-5 py-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
+                      <td colSpan={role === "admin" ? 7 : 6} className="px-5 py-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
                         Grid is empty. Use the configuration generator above to create lecture rows.
                       </td>
                     </tr>
                   ) : (
                     lectures.map((lecture, index) => {
                       const isDone = lecture.status === "Done";
+                      const hasHW = lecture.homework?.title;
                       
                       return (
                         <tr key={lecture._id || index} className="hover:bg-[#F8FAFC]/50 transition-colors">
@@ -643,7 +863,7 @@ export default function LectureSchedule() {
 
                           {/* Lecture Title */}
                           <td className="px-5 py-3.5">
-                            {role === "admin" ? (
+                            {(role === "admin" || role === "teacher") ? (
                               <input
                                 type="text"
                                 placeholder="Enter lecture title..."
@@ -660,7 +880,7 @@ export default function LectureSchedule() {
 
                           {/* Description */}
                           <td className="px-5 py-3.5">
-                            {role === "admin" ? (
+                            {(role === "admin" || role === "teacher") ? (
                               <textarea
                                 rows={1}
                                 style={{ resize: "none" }}
@@ -682,7 +902,7 @@ export default function LectureSchedule() {
 
                           {/* Date */}
                           <td className="px-5 py-3.5">
-                            {role === "admin" ? (
+                            {(role === "admin" || role === "teacher") ? (
                               <input
                                 type="date"
                                 value={lecture.date ? formatDateForInput(lecture.date) : ""}
@@ -699,6 +919,30 @@ export default function LectureSchedule() {
                                       year: "numeric" 
                                     })
                                   : "Unscheduled"}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Homework Action Column */}
+                          <td className="px-5 py-3.5">
+                            {lecture._id && !lecture._id.startsWith("temp-") ? (
+                              <button
+                                onClick={() => openHomeworkModal(lecture, index)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                  hasHW
+                                    ? "bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE] hover:bg-[#E0E7FF]"
+                                    : "bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
+                                }`}
+                              >
+                                <BookOpen size={13} />
+                                {role === "student" ? (hasHW ? "View Homework" : "No HW") : (hasHW ? "Edit HW" : "Add HW")}
+                                {hasHW && (
+                                  <span className="w-1.5 h-1.5 bg-[#4F46E5] rounded-full inline-block animate-pulse" />
+                                )}
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-[#94A3B8] font-medium italic block leading-tight">
+                                Save schedule first
                               </span>
                             )}
                           </td>
@@ -735,7 +979,7 @@ export default function LectureSchedule() {
                           </td>
 
                           {/* Action (Delete Single Row) */}
-                          {role === "admin" && (
+                          {(role === "admin" || role === "teacher") && (
                             <td className="px-5 py-3.5 text-center">
                               <button
                                 onClick={() => removeLectureRow(index)}
@@ -759,7 +1003,7 @@ export default function LectureSchedule() {
           <div className="flex justify-between items-center border-t border-[#E2E8F0] pt-6 flex-wrap gap-4">
             
             <div className="flex gap-2">
-              {role === "admin" && (
+              {(role === "admin" || role === "teacher") && (
                 <>
                   <button
                     onClick={addLectureRow}
@@ -806,6 +1050,292 @@ export default function LectureSchedule() {
 
           </div>
 
+        </div>
+      )}
+
+      {/* DYNAMIC INTERACTIVE HOMEWORK MODAL */}
+      {isHomeworkModalOpen && activeHomeworkLecture && (
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E2E8F0] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F5F9]">
+              <div>
+                <span className="text-[10px] font-bold text-[#2563EB] uppercase tracking-wider block mb-0.5">
+                  Lecture #{homeworkIndex + 1}: {activeHomeworkLecture.title}
+                </span>
+                <h3 className="text-base font-extrabold text-[#1B2B4B]">Homework Assignments</h3>
+              </div>
+              <button
+                onClick={() => setIsHomeworkModalOpen(false)}
+                className="text-[#94A3B8] hover:text-[#475569] p-1.5 hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* ADMIN / TEACHER EDIT VIEW */}
+              {role !== "student" ? (
+                <div className="space-y-6">
+                  
+                  {/* Homework Form */}
+                  <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-5 rounded-xl space-y-4">
+                    <h4 className="text-xs font-bold text-[#475569] uppercase tracking-wider flex items-center gap-1">
+                      <FileText size={14} className="text-[#2563EB]" /> Assignment Config
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Homework Title</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Build Mongoose Models"
+                          value={homeworkTitle}
+                          onChange={(e) => setHomeworkTitle(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-[#E2E8F0] focus:border-[#2563EB] focus:outline-none rounded-lg text-xs font-semibold text-[#1B2B4B] shadow-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Due Date</label>
+                        <input
+                          type="date"
+                          value={homeworkDueDate}
+                          onChange={(e) => setHomeworkDueDate(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-[#E2E8F0] focus:border-[#2563EB] focus:outline-none rounded-lg text-xs font-semibold text-[#1B2B4B] shadow-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Instructions / Description</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Provide details and instructions for the students..."
+                        value={homeworkDesc}
+                        onChange={(e) => setHomeworkDesc(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E2E8F0] focus:border-[#2563EB] focus:outline-none rounded-lg text-xs font-medium text-[#475569] shadow-sm"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0]">
+                      <div className="flex items-center gap-2">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={homeworkAcceptSubmissions}
+                            onChange={(e) => setHomeworkAcceptSubmissions(e.target.checked)}
+                          />
+                          <div className="w-9 h-5 bg-[#CBD5E1] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#10B981]"></div>
+                        </label>
+                        <span className="text-xs font-bold text-[#475569]">
+                          {homeworkAcceptSubmissions ? "Accepting student file submissions" : "Submissions locked / closed"}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={saveHomework}
+                        disabled={savingHW}
+                        className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      >
+                        {savingHW ? "Saving..." : "Save Homework Settings"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Student Submissions List */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-[#475569] uppercase tracking-wider">
+                      Student Submissions ({homeworkSubmissions.length})
+                    </h4>
+                    
+                    {homeworkSubmissions.length === 0 ? (
+                      <div className="border border-dashed border-[#E2E8F0] rounded-xl p-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
+                        No student submissions uploaded yet.
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-[#F1F5F9] border border-[#E2E8F0] rounded-xl bg-white overflow-hidden max-h-[250px] overflow-y-auto">
+                        {homeworkSubmissions.map((sub) => (
+                          <div key={sub._id} className="p-3.5 flex justify-between items-center text-xs hover:bg-[#F8FAFC]">
+                            <div>
+                              <strong className="block text-[#1B2B4B]">{sub.student?.name}</strong>
+                              <span className="text-[10px] text-[#64748B] block mt-0.5">{sub.student?.email}</span>
+                              <button
+                                onClick={() => handleDownloadFile(sub.fileName, sub.fileUrl)}
+                                className="text-[#2563EB] hover:underline flex items-center gap-1 mt-1 text-[10px] font-semibold text-left"
+                              >
+                                <Download size={11} /> {sub.fileName}
+                              </button>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${
+                                sub.status === "reviewed"
+                                  ? "bg-[#D1FAE5] border-[#A7F3D0] text-[#065F46]"
+                                  : "bg-[#FFF7ED] border-[#FED7AA] text-[#C2410C]"
+                              }`}>
+                                {sub.status}
+                              </span>
+
+                              <button
+                                onClick={() => handleToggleReview(sub._id)}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm transition-all cursor-pointer ${
+                                  sub.status === "reviewed"
+                                    ? "bg-white border border-[#CBD5E1] text-[#475569] hover:bg-[#F8FAFC]"
+                                    : "bg-[#10B981] hover:bg-[#059669] text-white"
+                                }`}
+                              >
+                                {sub.status === "reviewed" ? "Re-open" : "Mark Reviewed"}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              ) : (
+                
+                /* STUDENT SUBMISSION VIEW */
+                <div className="space-y-6">
+                  
+                  {/* Read-Only Assignment Details */}
+                  {!activeHomeworkLecture.homework?.title ? (
+                    <div className="bg-[#FFF7ED] border border-[#FED7AA] text-[#9A3412] p-5 rounded-xl text-center space-y-2">
+                      <Lock className="mx-auto text-[#EA580C]" size={24} />
+                      <h4 className="text-sm font-bold">No Homework Assigned</h4>
+                      <p className="text-xs">Your instructor has not added any homework task for this lecture yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      
+                      {/* Assignment card */}
+                      <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-5 rounded-xl space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EEF2FF] text-[#4F46E5] uppercase tracking-wider mb-2">
+                              Assigned Assignment
+                            </span>
+                            <h4 className="text-base font-bold text-[#1B2B4B] leading-tight">
+                              {activeHomeworkLecture.homework.title}
+                            </h4>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="block text-[10px] font-bold text-[#64748B] uppercase mb-0.5">Due Date</span>
+                            <span className="text-xs font-semibold text-[#EF4444]">
+                              {activeHomeworkLecture.homework.due_date 
+                                ? new Date(activeHomeworkLecture.homework.due_date).toLocaleDateString(undefined, {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric"
+                                  })
+                                : "No due date set"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {activeHomeworkLecture.homework.description && (
+                          <div className="pt-3 border-t border-[#E2E8F0]">
+                            <span className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Instructions</span>
+                            <p className="text-xs text-[#475569] whitespace-pre-wrap leading-relaxed">
+                              {activeHomeworkLecture.homework.description}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Submission Area */}
+                      {activeHomeworkLecture.homework.accept_submissions === false ? (
+                        <div className="bg-[#F1F5F9] border border-[#E2E8F0] p-6 rounded-xl text-center space-y-2 text-[#475569]">
+                          <Lock className="mx-auto text-[#64748B]" size={22} />
+                          <h5 className="text-xs font-bold uppercase tracking-wider">Submissions Locked</h5>
+                          <p className="text-xs text-[#64748B]">The submissions portal for this assignment has been closed by your instructor.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          
+                          {/* Green Confirmation banner if already submitted */}
+                          {homeworkSubmissions.length > 0 && (
+                            <div className="bg-[#ECFDF5] border border-[#A7F3D0] p-4 rounded-xl flex items-start gap-3 text-[#065F46] text-xs">
+                              <CheckCircle size={18} className="text-[#059669] shrink-0 mt-0.5" />
+                              <div>
+                                <strong className="block text-[#047857]">Assignment Successfully Submitted!</strong>
+                                <span className="block mt-0.5">
+                                  You uploaded <strong className="font-semibold">{homeworkSubmissions[0].fileName}</strong> on{" "}
+                                  {new Date(homeworkSubmissions[0].updatedAt).toLocaleString()}.
+                                </span>
+                                <span className="block text-[10px] text-[#059669] mt-1 font-bold">
+                                  Review Status: {homeworkSubmissions[0].status.toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* File Dropzone Area */}
+                          <div className="bg-white border-2 border-dashed border-[#CBD5E1] rounded-xl p-6 text-center space-y-3 relative hover:border-[#2563EB] transition-colors">
+                            <input
+                              type="file"
+                              onChange={handleFileChange}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            />
+                            
+                            <UploadCloud className="mx-auto text-[#94A3B8]" size={36} />
+                            
+                            <div>
+                              <p className="text-xs font-bold text-[#1B2B4B]">
+                                {selectedFile ? `Selected: ${selectedFile.name}` : "Click or drag your assignment file here"}
+                              </p>
+                              <p className="text-[10px] text-[#64748B] mt-1">Accepts any file formats (PDF, DOCX, ZIP, PNG) up to 2MB</p>
+                            </div>
+                          </div>
+
+                          {selectedFile && (
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => setSelectedFile(null)}
+                                className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#64748B] px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handleHWSubmission}
+                                disabled={submittingHW}
+                                className="bg-[#10B981] hover:bg-[#059669] text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                              >
+                                {submittingHW ? "Submitting..." : "Submit Assignment"}
+                              </button>
+                            </div>
+                          )}
+
+                        </div>
+                      )}
+
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-[#F8FAFC] border-t border-[#F1F5F9] flex justify-end">
+              <button
+                onClick={() => setIsHomeworkModalOpen(false)}
+                className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              >
+                Close View
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
 
