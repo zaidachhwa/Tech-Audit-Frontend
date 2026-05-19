@@ -35,6 +35,7 @@ import AdminTeachers from './pages/AdminTeachers';
 import TeacherProfileView from './components/admin/TeacherProfileView';
 import StudentProfileView from './components/admin/StudentProfileView';
 import AdminAnalytics from './pages/AdminAnalytics';
+import LectureSchedule from './pages/LectureSchedule';
 
 /* TEACHER */
 import TeacherLogin from './components/teacher/TeacherLogin';
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="projects"     element={<Projects />} />
           <Route path="reports"      element={<Reports />} />
           <Route path="profile"      element={<StudentProfile />} />
+          <Route path="lecture-scheduler" element={<LectureSchedule />} />
         </Route>
 
         {/* ─── ADMIN AUTH ──────────────────────────────────────────────────── */}
@@ -108,6 +110,7 @@ export default function App() {
           <Route path="all-reports"  element={<AllReports />} />
           <Route path="drafts"       element={<Drafts />} />
           <Route path="analytics"    element={<AdminAnalytics />} />
+          <Route path="lecture-scheduler" element={<LectureSchedule />} />
           <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
         </Route>
@@ -143,6 +146,7 @@ export default function App() {
           <Route path="attendance"    element={<TeacherAttendance />} />
           <Route path="grades"        element={<TeacherGrades />} />
           <Route path="announcements" element={<TeacherAnnouncements />} />
+          <Route path="lecture-scheduler" element={<LectureSchedule />} />
         </Route>
 
         {/* ─── FALLBACK ────────────────────────────────────────────────────── */}

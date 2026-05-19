@@ -8,7 +8,8 @@ import {
   Notebook,
   FileText,
   BarChart3,
-  ClipboardList
+  ClipboardList,
+  CalendarDays
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -36,6 +37,11 @@ export const adminSidebarItems = [
     name: "Syllabus Tracker",
     path: "/admin/syllabus",
     icon: BookOpen,
+  },
+  {
+    name: "Lecture Scheduler",
+    path: "/admin/lecture-scheduler",
+    icon: CalendarDays,
   },
   {
     name: "Assign Task",

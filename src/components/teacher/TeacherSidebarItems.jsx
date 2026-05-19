@@ -36,6 +36,11 @@ export const teacherSidebarItems = [
     path: "/teacher/attendance",
   },
   {
+    name: "Lecture Scheduler",
+    icon: CalendarCheck,
+    path: "/teacher/lecture-scheduler",
+  },
+  {
     name: "Grades",
     icon: TrendingUp,
     path: "/teacher/grades",
