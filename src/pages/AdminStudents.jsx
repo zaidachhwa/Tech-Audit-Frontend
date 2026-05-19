@@ -20,6 +20,8 @@ import {
   BookOpen,
   Hash,
   ChevronDown,
+  Upload,
+  Download,
 } from "lucide-react";
 
 export default function AdminStudents() {
@@ -45,6 +47,135 @@ export default function AdminStudents() {
     batch_name: "",
     batch_no: "",
   });
+
+  // Bulk Import States
+  const [showImport, setShowImport] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importCourse, setImportCourse] = useState("");
+  const [importBatch, setImportBatch] = useState("");
+  const [coursesList, setCoursesList] = useState([]);
+  const [batchesList, setBatchesList] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+
+  // Fetch courses list for dropdown
+  const fetchCoursesList = async () => {
+    try {
+      const res = await API.get("/batches/names");
+      setCoursesList(res.data || []);
+    } catch (err) {
+      toast.error("Failed to load courses");
+    }
+  };
+
+  // Fetch batches for selected course
+  const fetchBatchesList = async (courseName) => {
+    try {
+      const res = await API.get(`/batches/numbers?batch_name=${encodeURIComponent(courseName)}`);
+      setBatchesList(res.data || []);
+    } catch (err) {
+      toast.error("Failed to load batches");
+    }
+  };
+
+  useEffect(() => {
+    if (showImport) {
+      fetchCoursesList();
+      setImportFile(null);
+      setImportCourse("");
+      setImportBatch("");
+      setImportResult(null);
+      setBatchesList([]);
+    }
+  }, [showImport]);
+
+  const handleCourseChange = (course) => {
+    setImportCourse(course);
+    setImportBatch("");
+    setBatchesList([]);
+    if (course) {
+      fetchBatchesList(course);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.name.endsWith(".csv")) {
+      toast.error("Please upload a valid CSV file (.csv)");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size exceeds 2 MB limit");
+      return;
+    }
+
+    setImportFile(file);
+  };
+
+  const downloadTemplate = () => {
+    const headers = ["name", "email", "phone"];
+    const rows = [
+      ["Aayush Sharma", "aayush.sharma@example.com", "9876543210"],
+      ["Riya Verma", "riya.verma@example.com", "9876543211"]
+    ];
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "student_import_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportSubmit = async (e) => {
+    e.preventDefault();
+    if (!importCourse || !importBatch) {
+      toast.error("Please select a Course and a Batch");
+      return;
+    }
+    if (!importFile) {
+      toast.error("Please select a CSV file");
+      return;
+    }
+
+    setImporting(true);
+    setImportResult(null);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const csvData = event.target.result;
+        const res = await API.post("/students/bulk-import", {
+          batch_name: importCourse,
+          batch_no: importBatch,
+          csvData
+        });
+
+        setImportResult(res.data);
+        if (res.data.successCount > 0) {
+          toast.success(`Successfully imported ${res.data.successCount} students!`);
+          fetchStudents();
+        } else {
+          toast.error("Failed to import students. Check row-wise errors.");
+        }
+      } catch (err) {
+        toast.error(err.response?.data?.message || "Import failed. Please try again.");
+      } finally {
+        setImporting(false);
+      }
+    };
+    reader.onerror = () => {
+      toast.error("Error reading file");
+      setImporting(false);
+    };
+    reader.readAsText(importFile);
+  };
 
   useEffect(() => {
     fetchStudents();
@@ -171,9 +302,16 @@ export default function AdminStudents() {
 
           <button
             onClick={() => setShowCreate(true)}
-            className="bg-[#2563EB] text-white px-4 py-2 rounded-lg text-sm font-medium"
+            className="bg-[#2563EB] text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5"
           >
             <Plus size={14} /> Add Student
+          </button>
+
+          <button
+            onClick={() => setShowImport(true)}
+            className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+          >
+            <Upload size={14} /> Bulk Import
           </button>
         </div>
       </div>
@@ -495,6 +633,259 @@ export default function AdminStudents() {
                 Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {showImport && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                  <Upload size={20} />
+                </div>
+                <div>
+                  <h2 className="text-[18px] font-bold text-[#1B2B4B]">Bulk Student Import</h2>
+                  <p className="text-[12px] text-[#64748B]">Upload student details using a CSV file</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowImport(false)} 
+                className="text-[#94A3B8] hover:text-[#64748B] transition-colors"
+                disabled={importing}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {!importResult ? (
+              <form onSubmit={handleImportSubmit} className="space-y-6">
+                
+                {/* Course and Batch Dropdowns */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-[#1B2B4B] mb-1.5 flex items-center gap-1">
+                      <BookOpen size={14} className="text-[#64748B]" /> Course
+                    </label>
+                    <select
+                      required
+                      value={importCourse}
+                      onChange={(e) => handleCourseChange(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm text-[#1B2B4B]"
+                    >
+                      <option value="">-- Select Course --</option>
+                      {coursesList.map((course) => (
+                        <option key={course} value={course}>
+                          {course}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#1B2B4B] mb-1.5 flex items-center gap-1">
+                      <Hash size={14} className="text-[#64748B]" /> Batch
+                    </label>
+                    <select
+                      required
+                      disabled={!importCourse}
+                      value={importBatch}
+                      onChange={(e) => setImportBatch(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm text-[#1B2B4B] disabled:bg-[#F8FAFC] disabled:cursor-not-allowed"
+                    >
+                      <option value="">
+                        {!importCourse ? "Select Course first" : "-- Select Batch --"}
+                      </option>
+                      {batchesList.map((batchNo) => (
+                        <option key={batchNo} value={batchNo}>
+                          Batch {batchNo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* CSV Template Download */}
+                <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg p-4 flex justify-between items-center">
+                  <div className="flex gap-3 items-center">
+                    <div className="p-2 bg-blue-100 text-blue-600 rounded-full">
+                      <Download size={16} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#1E40AF]">CSV Template</h4>
+                      <p className="text-[11px] text-[#60A5FA]">Includes mandatory headers: name, email, phone</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={downloadTemplate}
+                    className="bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                  >
+                    Download
+                  </button>
+                </div>
+
+                {/* Drag and Drop Zone */}
+                <div>
+                  <label className="block text-sm font-semibold text-[#1B2B4B] mb-2">
+                    Upload CSV File
+                  </label>
+                  <div 
+                    onClick={() => document.getElementById("csvFilePicker").click()}
+                    className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
+                      importFile 
+                        ? "border-[#10B981] bg-[#ECFDF5]" 
+                        : "border-[#E2E8F0] hover:border-[#2563EB] hover:bg-[#F8FAFC]"
+                    }`}
+                  >
+                    <input
+                      id="csvFilePicker"
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    
+                    {importFile ? (
+                      <>
+                        <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                          <Check size={24} />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-bold text-[#065F46] max-w-xs truncate">
+                            {importFile.name}
+                          </p>
+                          <p className="text-xs text-[#047857]">
+                            {(importFile.size / 1024).toFixed(1)} KB • Click to change
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 bg-[#F1F5F9] text-[#64748B] rounded-full flex items-center justify-center">
+                          <Upload size={24} />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-semibold text-[#1B2B4B]">
+                            Click to upload CSV
+                          </p>
+                          <p className="text-xs text-[#64748B]">
+                            Strictly CSV format (.csv) • Max 2 MB
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Submit Actions */}
+                <div className="flex gap-3 pt-4 border-t border-[#F1F5F9]">
+                  <button
+                    type="button"
+                    onClick={() => setShowImport(false)}
+                    disabled={importing}
+                    className="flex-1 px-4 py-2.5 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg text-sm font-semibold hover:bg-[#F8FAFC] disabled:opacity-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={importing || !importFile || !importCourse || !importBatch}
+                    className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:bg-[#94A3B8] disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                  >
+                    {importing ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" /> Importing...
+                      </>
+                    ) : (
+                      "Import Students"
+                    )}
+                  </button>
+                </div>
+
+              </form>
+            ) : (
+              
+              /* Results Dashboard */
+              <div className="space-y-6">
+                
+                {/* Result Hero */}
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-6 text-center">
+                  <div className="flex justify-center gap-6 mb-4">
+                    <div className="text-center bg-[#E8F5E9] border border-[#C8E6C9] rounded-xl px-6 py-4 min-w-[120px]">
+                      <span className="block text-[32px] font-extrabold text-[#2E7D32]">
+                        {importResult.successCount}
+                      </span>
+                      <span className="text-xs font-semibold text-[#4CAF50] uppercase tracking-wider">
+                        Success
+                      </span>
+                    </div>
+
+                    <div className="text-center bg-[#FFEBEE] border border-[#FFCDD2] rounded-xl px-6 py-4 min-w-[120px]">
+                      <span className="block text-[32px] font-extrabold text-[#C62828]">
+                        {importResult.failedCount}
+                      </span>
+                      <span className="text-xs font-semibold text-[#EF5350] uppercase tracking-wider">
+                        Failed
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="text-base font-bold text-[#1B2B4B] mb-1">Import Completed</h3>
+                  <p className="text-xs text-[#64748B]">
+                    Students have been assigned to Course <strong className="text-[#1B2B4B]">{importCourse}</strong>, Batch <strong className="text-[#1B2B4B]">#{importBatch}</strong>
+                  </p>
+                </div>
+
+                {/* Error Lists */}
+                {importResult.errors && importResult.errors.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-bold text-[#EF5350] uppercase tracking-wider mb-2">
+                      Failed Records ({importResult.failedCount})
+                    </label>
+                    <div className="border border-[#FEE2E2] rounded-xl overflow-hidden max-h-[220px] overflow-y-auto">
+                      <table className="w-full text-left border-collapse text-sm">
+                        <thead className="bg-[#FEF2F2] text-[#991B1B] text-[11px] font-bold uppercase sticky top-0 border-b border-[#FEE2E2]">
+                          <tr>
+                            <th className="px-4 py-2.5 w-16">Row</th>
+                            <th className="px-4 py-2.5">Failure Reason</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {importResult.errors.map((err, index) => (
+                            <tr key={index} className="border-b border-[#FEE2E2] last:border-b-0 hover:bg-[#FEF2F2]/50 bg-white">
+                              <td className="px-4 py-2.5 font-bold text-[#991B1B]">#{err.row}</td>
+                              <td className="px-4 py-2.5 text-[#7F1D1D] font-medium">{err.reason}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Success Banner */}
+                {importResult.successCount > 0 && importResult.failedCount === 0 && (
+                  <div className="bg-[#E8F5E9] border border-[#C8E6C9] rounded-xl p-4 flex items-center gap-3 text-[#2E7D32]">
+                    <CheckCircle size={20} />
+                    <span className="text-xs font-bold">Awesome! All students imported successfully without any errors.</span>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="pt-4 border-t border-[#F1F5F9] flex justify-end">
+                  <button
+                    onClick={() => setShowImport(false)}
+                    className="px-6 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg text-sm font-semibold shadow-sm transition-all cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
+
+              </div>
+            )}
           </div>
         </div>
       )}
