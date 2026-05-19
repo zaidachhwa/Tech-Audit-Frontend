@@ -68,6 +68,15 @@ export default function LectureSchedule() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [submittingHW, setSubmittingHW] = useState(false);
 
+  // Submissions Tracker Center states (Admin/Teacher)
+  const [isViewingSubmissionsCenter, setIsViewingSubmissionsCenter] = useState(false);
+  const [trackerCourse, setTrackerCourse] = useState("");
+  const [trackerSchedule, setTrackerSchedule] = useState(null);
+  const [trackerSubmissions, setTrackerSubmissions] = useState([]);
+  const [trackerStudents, setTrackerStudents] = useState([]);
+  const [trackerSelectedStudentId, setTrackerSelectedStudentId] = useState("");
+  const [loadingTracker, setLoadingTracker] = useState(false);
+
   // Fetch all schedules
   const fetchSchedules = async () => {
     try {
@@ -362,7 +371,56 @@ export default function LectureSchedule() {
   const handleBack = () => {
     setSelectedSchedule(null);
     setIsCreating(false);
+    setIsViewingSubmissionsCenter(false);
     fetchSchedules();
+  };
+
+  // Handle tracker schedule selected
+  const handleTrackerScheduleChange = async (scheduleId) => {
+    if (!scheduleId) {
+      setTrackerSchedule(null);
+      setTrackerSubmissions([]);
+      setTrackerStudents([]);
+      setTrackerSelectedStudentId("");
+      return;
+    }
+
+    const schedule = schedules.find(s => s._id === scheduleId);
+    setTrackerSchedule(schedule);
+    setTrackerSelectedStudentId("");
+    
+    try {
+      setLoadingTracker(true);
+      const [subsRes, batchRes] = await Promise.all([
+        API.get(`/schedules/${scheduleId}/submissions`),
+        API.get(`/batches/${schedule.batch?._id}`)
+      ]);
+      setTrackerSubmissions(subsRes.data || []);
+      setTrackerStudents(batchRes.data?.students || []);
+      
+      const studentsList = batchRes.data?.students || [];
+      if (studentsList.length > 0) {
+        setTrackerSelectedStudentId(studentsList[0]._id);
+      }
+    } catch (err) {
+      toast.error("Failed to load submissions or students list.");
+    } finally {
+      setLoadingTracker(false);
+    }
+  };
+
+  // Toggle review status from the tracker dashboard
+  const handleTrackerToggleReview = async (submissionId) => {
+    try {
+      const res = await API.patch(`/schedules/submissions/${submissionId}/review`);
+      toast.success(res.data?.message || "Review status updated.");
+      
+      setTrackerSubmissions(prev => prev.map(s => 
+        s._id === submissionId ? { ...s, status: res.data?.submission?.status } : s
+      ));
+    } catch (err) {
+      toast.error("Failed to toggle review status.");
+    }
   };
 
   // Fetch Submissions for active Homework
@@ -504,6 +562,23 @@ export default function LectureSchedule() {
     }
   };
 
+  // Student: delete submission
+  const handleDeleteSubmission = async (submissionId) => {
+    if (!window.confirm("Are you sure you want to delete this submission?")) return;
+
+    try {
+      setSubmittingHW(true); // Reuse submittingHW state for loading indication
+      await API.delete(`/schedules/submissions/${submissionId}`);
+      
+      toast.success("Submission deleted successfully!");
+      fetchSubmissions(selectedSchedule._id, activeHomeworkLecture._id);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete submission.");
+    } finally {
+      setSubmittingHW(false);
+    }
+  };
+
   // Admin/Teacher: Toggle submission status between pending/reviewed
   const handleToggleReview = async (subId) => {
     try {
@@ -536,7 +611,7 @@ export default function LectureSchedule() {
       <div className="flex justify-between items-center">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            {(selectedSchedule || isCreating) && (
+            {(selectedSchedule || isCreating || isViewingSubmissionsCenter) && (
               <button 
                 onClick={handleBack} 
                 className="p-1 text-[#64748B] hover:text-[#1B2B4B] hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
@@ -547,22 +622,286 @@ export default function LectureSchedule() {
             <h1 className="text-[20px] font-bold text-[#1B2B4B]">Lecture Scheduler</h1>
           </div>
           <p className="text-[13px] text-[#64748B]">
-            {isCreating ? "Generate and define a new course schedule calendar" : selectedSchedule ? `Viewing schedule for ${subject}` : "Manage and track lecture schedules across batches"}
+            {isViewingSubmissionsCenter 
+              ? "Global Homework Submissions Tracker for students and batches"
+              : isCreating 
+              ? "Generate and define a new course schedule calendar" 
+              : selectedSchedule 
+              ? `Viewing schedule for ${subject}` 
+              : "Manage and track lecture schedules across batches"}
           </p>
         </div>
 
         {(role === "admin" || role === "teacher") && !selectedSchedule && !isCreating && (
-          <button
-            onClick={handleOpenCreate}
-            className="bg-[#2563EB] text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer"
-          >
-            <Plus size={16} /> New Schedule
-          </button>
+          <div className="flex gap-3">
+            {!isViewingSubmissionsCenter ? (
+              <button
+                onClick={() => {
+                  setIsViewingSubmissionsCenter(true);
+                  setTrackerCourse("");
+                  setTrackerSchedule(null);
+                  setTrackerSubmissions([]);
+                  setTrackerStudents([]);
+                  setTrackerSelectedStudentId("");
+                }}
+                className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+              >
+                <Eye size={16} className="text-[#4F46E5]" /> Submissions Tracker
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsViewingSubmissionsCenter(false)}
+                className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+              >
+                <ArrowLeft size={16} /> View Schedules
+              </button>
+            )}
+            
+            {!isViewingSubmissionsCenter && (
+              <button
+                onClick={handleOpenCreate}
+                className="bg-[#2563EB] text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer"
+              >
+                <Plus size={16} /> New Schedule
+              </button>
+            )}
+          </div>
         )}
       </div>
 
-      {/* DASHBOARD GRID LIST */}
-      {!selectedSchedule && !isCreating ? (
+      {/* SUBMISSIONS TRACKER WORKSPACE */}
+      {isViewingSubmissionsCenter ? (
+        <div className="space-y-6">
+          {/* TRACKER FILTERS */}
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm">
+            <h2 className="text-sm font-bold text-[#1B2B4B] mb-4 flex items-center gap-1.5 uppercase tracking-wider">
+              <Eye size={16} className="text-[#2563EB]" /> Homework Submissions Filter
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Select Subject/Course */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-[#64748B] mb-1.5">
+                  Select Course/Subject
+                </label>
+                <select
+                  value={trackerCourse}
+                  onChange={(e) => {
+                    setTrackerCourse(e.target.value);
+                    handleTrackerScheduleChange("");
+                  }}
+                  className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#CBD5E1] focus:border-[#2563EB] focus:outline-none rounded-lg text-xs font-semibold text-[#1B2B4B] transition-all"
+                >
+                  <option value="">-- Choose Course --</option>
+                  {Array.from(new Set(schedules.map(s => s.subject))).map((subj, idx) => (
+                    <option key={idx} value={subj}>{subj}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Select Batch */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase text-[#64748B] mb-1.5">
+                  Select Course Batch
+                </label>
+                <select
+                  value={trackerSchedule?._id || ""}
+                  onChange={(e) => handleTrackerScheduleChange(e.target.value)}
+                  disabled={!trackerCourse}
+                  className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#CBD5E1] focus:border-[#2563EB] focus:outline-none rounded-lg text-xs font-semibold text-[#1B2B4B] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">-- Choose Batch --</option>
+                  {schedules
+                    .filter(s => s.subject === trackerCourse)
+                    .map(s => (
+                      <option key={s._id} value={s._id}>
+                        {s.batch?.batch_name} #{s.batch?.batch_no}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* MAIN TRACKER CONTENT */}
+          {trackerSchedule ? (
+            loadingTracker ? (
+              <div className="flex justify-center items-center py-20 bg-white border border-[#E2E8F0] rounded-xl shadow-sm">
+                <RefreshCw size={24} className="animate-spin text-[#2563EB]" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Left Column: Master Students List */}
+                <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden flex flex-col">
+                  <div className="p-4 border-b border-[#F1F5F9] bg-[#FAFBFC]">
+                    <h3 className="text-xs font-bold text-[#1B2B4B] uppercase tracking-wider">
+                      Students ({trackerStudents.length})
+                    </h3>
+                  </div>
+                  <div className="divide-y divide-[#F1F5F9] max-h-[500px] overflow-y-auto">
+                    {trackerStudents.length === 0 ? (
+                      <p className="p-6 text-center text-xs text-[#94A3B8] font-medium">
+                        No students enrolled in this batch.
+                      </p>
+                    ) : (
+                      trackerStudents.map(student => {
+                        const isSelected = student._id === trackerSelectedStudentId;
+                        
+                        // Count student's submissions for this schedule's homeworks
+                        const scheduleHWCount = (trackerSchedule.lectures || []).filter(l => l.homework?.title).length;
+                        const studentSubsCount = trackerSubmissions.filter(sub => sub.student?._id === student._id).length;
+
+                        return (
+                          <button
+                            key={student._id}
+                            onClick={() => setTrackerSelectedStudentId(student._id)}
+                            className={`w-full text-left p-4 transition-all flex flex-col gap-1 hover:bg-[#F8FAFC] cursor-pointer ${
+                              isSelected ? "bg-blue-50/70 border-r-4 border-[#2563EB]" : ""
+                            }`}
+                          >
+                            <span className="text-xs font-bold text-[#1B2B4B]">
+                              {student.name}
+                            </span>
+                            <div className="flex justify-between items-center text-[10px] text-[#64748B]">
+                              <span>{student.email}</span>
+                              <span className="font-semibold px-1.5 py-0.5 rounded bg-[#F1F5F9]">
+                                {studentSubsCount} / {scheduleHWCount} Submitted
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Pane: Homework submissions details */}
+                <div className="lg:col-span-2 bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden flex flex-col">
+                  <div className="p-4 border-b border-[#F1F5F9] bg-[#FAFBFC] flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-[#1B2B4B] uppercase tracking-wider">
+                      Assignment Status & Submissions
+                    </h3>
+                    {trackerSelectedStudentId && (
+                      <span className="text-xs font-bold text-[#2563EB]">
+                        {trackerStudents.find(s => s._id === trackerSelectedStudentId)?.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-6 space-y-6 max-h-[500px] overflow-y-auto">
+                    {!trackerSelectedStudentId ? (
+                      <div className="text-center py-12 text-[#94A3B8]">
+                        <Clock size={32} className="mx-auto mb-2 opacity-50" />
+                        <p className="text-xs font-medium">Select a student from the list to view their submissions.</p>
+                      </div>
+                    ) : (trackerSchedule.lectures || []).filter(l => l.homework?.title).length === 0 ? (
+                      <div className="text-center py-12 text-[#94A3B8]">
+                        <BookOpen size={32} className="mx-auto mb-2 opacity-50" />
+                        <p className="text-xs font-medium">No homework assignments configured in this schedule.</p>
+                      </div>
+                    ) : (
+                      (trackerSchedule.lectures || [])
+                        .filter(l => l.homework?.title)
+                        .map((lecture, idx) => {
+                          // Find submission for this lecture by selected student
+                          const sub = trackerSubmissions.find(
+                            s => s.lecture_id === lecture._id && s.student?._id === trackerSelectedStudentId
+                          );
+
+                          return (
+                            <div key={lecture._id || idx} className="border border-[#E2E8F0] rounded-xl p-4 space-y-3 hover:shadow-sm transition-all">
+                              <div className="flex justify-between items-start flex-wrap gap-2">
+                                <div>
+                                  <h4 className="text-xs font-bold text-[#1B2B4B]">
+                                    {lecture.homework.title}
+                                  </h4>
+                                  <p className="text-[10px] text-[#64748B]">
+                                    Lecture: {lecture.title} | Due: {lecture.homework.due_date ? new Date(lecture.homework.due_date).toLocaleDateString() : "No due date"}
+                                  </p>
+                                </div>
+                                
+                                {/* Status badge */}
+                                {sub ? (
+                                  sub.status === "reviewed" ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0]">
+                                      Reviewed
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#2563EB] border border-[#BFDBFE]">
+                                      Pending Review
+                                    </span>
+                                  )
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-[#EF4444] border border-[#FEE2E2]">
+                                    Not Submitted
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-xs text-[#64748B] bg-[#F8FAFC] p-2.5 rounded-lg border border-[#E2E8F0] whitespace-pre-wrap">
+                                {lecture.homework.description || "No instructions provided."}
+                              </p>
+
+                              {sub && (
+                                <div className="flex justify-between items-center bg-blue-50/40 p-3 rounded-lg border border-blue-100 flex-wrap gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <FileText size={16} className="text-[#2563EB]" />
+                                    <div className="text-left">
+                                      <p className="text-xs font-bold text-[#1B2B4B] max-w-[180px] truncate">
+                                        {sub.file_url ? (sub.file_url.split(",")[0].startsWith("data:") ? "student_submission_file" : sub.file_url) : "Uploaded File"}
+                                      </p>
+                                      <p className="text-[9px] text-[#64748B]">
+                                        Submitted at: {new Date(sub.submitted_at).toLocaleString()}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2">
+                                    {sub.file_url && (
+                                      <button
+                                        onClick={() => handleDownloadFile(sub.file_url.split(",")[0].startsWith("data:") ? "homework_solution.pdf" : "homework_solution", sub.file_url)}
+                                        className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                                        title="Download homework submission"
+                                      >
+                                        <Download size={13} /> Download
+                                      </button>
+                                    )}
+
+                                    <button
+                                      onClick={() => handleTrackerToggleReview(sub._id)}
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm cursor-pointer ${
+                                        sub.status === "reviewed"
+                                          ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200"
+                                          : "bg-[#10B981] hover:bg-[#059669] text-white border border-[#10B981]"
+                                      }`}
+                                    >
+                                      {sub.status === "reviewed" ? "Mark Pending" : "Mark Reviewed"}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            )
+          ) : (
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-12 text-center max-w-md mx-auto mt-10">
+              <div className="w-12 h-12 bg-indigo-50 text-[#4F46E5] rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen size={24} />
+              </div>
+              <h3 className="text-base font-bold text-[#1B2B4B] mb-1">No Schedule Selected</h3>
+              <p className="text-xs text-[#64748B] mb-2">
+                Please select a course and batch schedule above to review student homework submissions.
+              </p>
+            </div>
+          )}
+        </div>
+      ) : !selectedSchedule && !isCreating ? (
         loading ? (
           <div className="flex justify-center items-center py-20">
             <RefreshCw size={24} className="animate-spin text-[#2563EB]" />
@@ -1263,18 +1602,28 @@ export default function LectureSchedule() {
                           
                           {/* Green Confirmation banner if already submitted */}
                           {homeworkSubmissions.length > 0 && (
-                            <div className="bg-[#ECFDF5] border border-[#A7F3D0] p-4 rounded-xl flex items-start gap-3 text-[#065F46] text-xs">
-                              <CheckCircle size={18} className="text-[#059669] shrink-0 mt-0.5" />
-                              <div>
-                                <strong className="block text-[#047857]">Assignment Successfully Submitted!</strong>
-                                <span className="block mt-0.5">
-                                  You uploaded <strong className="font-semibold">{homeworkSubmissions[0].fileName}</strong> on{" "}
-                                  {new Date(homeworkSubmissions[0].updatedAt).toLocaleString()}.
-                                </span>
-                                <span className="block text-[10px] text-[#059669] mt-1 font-bold">
-                                  Review Status: {homeworkSubmissions[0].status.toUpperCase()}
-                                </span>
+                            <div className="bg-[#ECFDF5] border border-[#A7F3D0] p-4 rounded-xl flex items-start justify-between gap-3 text-[#065F46] text-xs">
+                              <div className="flex items-start gap-3">
+                                <CheckCircle size={18} className="text-[#059669] shrink-0 mt-0.5" />
+                                <div>
+                                  <strong className="block text-[#047857]">Assignment Successfully Submitted!</strong>
+                                  <span className="block mt-0.5">
+                                    You uploaded <strong className="font-semibold">{homeworkSubmissions[0].fileName}</strong> on{" "}
+                                    {new Date(homeworkSubmissions[0].updatedAt).toLocaleString()}.
+                                  </span>
+                                  <span className="block text-[10px] text-[#059669] mt-1 font-bold">
+                                    Review Status: {homeworkSubmissions[0].status.toUpperCase()}
+                                  </span>
+                                </div>
                               </div>
+                              <button
+                                onClick={() => handleDeleteSubmission(homeworkSubmissions[0]._id)}
+                                disabled={submittingHW}
+                                className="bg-white border border-[#A7F3D0] hover:bg-[#D1FAE5] text-[#047857] px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                title="Delete submitted homework"
+                              >
+                                <Trash2 size={13} className="text-[#059669]" /> Delete
+                              </button>
                             </div>
                           )}
 
