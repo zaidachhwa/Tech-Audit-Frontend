@@ -37,6 +37,8 @@ export default function LectureSchedule() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Setup form states (Admin)
+  const [subjectTemplates, setSubjectTemplates] = useState([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [subject, setSubject] = useState("");
   const [batchId, setBatchId] = useState("");
   const [teacherId, setTeacherId] = useState("");
@@ -63,6 +65,14 @@ export default function LectureSchedule() {
   const [homeworkAcceptSubmissions, setHomeworkAcceptSubmissions] = useState(true);
   const [homeworkSubmissions, setHomeworkSubmissions] = useState([]);
   const [savingHW, setSavingHW] = useState(false);
+
+  // Notes Modal states
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [activeNotesLecture, setActiveNotesLecture] = useState(null);
+  const [notesIndex, setNotesIndex] = useState(null);
+  const [notesSharedFile, setNotesSharedFile] = useState(null);
+  const [notesTeacherFile, setNotesTeacherFile] = useState(null);
+  const [savingNotes, setSavingNotes] = useState(false);
 
   // Student submission states
   const [selectedFile, setSelectedFile] = useState(null);
@@ -95,15 +105,21 @@ export default function LectureSchedule() {
     if (role !== "admin" && role !== "teacher") return;
     try {
       if (role === "admin") {
-        const [batchesRes, teachersRes] = await Promise.all([
+        const [batchesRes, teachersRes, subjectsRes] = await Promise.all([
           API.get("/batches"),
-          API.get("/teachers/list")
+          API.get("/teachers/list"),
+          API.get("/subjects")
         ]);
         setBatches(batchesRes.data?.batches || []);
         setTeachers(teachersRes.data?.teachers || []);
+        setSubjectTemplates(subjectsRes.data || []);
       } else if (role === "teacher") {
-        const batchesRes = await API.get("/batches");
+        const [batchesRes, subjectsRes] = await Promise.all([
+          API.get("/batches"),
+          API.get("/subjects")
+        ]);
         setBatches(batchesRes.data?.batches || []);
+        setSubjectTemplates(subjectsRes.data || []);
         // For teacher, they can only assign themselves. 
         // We set the teachers list to just the current teacher.
         setTeachers([{
@@ -149,7 +165,41 @@ export default function LectureSchedule() {
     }
   };
 
-  // Generate rows
+  // Load predefined template lectures into the grid
+  const handleLoadSubjectTemplate = (e) => {
+    e.preventDefault();
+    if (!teacherId || !batchId) return toast.error("Select a Batch and Teacher first");
+    const tmpl = subjectTemplates.find(t => t._id === selectedTemplateId);
+    if (!tmpl) return;
+
+    let currentDate = startDate ? new Date(startDate) : new Date();
+    const interval = getFrequencyInterval(frequency);
+
+    const loadedLectures = tmpl.lectures.map((l, i) => {
+      let nextDate = null;
+      if (frequency !== "custom") {
+        nextDate = new Date(currentDate);
+        if (i > 0) nextDate.setDate(nextDate.getDate() + interval);
+        currentDate = nextDate;
+      }
+
+      return {
+        _id: `temp-${Date.now()}-${i}`,
+        title: l.title || `Lecture ${i + 1}`,
+        description: l.description || "",
+        date: nextDate ? formatDateForInput(nextDate) : "",
+        status: "Planned",
+        teacher: teacherId,
+        homework: { title: "", description: "", due_date: "", accept_submissions: true },
+        notes_shared: l.notes_shared || { fileName: "", fileUrl: "" },
+        notes_teacher: l.notes_teacher || { fileName: "", fileUrl: "" }
+      };
+    });
+    setLectures(loadedLectures);
+    toast.success("Subject loaded!");
+  };
+
+  // Generate blank rows
   const handleGenerateSchedule = (e) => {
     e.preventDefault();
     if (!subject.trim()) {
@@ -168,7 +218,7 @@ export default function LectureSchedule() {
       toast.error("Please enter a valid number of lectures.");
       return;
     }
-    if (!startDate) {
+    if (!startDate && frequency !== "custom") {
       toast.error("Please select a start date.");
       return;
     }
@@ -182,8 +232,9 @@ export default function LectureSchedule() {
         _id: `temp-${Date.now()}-${i}`,
         title: `Lecture ${i + 1}`,
         description: "",
-        date: formatDateForInput(currentDate),
+        date: frequency === "custom" ? "" : formatDateForInput(currentDate),
         status: "Planned",
+        teacher: teacherId,
         homework: {
           title: "",
           description: "",
@@ -192,7 +243,7 @@ export default function LectureSchedule() {
         }
       });
 
-      if (frequency !== "manual") {
+      if (frequency !== "manual" && frequency !== "custom") {
         currentDate.setDate(currentDate.getDate() + interval);
       }
     }
@@ -208,20 +259,27 @@ export default function LectureSchedule() {
 
     if (list.length > 0) {
       const last = list[list.length - 1];
-      const lastDate = new Date(last.date);
-      const interval = getFrequencyInterval(frequency);
-      lastDate.setDate(lastDate.getDate() + interval);
-      nextDate = lastDate;
+      if (last.date) {
+        const lastDate = new Date(last.date);
+        const interval = getFrequencyInterval(frequency);
+        lastDate.setDate(lastDate.getDate() + interval);
+        nextDate = lastDate;
+      } else {
+        nextDate = null;
+      }
     } else if (startDate) {
       nextDate = new Date(startDate);
+    } else if (frequency === "custom") {
+      nextDate = null;
     }
 
     list.push({
       _id: `temp-${Date.now()}`,
       title: `Lecture ${list.length + 1}`,
       description: "",
-      date: formatDateForInput(nextDate),
+      date: frequency === "custom" || !nextDate ? "" : formatDateForInput(nextDate),
       status: "Planned",
+      teacher: teacherId,
       homework: {
         title: "",
         description: "",
@@ -434,13 +492,29 @@ export default function LectureSchedule() {
     }
   };
 
-  // Homework Modal opening logic with dynamic pre-fill due dates
-  const openHomeworkModal = (lecture, index) => {
-    if (!selectedSchedule?._id) {
-      toast.error("Please save the schedule first before assigning homework.");
-      return;
+  // Admin: Save as Subject Template
+  const handleSaveTemplate = async () => {
+    if (!subject.trim()) return toast.error("Subject name is required to save as a template.");
+    try {
+      await API.post("/subjects", {
+        name: subject,
+        teacher: teacherId || undefined,
+        lectures: lectures.map(l => ({
+          title: l.title,
+          description: l.description,
+          notes_shared: l.notes_shared,
+          notes_teacher: l.notes_teacher
+        }))
+      });
+      toast.success("Saved as subject template!");
+      fetchDropdowns(); 
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save template");
     }
+  };
 
+  // Open Homework Modal opening logic with dynamic pre-fill due dates
+  const openHomeworkModal = (lecture, index) => {
     setActiveHomeworkLecture(lecture);
     setHomeworkIndex(index);
     setSelectedFile(null);
@@ -488,30 +562,93 @@ export default function LectureSchedule() {
 
     try {
       setSavingHW(true);
-      const res = await API.post(
-        `/schedules/${selectedSchedule._id}/lectures/${activeHomeworkLecture._id}/homework`,
-        {
-          title: homeworkTitle,
-          description: homeworkDesc,
-          due_date: homeworkDueDate,
-          accept_submissions: homeworkAcceptSubmissions
-        }
-      );
-
-      // Update local grid state
-      const list = [...lectures];
-      list[homeworkIndex] = {
-        ...list[homeworkIndex],
-        homework: res.data.lecture.homework
+      const hwData = {
+        title: homeworkTitle,
+        description: homeworkDesc,
+        due_date: homeworkDueDate,
+        accept_submissions: homeworkAcceptSubmissions
       };
-      setLectures(list);
+
+      if (selectedSchedule?._id && activeHomeworkLecture?._id && !activeHomeworkLecture._id.startsWith("temp-")) {
+        const res = await API.post(
+          `/schedules/${selectedSchedule._id}/lectures/${activeHomeworkLecture._id}/homework`,
+          hwData
+        );
+        const list = [...lectures];
+        list[homeworkIndex] = {
+          ...list[homeworkIndex],
+          homework: res.data.lecture.homework
+        };
+        setLectures(list);
+      } else {
+        const list = [...lectures];
+        list[homeworkIndex] = {
+          ...list[homeworkIndex],
+          homework: hwData
+        };
+        setLectures(list);
+      }
 
       toast.success("Homework saved successfully!");
       setIsHomeworkModalOpen(false);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save homework.");
+      toast.error(err.response?.data?.message || "Failed to assign homework.");
     } finally {
       setSavingHW(false);
+    }
+  };
+
+  // Open Notes Modal
+  const openNotesModal = (lecture, index) => {
+    setActiveNotesLecture(lecture);
+    setNotesIndex(index);
+    setNotesSharedFile(null);
+    setNotesTeacherFile(null);
+    setIsNotesModalOpen(true);
+  };
+
+  // Admin/Teacher: Save Notes changes
+  const saveNotes = async () => {
+    try {
+      setSavingNotes(true);
+      const formData = new FormData();
+      if (notesSharedFile) formData.append("notes_shared", notesSharedFile);
+      if (notesTeacherFile) formData.append("notes_teacher", notesTeacherFile);
+
+      if (selectedSchedule?._id && activeNotesLecture?._id && !activeNotesLecture._id.startsWith("temp-")) {
+        const res = await API.post(
+          `/schedules/${selectedSchedule._id}/lectures/${activeNotesLecture._id}/notes`,
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+
+        const list = [...lectures];
+        list[notesIndex] = {
+          ...list[notesIndex],
+          notes_shared: res.data.lecture.notes_shared,
+          notes_teacher: res.data.lecture.notes_teacher
+        };
+        setLectures(list);
+      } else {
+        const res = await API.post(`/schedules/upload`, formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+
+        const list = [...lectures];
+        list[notesIndex] = {
+          ...list[notesIndex],
+          notes_shared: res.data.notes_shared || list[notesIndex].notes_shared || { fileName: "", fileUrl: "" },
+          notes_teacher: res.data.notes_teacher || list[notesIndex].notes_teacher || { fileName: "", fileUrl: "" }
+        };
+        setLectures(list);
+      }
+
+      toast.success("Notes uploaded successfully!");
+      setIsNotesModalOpen(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to upload notes.");
+    } finally {
+      setSavingNotes(false);
     }
   };
 
@@ -1003,16 +1140,34 @@ export default function LectureSchedule() {
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                   
                   {/* Subject */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Subject Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Full Stack Web Development"
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
-                    />
+                  <div className="col-span-1 md:col-span-2 lg:col-span-1">
+                    <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Subject</label>
+                    <select
+                      value={selectedTemplateId}
+                      onChange={(e) => {
+                        setSelectedTemplateId(e.target.value);
+                        if(e.target.value) {
+                          const tmpl = subjectTemplates.find(t => t._id === e.target.value);
+                          if(tmpl) setSubject(tmpl.name);
+                        } else {
+                          setSubject("");
+                        }
+                      }}
+                      className="w-full px-3 py-2 mb-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
+                    >
+                      <option value="">-- Create New Subject --</option>
+                      {subjectTemplates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                    </select>
+                    {!selectedTemplateId && (
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Full Stack Web Development"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
+                      />
+                    )}
                   </div>
 
                   {/* Batch Select */}
@@ -1035,7 +1190,22 @@ export default function LectureSchedule() {
 
                   {/* Teacher Select */}
                   <div>
-                    <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Assign Teacher</label>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="block text-xs font-bold text-[#475569] uppercase">Assign Teacher</label>
+                      {role === "admin" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!teacherId) return toast.error("Select a teacher first");
+                            setLectures((prev) => prev.map((l) => ({ ...l, teacher: teacherId })));
+                            toast.success("Applied to all rows");
+                          }}
+                          className="text-[9px] text-[#2563EB] hover:text-[#1D4ED8] font-bold uppercase tracking-wider cursor-pointer"
+                        >
+                          Apply to All
+                        </button>
+                      )}
+                    </div>
                     <select
                       required
                       value={teacherId}
@@ -1056,10 +1226,11 @@ export default function LectureSchedule() {
                     <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Start Date</label>
                     <input
                       type="date"
-                      required
-                      value={startDate}
+                      required={frequency !== "custom"}
+                      disabled={frequency === "custom"}
+                      value={frequency === "custom" ? "" : startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
+                      className={`w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium ${frequency === "custom" ? "opacity-50 cursor-not-allowed" : ""}`}
                     />
                   </div>
 
@@ -1076,31 +1247,46 @@ export default function LectureSchedule() {
                       <option value="weekly">Weekly</option>
                       <option value="bi-weekly">Bi-weekly</option>
                       <option value="manual">Manual (Self Date Setup)</option>
+                      <option value="custom">Custom Dates (Leave Blank)</option>
                     </select>
                   </div>
 
                 </div>
 
-                <div className="flex justify-between items-center pt-2">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-bold text-[#475569] uppercase">Number of Lectures:</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={numLectures}
-                      onChange={(e) => setNumLectures(Number(e.target.value))}
-                      className="w-16 px-2 py-1 bg-white border border-[#E2E8F0] rounded-lg text-center text-xs font-bold focus:outline-none focus:border-[#2563EB] text-[#1B2B4B]"
-                    />
-                  </div>
+                  <div className="flex justify-between items-center pt-2">
+                    {selectedTemplateId ? (
+                      <div className="flex-1 pr-4">
+                        <button
+                          type="button"
+                          onClick={handleLoadSubjectTemplate}
+                          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer w-full justify-center"
+                        >
+                          Load Predefined Subject Lectures
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-[#475569] uppercase">Number of Lectures:</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={numLectures}
+                          onChange={(e) => setNumLectures(Number(e.target.value))}
+                          className="w-16 px-2 py-1 bg-white border border-[#E2E8F0] rounded-lg text-center text-xs font-bold focus:outline-none focus:border-[#2563EB] text-[#1B2B4B]"
+                        />
+                      </div>
+                    )}
 
-                  <button
-                    type="submit"
-                    className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    Generate Schedule Rows
-                  </button>
-                </div>
+                    {!selectedTemplateId && (
+                      <button
+                        type="submit"
+                        className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        Generate Schedule Rows
+                      </button>
+                    )}
+                  </div>
               </form>
             </div>
           )}
@@ -1169,6 +1355,8 @@ export default function LectureSchedule() {
                     <th className="px-5 py-3 min-w-[180px]">Lecture Title</th>
                     <th className="px-5 py-3 min-w-[220px]">Description Summary</th>
                     <th className="px-5 py-3 w-40">Date</th>
+                    <th className="px-5 py-3 w-40">Teacher</th>
+                    <th className="px-5 py-3 w-40">Notes</th>
                     <th className="px-5 py-3 w-40">Homework</th>
                     <th className="px-5 py-3 w-36">Status</th>
                     {(role === "admin" || role === "teacher") && <th className="px-5 py-3 w-16 text-center">Action</th>}
@@ -1177,7 +1365,7 @@ export default function LectureSchedule() {
                 <tbody className="divide-y divide-[#F1F5F9]">
                   {lectures.length === 0 ? (
                     <tr>
-                      <td colSpan={role === "admin" ? 7 : 6} className="px-5 py-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
+                      <td colSpan={role === "admin" ? 9 : 8} className="px-5 py-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
                         Grid is empty. Use the configuration generator above to create lecture rows.
                       </td>
                     </tr>
@@ -1244,27 +1432,61 @@ export default function LectureSchedule() {
                             {(role === "admin" || role === "teacher") ? (
                               <input
                                 type="date"
-                                value={lecture.date ? formatDateForInput(lecture.date) : ""}
+                                value={lecture.date ? String(lecture.date).split("T")[0] : ""}
                                 onChange={(e) => handleCellChange(index, "date", e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-[#E2E8F0] focus:border-[#2563EB] focus:outline-none rounded-lg text-xs font-semibold text-[#1B2B4B] shadow-sm"
+                                className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg text-xs font-medium focus:outline-none focus:border-[#2563EB] shadow-sm bg-white"
                               />
                             ) : (
-                              <span className="text-xs font-semibold text-[#475569]">
-                                {lecture.date 
-                                  ? new Date(lecture.date).toLocaleDateString(undefined, { 
-                                      weekday: "short", 
-                                      month: "short", 
-                                      day: "numeric", 
-                                      year: "numeric" 
-                                    })
-                                  : "Unscheduled"}
+                              <span className="text-[13px] font-semibold text-[#1B2B4B]">
+                                {lecture.date ? new Date(lecture.date).toLocaleDateString() : "TBD"}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Teacher Column */}
+                          <td className="px-5 py-3.5">
+                            {role === "admin" ? (
+                              <select
+                                value={lecture.teacher?._id || lecture.teacher || ""}
+                                onChange={(e) => handleCellChange(index, "teacher", e.target.value)}
+                                className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded-lg text-[11px] font-bold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer bg-white"
+                              >
+                                <option value="">Global Teacher</option>
+                                {teachers.map(t => (
+                                  <option key={t._id} value={t._id}>{t.name}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-[11px] font-medium text-[#475569] block leading-tight">
+                                {typeof lecture.teacher === "object" ? lecture.teacher?.name : teachers.find(t => t._id === lecture.teacher)?.name || "Global Teacher"}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Notes Action Column */}
+                          <td className="px-5 py-3.5">
+                            {role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
+                              <button
+                                onClick={() => openNotesModal(lecture, index)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                  lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl
+                                    ? "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7]"
+                                    : "bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
+                                }`}
+                              >
+                                <FileText size={13} />
+                                {role === "student" ? (lecture.notes_shared?.fileUrl ? "View Notes" : "No Notes") : (lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl ? "Edit Notes" : "Add Notes")}
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-[#94A3B8] font-medium italic block leading-tight">
+                                Save schedule first
                               </span>
                             )}
                           </td>
 
                           {/* Homework Action Column */}
                           <td className="px-5 py-3.5">
-                            {lecture._id && !lecture._id.startsWith("temp-") ? (
+                            {role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
                               <button
                                 onClick={() => openHomeworkModal(lecture, index)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -1368,6 +1590,14 @@ export default function LectureSchedule() {
             </div>
 
             <div className="flex gap-2">
+              {role === "admin" && lectures.length > 0 && (
+                <button
+                  onClick={handleSaveTemplate}
+                  className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  Save as Subject Template
+                </button>
+              )}
               <button
                 onClick={exportCSV}
                 disabled={lectures.length === 0}
@@ -1389,6 +1619,151 @@ export default function LectureSchedule() {
 
           </div>
 
+        </div>
+      )}
+
+      {/* DYNAMIC INTERACTIVE NOTES MODAL */}
+      {isNotesModalOpen && activeNotesLecture && (
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E2E8F0] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F5F9]">
+              <div>
+                <span className="text-[10px] font-bold text-[#166534] uppercase tracking-wider block mb-0.5">
+                  Lecture #{notesIndex + 1}: {activeNotesLecture.title}
+                </span>
+                <h3 className="text-base font-extrabold text-[#1B2B4B]">Lecture Notes</h3>
+              </div>
+              <button
+                onClick={() => setIsNotesModalOpen(false)}
+                className="text-[#94A3B8] hover:text-[#475569] p-1.5 hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* ADMIN / TEACHER EDIT VIEW */}
+              {role !== "student" && (
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-5 rounded-xl space-y-4">
+                  <h4 className="text-xs font-bold text-[#475569] uppercase tracking-wider flex items-center gap-1">
+                    <UploadCloud size={14} className="text-[#166534]" /> Upload Notes
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Shared Notes (Students & Teachers)</label>
+                      <p className="text-[9px] text-[#94A3B8] mb-2">Max 10MB limit. All formats allowed.</p>
+                      <input
+                        type="file"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file && file.size > 10 * 1024 * 1024) {
+                            toast.error("File is too large. Maximum size allowed is 10MB.");
+                            e.target.value = "";
+                          } else {
+                            setNotesSharedFile(file);
+                          }
+                        }}
+                        className="w-full text-xs text-[#475569] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#EEF2FF] file:text-[#4F46E5] hover:file:bg-[#E0E7FF] cursor-pointer"
+                      />
+                      {activeNotesLecture.notes_shared?.fileName && !notesSharedFile && (
+                        <p className="text-[10px] mt-2 text-[#10B981] font-medium">Currently uploaded: {activeNotesLecture.notes_shared.fileName}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Teacher Notes (Teachers Only)</label>
+                      <p className="text-[9px] text-[#94A3B8] mb-2">Max 10MB limit. All formats allowed.</p>
+                      <input
+                        type="file"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file && file.size > 10 * 1024 * 1024) {
+                            toast.error("File is too large. Maximum size allowed is 10MB.");
+                            e.target.value = "";
+                          } else {
+                            setNotesTeacherFile(file);
+                          }
+                        }}
+                        className="w-full text-xs text-[#475569] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer"
+                      />
+                      {activeNotesLecture.notes_teacher?.fileName && !notesTeacherFile && (
+                        <p className="text-[10px] mt-2 text-[#10B981] font-medium">Currently uploaded: {activeNotesLecture.notes_teacher.fileName}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2 border-t border-[#E2E8F0]">
+                    <button
+                      onClick={saveNotes}
+                      disabled={savingNotes || (!notesSharedFile && !notesTeacherFile)}
+                      className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      {savingNotes ? "Uploading..." : "Upload Selected Notes"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* DOWNLOAD VIEW FOR EVERYONE */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-[#475569] uppercase tracking-wider">
+                  Available Downloads
+                </h4>
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Shared Notes Download */}
+                  {activeNotesLecture.notes_shared?.fileUrl ? (
+                    <div className="flex justify-between items-center bg-blue-50/40 border border-blue-100 p-3 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-[#2563EB]" />
+                        <div>
+                          <p className="text-xs font-bold text-[#1B2B4B]">{activeNotesLecture.notes_shared.fileName}</p>
+                          <p className="text-[10px] text-[#64748B]">For Students & Teachers</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDownloadFile(activeNotesLecture.notes_shared.fileName, activeNotesLecture.notes_shared.fileUrl)}
+                        className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                      >
+                        <Download size={13} /> Download
+                      </button>
+                    </div>
+                  ) : (
+                    role === "student" && (
+                      <div className="bg-[#FFF7ED] border border-[#FED7AA] text-[#9A3412] p-5 rounded-xl text-center space-y-2">
+                        <h4 className="text-sm font-bold">No Notes Available</h4>
+                        <p className="text-xs">Your instructor has not uploaded any notes for this lecture.</p>
+                      </div>
+                    )
+                  )}
+
+                  {/* Teacher Notes Download */}
+                  {role !== "student" && activeNotesLecture.notes_teacher?.fileUrl && (
+                    <div className="flex justify-between items-center bg-amber-50/40 border border-amber-100 p-3 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-amber-600" />
+                        <div>
+                          <p className="text-xs font-bold text-[#1B2B4B]">{activeNotesLecture.notes_teacher.fileName}</p>
+                          <p className="text-[10px] text-[#64748B]">Teacher Notes Only</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDownloadFile(activeNotesLecture.notes_teacher.fileName, activeNotesLecture.notes_teacher.fileUrl)}
+                        className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                      >
+                        <Download size={13} /> Download
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+            </div>
+          </div>
         </div>
       )}
 
