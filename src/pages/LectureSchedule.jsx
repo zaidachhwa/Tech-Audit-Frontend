@@ -87,6 +87,22 @@ export default function LectureSchedule() {
   const [trackerSelectedStudentId, setTrackerSelectedStudentId] = useState("");
   const [loadingTracker, setLoadingTracker] = useState(false);
 
+  // Delete predefined subject template
+  const handleDeleteSubjectTemplate = async (templateId) => {
+    if (!window.confirm("Are you sure you want to delete this predefined subject template?")) return;
+    try {
+      await API.delete(`/subjects/${templateId}`);
+      toast.success("Subject template deleted successfully!");
+      if (selectedTemplateId === templateId) {
+        setSelectedTemplateId("");
+        setSubject("");
+      }
+      fetchDropdowns();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete subject template");
+    }
+  };
+
   // Fetch all schedules
   const fetchSchedules = async () => {
     try {
@@ -1062,8 +1078,9 @@ export default function LectureSchedule() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {schedules.map((schedule) => {
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {schedules.map((schedule) => {
               const lecturesList = schedule.lectures || [];
               const total = lecturesList.length;
               const done = lecturesList.filter(l => l.status === "Done").length;
@@ -1124,6 +1141,73 @@ export default function LectureSchedule() {
               );
             })}
           </div>
+
+          {/* Subject Templates Section */}
+          {(role === "admin" || role === "teacher") && subjectTemplates.length > 0 && (
+            <div className="mt-12 animate-[fadeIn_0.3s_ease-out]">
+              <div className="flex items-center gap-2 mb-6">
+                <BookOpen className="text-[#2563EB]" size={20} />
+                <h3 className="text-lg font-bold text-[#1B2B4B]">Predefined Subject Templates</h3>
+                <span className="bg-[#F1F5F9] text-[#64748B] text-xs font-bold px-2 py-0.5 rounded-full ml-2">
+                  {subjectTemplates.length}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {subjectTemplates.map(tmpl => (
+                  <div key={tmpl._id} className="bg-white border border-[#E2E8F0] rounded-xl p-5 hover:shadow-md transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 uppercase tracking-wider mb-2">
+                          Subject Template
+                        </span>
+                        {role === "admin" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSubjectTemplate(tmpl._id);
+                            }}
+                            className="text-[#94A3B8] hover:text-red-500 p-1 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete Template"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
+                      <h3 className="text-base font-bold text-[#1B2B4B] leading-tight">
+                        {tmpl.name}
+                      </h3>
+                      
+                      <div className="space-y-2 mt-4 text-xs text-[#64748B] border-t border-[#F1F5F9] pt-4">
+                        <div className="flex items-center gap-1.5">
+                          <User size={13} className="text-[#94A3B8]" />
+                          <span>Teacher: <strong className="text-[#475569]">{teachers.find(t => t._id === tmpl.teacher)?.name || "Unassigned"}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <BookOpen size={13} className="text-[#94A3B8]" />
+                          <span>Lectures: <strong className="text-[#475569]">{tmpl.lectures?.length || 0} Topics</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-[#F1F5F9]">
+                      <button
+                        onClick={() => {
+                          handleOpenCreate();
+                          setSelectedTemplateId(tmpl._id);
+                          setSubject(tmpl.name);
+                        }}
+                        className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                      >
+                        Load into Setup <ChevronRight size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          </>
         )
       ) : (
         
@@ -1142,22 +1226,34 @@ export default function LectureSchedule() {
                   {/* Subject */}
                   <div className="col-span-1 md:col-span-2 lg:col-span-1">
                     <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Subject</label>
-                    <select
-                      value={selectedTemplateId}
-                      onChange={(e) => {
-                        setSelectedTemplateId(e.target.value);
-                        if(e.target.value) {
-                          const tmpl = subjectTemplates.find(t => t._id === e.target.value);
-                          if(tmpl) setSubject(tmpl.name);
-                        } else {
-                          setSubject("");
-                        }
-                      }}
-                      className="w-full px-3 py-2 mb-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
-                    >
-                      <option value="">-- Create New Subject --</option>
-                      {subjectTemplates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
-                    </select>
+                    <div className="flex items-center gap-2 mb-2">
+                      <select
+                        value={selectedTemplateId}
+                        onChange={(e) => {
+                          setSelectedTemplateId(e.target.value);
+                          if(e.target.value) {
+                            const tmpl = subjectTemplates.find(t => t._id === e.target.value);
+                            if(tmpl) setSubject(tmpl.name);
+                          } else {
+                            setSubject("");
+                          }
+                        }}
+                        className="flex-1 px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
+                      >
+                        <option value="">-- Create New Subject --</option>
+                        {subjectTemplates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                      </select>
+                      {role === "admin" && selectedTemplateId && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSubjectTemplate(selectedTemplateId)}
+                          className="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 px-3 py-2 rounded-lg transition-colors"
+                          title="Delete Subject Template"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
                     {!selectedTemplateId && (
                       <input
                         type="text"
@@ -1406,25 +1502,25 @@ export default function LectureSchedule() {
                           </td>
 
                           {/* Description */}
-                          <td className="px-5 py-3.5">
-                            {(role === "admin" || role === "teacher") ? (
-                              <textarea
-                                rows={1}
-                                style={{ resize: "none" }}
-                                placeholder="Write description/objectives..."
-                                value={lecture.description || ""}
-                                onInput={(e) => {
-                                  e.target.style.height = "auto";
-                                  e.target.style.height = e.target.scrollHeight + "px";
-                                }}
-                                onChange={(e) => handleCellChange(index, "description", e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-[#E2E8F0] focus:border-[#2563EB] focus:outline-none rounded-lg text-xs font-medium text-[#475569] shadow-sm min-h-[36px]"
-                              />
-                            ) : (
-                              <p className="text-xs text-[#64748B] whitespace-pre-wrap leading-relaxed">
-                                {lecture.description || "No description / objectives detailed yet."}
+                          <td className="px-5 py-3.5 group relative">
+                            <div className="flex items-center gap-2">
+                              <p className={`text-xs truncate max-w-[180px] ${lecture.description ? "text-[#475569]" : "text-[#94A3B8] italic"}`}>
+                                {lecture.description || "No description..."}
                               </p>
-                            )}
+                              {(role === "admin" || role === "teacher") && (
+                                <button
+                                  onClick={() => {
+                                    setActiveDetailsLecture(lecture);
+                                    setDetailsIndex(index);
+                                    setIsDetailsModalOpen(true);
+                                  }}
+                                  className="text-[#94A3B8] hover:text-[#2563EB] opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer"
+                                  title="Edit Description"
+                                >
+                                  <FileText size={14} />
+                                </button>
+                              )}
+                            </div>
                           </td>
 
                           {/* Date */}
