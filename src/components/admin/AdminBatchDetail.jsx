@@ -42,6 +42,7 @@ export default function AdminBatchDetail() {
   // Batch Projects
   const [groupedProjects, setGroupedProjects] = useState([]);
   const [enrolledSubjects, setEnrolledSubjects] = useState([]);
+  const [teachers, setTeachers] = useState([]);
 
   const fetchBatchDetails = async () => {
     try {
@@ -87,6 +88,44 @@ export default function AdminBatchDetail() {
     }
   };
 
+  const fetchTeachers = async () => {
+    try {
+      const res = await API.get("/teachers/list");
+      setTeachers(res.data?.teachers || []);
+    } catch (err) {
+      console.error("Failed to load teachers", err);
+    }
+  };
+
+  const handleTeacherChange = async (scheduleId, newTeacherId) => {
+    try {
+      const sched = enrolledSubjects.find(s => s._id === scheduleId);
+      if (!sched) return;
+
+      const sanitizedLectures = (sched.lectures || []).map(l => {
+        const cleaned = { ...l };
+        if (cleaned.teacher && typeof cleaned.teacher === "object") {
+          cleaned.teacher = cleaned.teacher._id;
+        }
+        return cleaned;
+      });
+
+      const payload = {
+        subject: sched.subject,
+        batch: sched.batch?._id || sched.batch,
+        teacher: newTeacherId || undefined,
+        lectures: sanitizedLectures
+      };
+
+      await API.put(`/schedules/update/${scheduleId}`, payload);
+      toast.success("Assigned teacher updated successfully!");
+      fetchBatchDetails();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to update assigned teacher.");
+    }
+  };
+
   const handleDeleteGroupProject = async (ids) => {
     if (!window.confirm("Are you sure you want to delete this project for ALL students in this batch?")) return;
     try {
@@ -103,6 +142,7 @@ export default function AdminBatchDetail() {
 
   useEffect(() => {
     fetchBatchDetails();
+    fetchTeachers();
   }, [batchId]);
 
   useEffect(() => {
@@ -273,9 +313,29 @@ export default function AdminBatchDetail() {
                     >
                       <div>
                         <h4 className="font-bold text-[#1B2B4B] text-sm mb-1">{sched.subject}</h4>
-                        <p className="text-xs text-[#64748B]">
-                          Teacher: <span className="font-semibold text-[#475569]">{sched.teacher?.name || "Unassigned"}</span>
-                        </p>
+                        {user?.role === "admin" ? (
+                          <div className="mt-1.5 mb-2">
+                            <label className="block text-[9px] font-bold text-[#64748B] uppercase mb-0.5">
+                              Assigned Teacher
+                            </label>
+                            <select
+                              value={sched.teacher?._id || sched.teacher || ""}
+                              onChange={(e) => handleTeacherChange(sched._id, e.target.value)}
+                              className="w-full px-2 py-1.5 bg-white border border-[#E2E8F0] rounded-lg text-xs font-semibold text-[#1B2B4B] shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer"
+                            >
+                              <option value="">-- Unassigned --</option>
+                              {teachers.map((t) => (
+                                <option key={t._id} value={t._id}>
+                                  {t.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-[#64748B]">
+                            Teacher: <span className="font-semibold text-[#475569]">{sched.teacher?.name || "Unassigned"}</span>
+                          </p>
+                        )}
                         <p className="text-[11px] text-[#94A3B8] mt-2">
                           {total} lecture(s) scheduled • {done} done
                         </p>

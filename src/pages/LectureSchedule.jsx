@@ -68,6 +68,12 @@ export default function LectureSchedule() {
   const [homeworkSubmissions, setHomeworkSubmissions] = useState([]);
   const [savingHW, setSavingHW] = useState(false);
 
+  // Details/Description Modal states
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [activeDetailsLecture, setActiveDetailsLecture] = useState(null);
+  const [detailsIndex, setDetailsIndex] = useState(null);
+  const [detailsDesc, setDetailsDesc] = useState("");
+
   // Notes Modal states
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [activeNotesLecture, setActiveNotesLecture] = useState(null);
@@ -452,13 +458,29 @@ export default function LectureSchedule() {
         );
         toast.success("Schedules successfully saved to database!");
       } else {
-        // Update existing
+        // Update existing schedule for the first batch
         await API.put(`/schedules/update/${selectedSchedule._id}`, {
           subject,
           batch: selectedBatchIds[0],
           teacher: teacherId,
           lectures: sanitizedLectures
         });
+        
+        // If other batches were selected in edit mode, create new schedules for them
+        if (selectedBatchIds.length > 1) {
+          const extraBatches = selectedBatchIds.slice(1);
+          await Promise.all(
+            extraBatches.map((bId) =>
+              API.post("/schedules/create", {
+                subject,
+                batch: bId,
+                teacher: teacherId,
+                lectures: sanitizedLectures
+              })
+            )
+          );
+        }
+        
         toast.success("Schedule changes successfully saved!");
       }
       
@@ -629,6 +651,13 @@ export default function LectureSchedule() {
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save template");
     }
+  };
+
+  const saveDetails = () => {
+    if (detailsIndex !== null) {
+      handleCellChange(detailsIndex, "description", detailsDesc);
+    }
+    setIsDetailsModalOpen(false);
   };
 
   // Open Homework Modal opening logic with dynamic pre-fill due dates
@@ -1412,9 +1441,9 @@ export default function LectureSchedule() {
                                   checked={isChecked}
                                   onChange={() => {
                                     if (isChecked) {
-                                      setSelectedBatchIds(selectedBatchIds.filter((id) => id !== b._id));
+                                      setSelectedBatchIds((prev) => prev.filter((id) => id !== b._id));
                                     } else {
-                                      setSelectedBatchIds([...selectedBatchIds, b._id]);
+                                      setSelectedBatchIds((prev) => [...prev, b._id]);
                                     }
                                   }}
                                   className="rounded border-[#E2E8F0] text-[#2563EB] focus:ring-[#2563EB] cursor-pointer"
@@ -1669,6 +1698,7 @@ export default function LectureSchedule() {
                                   onClick={() => {
                                     setActiveDetailsLecture(lecture);
                                     setDetailsIndex(index);
+                                    setDetailsDesc(lecture.description || "");
                                     setIsDetailsModalOpen(true);
                                   }}
                                   className="text-[#94A3B8] hover:text-[#2563EB] opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer"
@@ -2309,6 +2339,62 @@ export default function LectureSchedule() {
                 className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"
               >
                 Close View
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+      {/* DETAILS / DESCRIPTION MODAL */}
+      {isDetailsModalOpen && activeDetailsLecture && (
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E2E8F0] w-full max-w-xl rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F5F9]">
+              <div>
+                <span className="text-[10px] font-bold text-[#2563EB] uppercase tracking-wider block mb-0.5">
+                  Lecture #{detailsIndex + 1}: {activeDetailsLecture.title}
+                </span>
+                <h3 className="text-base font-extrabold text-[#1B2B4B]">Edit Lecture Description</h3>
+              </div>
+              <button
+                onClick={() => setIsDetailsModalOpen(false)}
+                className="text-[#94A3B8] hover:text-[#475569] p-1.5 hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1.5">
+                  Description / Summary
+                </label>
+                <textarea
+                  rows={6}
+                  value={detailsDesc}
+                  onChange={(e) => setDetailsDesc(e.target.value)}
+                  placeholder="Enter details or summary for this lecture..."
+                  className="w-full px-3 py-2 bg-white border border-[#E2E8F0] focus:border-[#2563EB] focus:outline-none rounded-lg text-xs font-medium text-[#475569] shadow-sm resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-[#F8FAFC] border-t border-[#F1F5F9] flex justify-end gap-2">
+              <button
+                onClick={() => setIsDetailsModalOpen(false)}
+                className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveDetails}
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              >
+                Save Description
               </button>
             </div>
 
