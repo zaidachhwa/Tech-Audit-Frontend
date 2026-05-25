@@ -13,6 +13,7 @@ import {
   FileSpreadsheet,
   ArrowLeft,
   ChevronRight,
+  ChevronDown,
   RefreshCw,
   TrendingUp,
   ListTodo,
@@ -40,7 +41,8 @@ export default function LectureSchedule() {
   const [subjectTemplates, setSubjectTemplates] = useState([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [subject, setSubject] = useState("");
-  const [batchId, setBatchId] = useState("");
+  const [selectedBatchIds, setSelectedBatchIds] = useState([]);
+  const [batchDropdownOpen, setBatchDropdownOpen] = useState(false);
   const [teacherId, setTeacherId] = useState("");
   const [numLectures, setNumLectures] = useState(5);
   const [startDate, setStartDate] = useState("");
@@ -184,7 +186,7 @@ export default function LectureSchedule() {
   // Load predefined template lectures into the grid
   const handleLoadSubjectTemplate = (e) => {
     e.preventDefault();
-    if (!teacherId || !batchId) return toast.error("Select a Batch and Teacher first");
+    if (!teacherId || selectedBatchIds.length === 0) return toast.error("Select a Batch and Teacher first");
     const tmpl = subjectTemplates.find(t => t._id === selectedTemplateId);
     if (!tmpl) return;
 
@@ -222,7 +224,7 @@ export default function LectureSchedule() {
       toast.error("Subject name is required.");
       return;
     }
-    if (!batchId) {
+    if (selectedBatchIds.length === 0) {
       toast.error("Please select a Batch.");
       return;
     }
@@ -325,6 +327,10 @@ export default function LectureSchedule() {
 
   // Save changes to database
   const saveSchedule = async () => {
+    if (selectedBatchIds.length === 0) {
+      toast.error("Please select at least one batch.");
+      return;
+    }
     if (lectures.length === 0) {
       toast.error("Please add at least one lecture row.");
       return;
@@ -341,19 +347,23 @@ export default function LectureSchedule() {
 
     try {
       if (isCreating) {
-        // Create new
-        await API.post("/schedules/create", {
-          subject,
-          batch: batchId,
-          teacher: teacherId,
-          lectures: sanitizedLectures
-        });
-        toast.success("Schedule successfully saved to database!");
+        // Create new schedule for each selected batch
+        await Promise.all(
+          selectedBatchIds.map((bId) =>
+            API.post("/schedules/create", {
+              subject,
+              batch: bId,
+              teacher: teacherId,
+              lectures: sanitizedLectures
+            })
+          )
+        );
+        toast.success("Schedules successfully saved to database!");
       } else {
         // Update existing
         await API.put(`/schedules/update/${selectedSchedule._id}`, {
           subject,
-          batch: batchId,
+          batch: selectedBatchIds[0],
           teacher: teacherId,
           lectures: sanitizedLectures
         });
@@ -422,7 +432,7 @@ export default function LectureSchedule() {
   const handleOpenEdit = (schedule) => {
     setSelectedSchedule(schedule);
     setSubject(schedule.subject);
-    setBatchId(schedule.batch?._id || "");
+    setSelectedBatchIds(schedule.batch?._id ? [schedule.batch._id] : []);
     setTeacherId(schedule.teacher?._id || "");
     setLectures(schedule.lectures || []);
     setIsCreating(false);
@@ -431,7 +441,7 @@ export default function LectureSchedule() {
   // Open scheduler creator
   const handleOpenCreate = () => {
     setSubject("");
-    setBatchId("");
+    setSelectedBatchIds([]);
     setTeacherId(role === "teacher" ? (user?.id || "") : "");
     setNumLectures(5);
     setStartDate("");
@@ -1267,21 +1277,65 @@ export default function LectureSchedule() {
                   </div>
 
                   {/* Batch Select */}
-                  <div>
+                  <div className="relative">
                     <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Assign Batch</label>
-                    <select
-                      required
-                      value={batchId}
-                      onChange={(e) => setBatchId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
+                    <button
+                      type="button"
+                      onClick={() => setBatchDropdownOpen(!batchDropdownOpen)}
+                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium flex justify-between items-center cursor-pointer min-h-[32px] text-left"
                     >
-                      <option value="">-- Select Batch --</option>
-                      {batches.map((b) => (
-                        <option key={b._id} value={b._id}>
-                          {b.batch_name} #{b.batch_no}
-                        </option>
-                      ))}
-                    </select>
+                      <span className="truncate pr-2">
+                        {selectedBatchIds.length === 0
+                          ? "-- Select Batches --"
+                          : selectedBatchIds
+                              .map((id) => {
+                                const b = batches.find((x) => x._id === id);
+                                return b ? `${b.batch_name} #${b.batch_no}` : "";
+                              })
+                              .filter(Boolean)
+                              .join(", ")}
+                      </span>
+                      <ChevronDown size={14} className="text-[#64748B] flex-shrink-0" />
+                    </button>
+                    
+                    {batchDropdownOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40 bg-transparent"
+                          onClick={() => setBatchDropdownOpen(false)}
+                        />
+                        <div
+                          className="absolute z-50 mt-1 w-full bg-white border border-[#E2E8F0] rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-1"
+                          style={{ top: "100%" }}
+                        >
+                          {batches.map((b) => {
+                            const isChecked = selectedBatchIds.includes(b._id);
+                            return (
+                              <label
+                                key={b._id}
+                                className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#F8FAFC] rounded-md cursor-pointer text-xs text-[#1B2B4B] font-medium select-none"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    if (isChecked) {
+                                      setSelectedBatchIds(selectedBatchIds.filter((id) => id !== b._id));
+                                    } else {
+                                      setSelectedBatchIds([...selectedBatchIds, b._id]);
+                                    }
+                                  }}
+                                  className="rounded border-[#E2E8F0] text-[#2563EB] focus:ring-[#2563EB] cursor-pointer"
+                                />
+                                <span>
+                                  {b.batch_name} #{b.batch_no}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Teacher Select */}

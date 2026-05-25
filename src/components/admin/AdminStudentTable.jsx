@@ -71,6 +71,7 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
 
   // Approve / Reject / Delete
   const approveStudent = async (id) => {
+    if (!window.confirm("Are you sure you want to approve this student?")) return;
     try {
       await API.patch(`/admin/approve-student/${id}`);
       toast.success("Student approved");
@@ -84,6 +85,7 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
   };
 
   const rejectStudent = async (id) => {
+    if (!window.confirm("Are you sure you want to reject this student?")) return;
     try {
       await API.patch(`/admin/reject-student/${id}`);
       toast.success("Student rejected");

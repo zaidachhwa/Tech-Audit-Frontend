@@ -39,6 +39,7 @@ export default function AdminStudents() {
   const [showEdit, setShowEdit] = useState(false);
   const [editStudent, setEditStudent] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [approvalConfirm, setApprovalConfirm] = useState(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -230,7 +231,11 @@ export default function AdminStudents() {
     }
   };
 
-  const toggleApproval = async (studentId, currentStatus) => {
+  const toggleApproval = (studentId, currentStatus, name) => {
+    setApprovalConfirm({ studentId, currentStatus, name });
+  };
+
+  const executeToggleApproval = async (studentId, currentStatus) => {
     try {
       await API.patch(`/students/update/${studentId}`, {
         isActive: !currentStatus,
@@ -397,7 +402,7 @@ export default function AdminStudents() {
                 <td className="px-6 py-4 text-right flex justify-end gap-2">
                   {!s.isActive && (
                     <button 
-                      onClick={() => toggleApproval(s._id, s.isActive)}
+                      onClick={() => toggleApproval(s._id, s.isActive, s.name)}
                       className="text-[#10B981] hover:bg-[#ECFDF5] p-2 rounded"
                     >
                       <Check size={14} />
@@ -405,7 +410,7 @@ export default function AdminStudents() {
                   )}
                   {s.isActive && (
                     <button 
-                      onClick={() => toggleApproval(s._id, s.isActive)}
+                      onClick={() => toggleApproval(s._id, s.isActive, s.name)}
                       className="text-[#F59E0B] hover:bg-[#FEF3C7] p-2 rounded"
                     >
                       <XCircle size={14} />
@@ -631,6 +636,52 @@ export default function AdminStudents() {
                 className="flex-1 px-4 py-2 bg-[#EF4444] text-white rounded-lg font-medium hover:bg-[#DC2626]"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approval Confirmation Modal */}
+      {approvalConfirm && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-sm w-full">
+            <div className="flex justify-center mb-4">
+              <div className={`w-12 h-12 ${
+                approvalConfirm.currentStatus ? "bg-[#FEF3C7] text-[#D97706]" : "bg-[#ECFDF5] text-[#10B981]"
+              } rounded-full flex items-center justify-center`}>
+                <AlertCircle size={24} />
+              </div>
+            </div>
+
+            <h2 className="text-[18px] font-bold text-[#1B2B4B] text-center mb-2">
+              {approvalConfirm.currentStatus ? "Deactivate Student?" : "Approve Student?"}
+            </h2>
+            <p className="text-[14px] text-[#64748B] text-center mb-6">
+              Are you sure you want to {approvalConfirm.currentStatus ? "deactivate" : "approve"}{" "}
+              <span className="font-bold text-[#1B2B4B]">{approvalConfirm.name}</span>?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setApprovalConfirm(null)}
+                className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg font-medium hover:bg-[#F8FAFC]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const { studentId, currentStatus } = approvalConfirm;
+                  setApprovalConfirm(null);
+                  await executeToggleApproval(studentId, currentStatus);
+                }}
+                className={`flex-1 px-4 py-2 text-white rounded-lg font-medium ${
+                  approvalConfirm.currentStatus 
+                    ? "bg-[#D97706] hover:bg-[#B45309]" 
+                    : "bg-[#10B981] hover:bg-[#059669]"
+                }`}
+              >
+                {approvalConfirm.currentStatus ? "Deactivate" : "Approve"}
               </button>
             </div>
           </div>
