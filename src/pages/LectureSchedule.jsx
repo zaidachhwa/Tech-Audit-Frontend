@@ -111,6 +111,29 @@ export default function LectureSchedule() {
     }
   };
 
+  // Approve subject request (Admin only)
+  const handleApproveRequest = async (id) => {
+    try {
+      await API.patch(`/subjects/${id}/status`, { status: "approved" });
+      toast.success("Subject request approved successfully!");
+      fetchDropdowns();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to approve request");
+    }
+  };
+
+  // Disapprove/Reject subject request (Admin only)
+  const handleRejectRequest = async (id) => {
+    if (!window.confirm("Are you sure you want to reject this subject request?")) return;
+    try {
+      await API.patch(`/subjects/${id}/status`, { status: "rejected" });
+      toast.success("Subject request rejected.");
+      fetchDropdowns();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to reject request");
+    }
+  };
+
   // Fetch all schedules
   const fetchSchedules = async () => {
     try {
@@ -888,6 +911,10 @@ export default function LectureSchedule() {
     document.body.removeChild(link);
   };
 
+  const approvedTemplates = subjectTemplates.filter(t => t.status === "approved" || !t.status);
+  const pendingRequests = subjectTemplates.filter(t => t.status === "pending");
+  const myRequests = subjectTemplates.filter(t => t.status === "pending" || t.status === "rejected");
+
   return (
     <div className="bg-[#F8FAFC] min-h-screen p-6 font-[DM_Sans] space-y-6">
       
@@ -1363,7 +1390,7 @@ export default function LectureSchedule() {
                         onChange={(e) => {
                           setSelectedTemplateId(e.target.value);
                           if(e.target.value) {
-                            const tmpl = subjectTemplates.find(t => t._id === e.target.value);
+                            const tmpl = approvedTemplates.find(t => t._id === e.target.value);
                             if(tmpl) setSubject(tmpl.name);
                           } else {
                             setSubject("");
@@ -1372,7 +1399,7 @@ export default function LectureSchedule() {
                         className="flex-1 px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
                       >
                         <option value="">-- Create New Subject --</option>
-                        {subjectTemplates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                        {approvedTemplates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
                       </select>
                       {role === "admin" && selectedTemplateId && (
                         <button
@@ -1873,12 +1900,12 @@ export default function LectureSchedule() {
             </div>
 
             <div className="flex gap-2">
-              {role === "admin" && lectures.length > 0 && (
+              {(role === "admin" || role === "teacher") && lectures.length > 0 && (
                 <button
                   onClick={handleSaveTemplate}
                   className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  Save as Subject Template
+                  {role === "admin" ? "Save as Subject Template" : "Request Subject Template"}
                 </button>
               )}
               <button
