@@ -172,15 +172,77 @@ export default function LectureSchedule() {
     return [year, month, day].join("-");
   };
 
-  // Frequency interval days helper
-  const getFrequencyInterval = (freq) => {
-    switch (freq) {
-      case "daily": return 1;
-      case "every 2 days": return 2;
-      case "weekly": return 7;
-      case "bi-weekly": return 14;
-      default: return 1;
+  const adjustDateSkippingWeekends = (d) => {
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return null;
+    const day = date.getDay();
+    if (day === 6) { // Saturday
+      date.setDate(date.getDate() + 2); // Sat -> Mon
+    } else if (day === 0) { // Sunday
+      date.setDate(date.getDate() + 1); // Sun -> Mon
     }
+    return date;
+  };
+
+  const getWeekdayOffset = (index, freq) => {
+    let offset = 0;
+    for (let k = 0; k < index; k++) {
+      if (freq === "once a week" || freq === "weekly") {
+        offset += 5;
+      } else if (freq === "bi-weekly") {
+        offset += 10;
+      } else if (freq === "every 2 days") {
+        offset += 2;
+      } else if (freq === "daily" || freq === "5 days a week") {
+        offset += 1;
+      } else if (freq === "twice a week") {
+        offset += (k % 2 === 0) ? 3 : 2;
+      } else if (freq === "thrice a week") {
+        const rem = k % 3;
+        if (rem === 0 || rem === 1) {
+          offset += 2;
+        } else {
+          offset += 1;
+        }
+      } else if (freq === "4 times a week") {
+        const rem = k % 4;
+        if (rem === 1) {
+          offset += 2;
+        } else {
+          offset += 1;
+        }
+      } else {
+        offset += 1;
+      }
+    }
+    return offset;
+  };
+
+  const addWeekdays = (startDate, offset) => {
+    let date = adjustDateSkippingWeekends(startDate);
+    if (!date) return null;
+    let added = 0;
+    while (added < offset) {
+      date.setDate(date.getDate() + 1);
+      const day = date.getDay();
+      if (day !== 0 && day !== 6) {
+        added++;
+      }
+    }
+    return date;
+  };
+
+  // Helper to calculate the date for a lecture index based on interval frequency
+  const getDateForLectureIndex = (start, index, freq) => {
+    const startDate = new Date(start);
+    if (isNaN(startDate.getTime())) return null;
+
+    if (freq === "custom" || freq === "manual") {
+      return adjustDateSkippingWeekends(startDate);
+    }
+
+    const offset = getWeekdayOffset(index, freq);
+    return addWeekdays(startDate, offset);
   };
 
   // Load predefined template lectures into the grid
@@ -190,15 +252,10 @@ export default function LectureSchedule() {
     const tmpl = subjectTemplates.find(t => t._id === selectedTemplateId);
     if (!tmpl) return;
 
-    let currentDate = startDate ? new Date(startDate) : new Date();
-    const interval = getFrequencyInterval(frequency);
-
     const loadedLectures = tmpl.lectures.map((l, i) => {
       let nextDate = null;
       if (frequency !== "custom") {
-        nextDate = new Date(currentDate);
-        if (i > 0) nextDate.setDate(nextDate.getDate() + interval);
-        currentDate = nextDate;
+        nextDate = getDateForLectureIndex(startDate || new Date(), i, frequency);
       }
 
       return {
@@ -241,16 +298,19 @@ export default function LectureSchedule() {
       return;
     }
 
-    const interval = getFrequencyInterval(frequency);
     const generated = [];
-    let currentDate = new Date(startDate);
 
     for (let i = 0; i < numLectures; i++) {
+      let nextDate = null;
+      if (frequency !== "custom" && frequency !== "manual") {
+        nextDate = getDateForLectureIndex(startDate, i, frequency);
+      }
+
       generated.push({
         _id: `temp-${Date.now()}-${i}`,
         title: `Lecture ${i + 1}`,
         description: "",
-        date: frequency === "custom" ? "" : formatDateForInput(currentDate),
+        date: nextDate ? formatDateForInput(nextDate) : "",
         status: "Planned",
         teacher: teacherId,
         homework: {
@@ -260,10 +320,6 @@ export default function LectureSchedule() {
           accept_submissions: true
         }
       });
-
-      if (frequency !== "manual" && frequency !== "custom") {
-        currentDate.setDate(currentDate.getDate() + interval);
-      }
     }
 
     setLectures(generated);
@@ -273,22 +329,26 @@ export default function LectureSchedule() {
   // Append new lecture row
   const addLectureRow = () => {
     const list = [...lectures];
-    let nextDate = new Date();
+    let nextDate = null;
 
-    if (list.length > 0) {
-      const last = list[list.length - 1];
-      if (last.date) {
-        const lastDate = new Date(last.date);
-        const interval = getFrequencyInterval(frequency);
-        lastDate.setDate(lastDate.getDate() + interval);
-        nextDate = lastDate;
-      } else {
-        nextDate = null;
+    if (frequency !== "custom") {
+      // Find the last row with a valid date
+      let lastValidIdx = -1;
+      let lastValidDate = null;
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (list[i].date) {
+          lastValidIdx = i;
+          lastValidDate = list[i].date;
+          break;
+        }
       }
-    } else if (startDate) {
-      nextDate = new Date(startDate);
-    } else if (frequency === "custom") {
-      nextDate = null;
+
+      if (lastValidIdx !== -1) {
+        const offset = list.length - lastValidIdx;
+        nextDate = getDateForLectureIndex(lastValidDate, offset, frequency);
+      } else if (startDate) {
+        nextDate = getDateForLectureIndex(startDate, list.length, frequency);
+      }
     }
 
     list.push({
@@ -312,10 +372,42 @@ export default function LectureSchedule() {
   // Update field inside grid
   const handleCellChange = (index, field, value) => {
     const updated = [...lectures];
-    updated[index] = {
-      ...updated[index],
-      [field]: value
-    };
+    
+    if (field === "date") {
+      let adjustedDate = value;
+      if (value) {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) {
+          const adjusted = adjustDateSkippingWeekends(d);
+          adjustedDate = formatDateForInput(adjusted);
+        }
+      }
+      
+      updated[index] = {
+        ...updated[index],
+        date: adjustedDate
+      };
+
+      // Cascade changes to all subsequent lectures if frequency is not custom
+      if (adjustedDate && frequency !== "custom") {
+        const shouldCascade = window.confirm("Would you like to shift the dates of all subsequent lectures accordingly?");
+        if (shouldCascade) {
+          for (let i = index + 1; i < updated.length; i++) {
+            const nextDate = getDateForLectureIndex(adjustedDate, i - index, frequency);
+            updated[i] = {
+              ...updated[i],
+              date: nextDate ? formatDateForInput(nextDate) : ""
+            };
+          }
+        }
+      }
+    } else {
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      };
+    }
+    
     setLectures(updated);
   };
 
@@ -1379,7 +1471,18 @@ export default function LectureSchedule() {
                       required={frequency !== "custom"}
                       disabled={frequency === "custom"}
                       value={frequency === "custom" ? "" : startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val) {
+                          const d = new Date(val);
+                          if (!isNaN(d.getTime())) {
+                            const adjusted = adjustDateSkippingWeekends(d);
+                            setStartDate(formatDateForInput(adjusted));
+                            return;
+                          }
+                        }
+                        setStartDate(val);
+                      }}
                       className={`w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium ${frequency === "custom" ? "opacity-50 cursor-not-allowed" : ""}`}
                     />
                   </div>
@@ -1392,11 +1495,11 @@ export default function LectureSchedule() {
                       onChange={(e) => setFrequency(e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
                     >
-                      <option value="daily">Daily</option>
-                      <option value="every 2 days">Every 2 days</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="bi-weekly">Bi-weekly</option>
-                      <option value="manual">Manual (Self Date Setup)</option>
+                      <option value="once a week">Once a week</option>
+                      <option value="twice a week">Twice a week</option>
+                      <option value="thrice a week">Thrice a week</option>
+                      <option value="4 times a week">4 times a week</option>
+                      <option value="5 days a week">5 days a week</option>
                       <option value="custom">Custom Dates (Leave Blank)</option>
                     </select>
                   </div>

@@ -41,6 +41,7 @@ export default function AdminBatchDetail() {
 
   // Batch Projects
   const [groupedProjects, setGroupedProjects] = useState([]);
+  const [enrolledSubjects, setEnrolledSubjects] = useState([]);
 
   const fetchBatchDetails = async () => {
     try {
@@ -70,6 +71,13 @@ export default function AdminBatchDetail() {
         }, {})
       );
       setGroupedProjects(grouped);
+
+      // Fetch enrolled subjects (schedules) for this batch
+      const schedulesRes = await API.get("/schedules/list");
+      const batchSchedules = (schedulesRes.data || []).filter(
+        (s) => String(s.batch?._id || s.batch) === String(batchId)
+      );
+      setEnrolledSubjects(batchSchedules);
       
     } catch (err) {
       console.error(err);
@@ -241,6 +249,55 @@ export default function AdminBatchDetail() {
               </div>
             ) : (
               <p className="text-[#64748B] text-sm py-4">No syllabus assigned to this batch yet.</p>
+            )}
+          </div>
+
+          {/* Enrolled Subjects Section */}
+          <div className="p-5 rounded-lg border border-[#E2E8F0] bg-white shadow-sm mt-5">
+            <div className="flex items-center gap-2 mb-4 text-[#1B2B4B]">
+              <BookOpen size={20} className="text-[#2563EB]"/>
+              <h2 className="text-lg font-bold">Enrolled Subjects</h2>
+            </div>
+            {enrolledSubjects.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {enrolledSubjects.map((sched) => {
+                  const total = sched.lectures?.length || 0;
+                  const done = sched.lectures?.filter((l) => l.status === "Done").length || 0;
+                  const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+                  
+                  return (
+                    <div
+                      key={sched._id}
+                      className="p-4 border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] flex flex-col justify-between"
+                      style={{ borderRadius: "12px" }}
+                    >
+                      <div>
+                        <h4 className="font-bold text-[#1B2B4B] text-sm mb-1">{sched.subject}</h4>
+                        <p className="text-xs text-[#64748B]">
+                          Teacher: <span className="font-semibold text-[#475569]">{sched.teacher?.name || "Unassigned"}</span>
+                        </p>
+                        <p className="text-[11px] text-[#94A3B8] mt-2">
+                          {total} lecture(s) scheduled • {done} done
+                        </p>
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-[#E2E8F0]">
+                        <div className="flex justify-between items-center text-[10px] font-semibold text-[#64748B] mb-1">
+                          <span>Syllabus Progress</span>
+                          <span>{percent}%</span>
+                        </div>
+                        <div className="w-full bg-[#E2E8F0] rounded-full h-1">
+                          <div
+                            className="bg-[#10B981] h-1 rounded-full transition-all duration-300"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[#64748B] text-sm py-4 text-center">No subjects enrolled to this batch yet.</p>
             )}
           </div>
 
