@@ -44,7 +44,7 @@ export default function LectureSchedule() {
   const [selectedBatchIds, setSelectedBatchIds] = useState([]);
   const [batchDropdownOpen, setBatchDropdownOpen] = useState(false);
   const [teacherId, setTeacherId] = useState("");
-  const [numLectures, setNumLectures] = useState(5);
+  const [numLectures, setNumLectures] = useState("");
   const [startDate, setStartDate] = useState("");
   const [frequency, setFrequency] = useState("daily");
 
@@ -281,10 +281,26 @@ export default function LectureSchedule() {
     const tmpl = subjectTemplates.find(t => t._id === selectedTemplateId);
     if (!tmpl) return;
 
+    let lastCalculatedDate = startDate ? new Date(startDate) : new Date();
+    let regularIndex = 0;
     const loadedLectures = tmpl.lectures.map((l, i) => {
       let nextDate = null;
-      if (frequency !== "custom") {
-        nextDate = getDateForLectureIndex(startDate || new Date(), i, frequency);
+      const isSatLec = l.isSaturdayLecture || false;
+      
+      if (isSatLec) {
+        const daysUntilSaturday = (6 - lastCalculatedDate.getDay() + 7) % 7 || 7;
+        const base = new Date(lastCalculatedDate);
+        base.setDate(base.getDate() + daysUntilSaturday);
+        nextDate = base;
+        lastCalculatedDate = base;
+      } else {
+        if (frequency !== "custom") {
+          nextDate = getDateForLectureIndex(startDate || new Date(), regularIndex, frequency);
+          regularIndex++;
+          if (nextDate) {
+            lastCalculatedDate = new Date(nextDate);
+          }
+        }
       }
 
       return {
@@ -294,6 +310,7 @@ export default function LectureSchedule() {
         date: nextDate ? formatDateForInput(nextDate) : "",
         status: "Planned",
         teacher: teacherId,
+        isSaturdayLecture: isSatLec,
         homework: { title: "", description: "", due_date: "", accept_submissions: true },
         notes_shared: l.notes_shared || { fileName: "", fileUrl: "" },
         notes_teacher: l.notes_teacher || { fileName: "", fileUrl: "" }
@@ -398,17 +415,74 @@ export default function LectureSchedule() {
     setLectures(list);
   };
 
+  // Append new Saturday lecture row
+  const addSaturdayLectureRow = () => {
+    const list = [...lectures];
+    
+    // Find base date for calculation
+    let baseDate = new Date();
+    for (let i = list.length - 1; i >= 0; i--) {
+      if (list[i].date) {
+        baseDate = new Date(list[i].date);
+        break;
+      }
+    }
+    
+    // Find next Saturday after baseDate
+    const nextSaturday = new Date(baseDate);
+    const daysUntilSaturday = (6 - nextSaturday.getDay() + 7) % 7 || 7;
+    nextSaturday.setDate(nextSaturday.getDate() + daysUntilSaturday);
+
+    list.push({
+      _id: `temp-${Date.now()}`,
+      title: `Saturday Special Lecture`,
+      description: "",
+      date: formatDateForInput(nextSaturday),
+      status: "Planned",
+      teacher: teacherId,
+      isSaturdayLecture: true,
+      homework: {
+        title: "",
+        description: "",
+        due_date: undefined,
+        accept_submissions: true
+      }
+    });
+
+    setLectures(list);
+  };
+
   // Update field inside grid
   const handleCellChange = (index, field, value) => {
     const updated = [...lectures];
     
-    if (field === "date") {
+    if (field === "isSaturdayLecture") {
+      updated[index] = {
+        ...updated[index],
+        isSaturdayLecture: value
+      };
+      // If Saturday is disabled and the date is a Saturday, shift it to Monday
+      if (!value && updated[index].date) {
+        const d = new Date(updated[index].date);
+        if (!isNaN(d.getTime()) && d.getDay() === 6) {
+          const adjusted = adjustDateSkippingWeekends(d);
+          updated[index].date = formatDateForInput(adjusted);
+        }
+      }
+    } else if (field === "date") {
       let adjustedDate = value;
       if (value) {
         const d = new Date(value);
         if (!isNaN(d.getTime())) {
-          const adjusted = adjustDateSkippingWeekends(d);
-          adjustedDate = formatDateForInput(adjusted);
+          const isSaturday = d.getDay() === 6;
+          if (updated[index].isSaturdayLecture && isSaturday) {
+            // Keep Saturday
+            adjustedDate = value;
+          } else {
+            // Default shift weekend to Monday
+            const adjusted = adjustDateSkippingWeekends(d);
+            adjustedDate = formatDateForInput(adjusted);
+          }
         }
       }
       
@@ -417,12 +491,19 @@ export default function LectureSchedule() {
         date: adjustedDate
       };
 
-      // Cascade changes to all subsequent lectures if frequency is not custom
-      if (adjustedDate && frequency !== "custom") {
+      // Cascade changes to all subsequent lectures if frequency is not custom,
+      // but only if this is NOT a Saturday-independent lecture.
+      if (adjustedDate && frequency !== "custom" && !updated[index].isSaturdayLecture) {
         const shouldCascade = window.confirm("Would you like to shift the dates of all subsequent lectures accordingly?");
         if (shouldCascade) {
+          let regularIndexOffset = 0;
           for (let i = index + 1; i < updated.length; i++) {
-            const nextDate = getDateForLectureIndex(adjustedDate, i - index, frequency);
+            if (updated[i].isSaturdayLecture) {
+              // Skip Saturday lectures from the cascade
+              continue;
+            }
+            regularIndexOffset++;
+            const nextDate = getDateForLectureIndex(adjustedDate, regularIndexOffset, frequency);
             updated[i] = {
               ...updated[i],
               date: nextDate ? formatDateForInput(nextDate) : ""
@@ -479,7 +560,11 @@ export default function LectureSchedule() {
             })
           )
         );
-        toast.success("Schedules successfully saved to database!");
+        if (role === "teacher") {
+          toast.success("Sent for approval");
+        } else {
+          toast.success("Schedules successfully saved to database!");
+        }
       } else {
         // Update existing schedule for the first batch
         await API.put(`/schedules/update/${selectedSchedule._id}`, {
@@ -504,7 +589,11 @@ export default function LectureSchedule() {
           );
         }
         
-        toast.success("Schedule changes successfully saved!");
+        if (role === "teacher") {
+          toast.success("Sent for approval");
+        } else {
+          toast.success("Schedule changes successfully saved!");
+        }
       }
       
       setIsCreating(false);
@@ -580,7 +669,7 @@ export default function LectureSchedule() {
     setSubject("");
     setSelectedBatchIds([]);
     setTeacherId(role === "teacher" ? (user?.id || "") : "");
-    setNumLectures(5);
+    setNumLectures("");
     setStartDate("");
     setFrequency("daily");
     setLectures([]);
@@ -665,11 +754,16 @@ export default function LectureSchedule() {
         lectures: lectures.map(l => ({
           title: l.title,
           description: l.description,
+          isSaturdayLecture: l.isSaturdayLecture || false,
           notes_shared: l.notes_shared,
           notes_teacher: l.notes_teacher
         }))
       });
-      toast.success("Saved as subject template!");
+      if (role === "teacher") {
+        toast.success("Sent for approval");
+      } else {
+        toast.success("Saved as subject template!");
+      }
       fetchDropdowns(); 
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save template");
@@ -1257,7 +1351,7 @@ export default function LectureSchedule() {
                         </h3>
                       </div>
                       
-                      {role === "admin" && (
+                      {(role === "admin" || (role === "teacher" && (schedule.teacher?._id === user?.id || schedule.teacher === user?.id))) && (
                         <button
                           onClick={() => handleDeleteSchedule(schedule._id)}
                           className="text-[#94A3B8] hover:text-red-500 p-1 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
@@ -1319,7 +1413,7 @@ export default function LectureSchedule() {
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 uppercase tracking-wider mb-2">
                           Subject Template
                         </span>
-                        {role === "admin" && (
+                        {(role === "admin" || (role === "teacher" && (tmpl.createdBy === user?.id || tmpl.teacher === user?.id))) && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1580,8 +1674,11 @@ export default function LectureSchedule() {
                           type="number"
                           min="1"
                           max="100"
-                          value={numLectures}
-                          onChange={(e) => setNumLectures(Number(e.target.value))}
+                          value={numLectures} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNumLectures(val === "" ? "" : Number(val));
+                          }}
                           className="w-16 px-2 py-1 bg-white border border-[#E2E8F0] rounded-lg text-center text-xs font-bold focus:outline-none focus:border-[#2563EB] text-[#1B2B4B]"
                         />
                       </div>
@@ -1740,16 +1837,30 @@ export default function LectureSchedule() {
                           {/* Date */}
                           <td className="px-5 py-3.5">
                             {(role === "admin" || role === "teacher") ? (
-                              <input
-                                type="date"
-                                value={lecture.date ? String(lecture.date).split("T")[0] : ""}
-                                onChange={(e) => handleCellChange(index, "date", e.target.value)}
-                                className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg text-xs font-medium focus:outline-none focus:border-[#2563EB] shadow-sm bg-white"
-                              />
+                              <div className="space-y-1.5">
+                                <input
+                                  type="date"
+                                  value={lecture.date ? String(lecture.date).split("T")[0] : ""}
+                                  onChange={(e) => handleCellChange(index, "date", e.target.value)}
+                                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg text-xs font-medium focus:outline-none focus:border-[#2563EB] shadow-sm bg-white"
+                                />
+                                {lecture.isSaturdayLecture && (
+                                  <div className="text-[10px] text-center font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                                    Saturday Session
+                                  </div>
+                                )}
+                              </div>
                             ) : (
-                              <span className="text-[13px] font-semibold text-[#1B2B4B]">
-                                {lecture.date ? new Date(lecture.date).toLocaleDateString() : "TBD"}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[13px] font-semibold text-[#1B2B4B]">
+                                  {lecture.date ? new Date(lecture.date).toLocaleDateString() : "TBD"}
+                                </span>
+                                {lecture.isSaturdayLecture && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">
+                                    Sat
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </td>
 
@@ -1882,6 +1993,13 @@ export default function LectureSchedule() {
                   >
                     <Plus size={14} /> Add Lecture Row
                   </button>
+ 
+                  <button
+                    onClick={addSaturdayLectureRow}
+                    className="bg-[#D97706] hover:bg-[#B45309] text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus size={14} /> Add Saturday Row
+                  </button>
 
                   <button
                     onClick={() => {
@@ -1922,7 +2040,7 @@ export default function LectureSchedule() {
                   disabled={lectures.length === 0}
                   className="bg-[#10B981] hover:bg-[#059669] text-white px-5 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
                 >
-                  Save Schedule Database
+                  Save Schedule Database / Request Approval
                 </button>
               )}
             </div>

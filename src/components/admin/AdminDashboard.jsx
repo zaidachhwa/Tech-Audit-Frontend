@@ -40,6 +40,7 @@ export default function AdminDashboard() {
 
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [pendingSubjects, setPendingSubjects] = useState([]);
 
   // ⭐ Sidebar state (reused everywhere)
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -155,8 +156,51 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchPendingSubjects = async () => {
+    try {
+      const res = await API.get("/subjects");
+      const pending = (res.data || []).filter(t => t.status === "pending");
+      setPendingSubjects(pending);
+    } catch (err) {
+      console.error("Failed to load pending subjects", err);
+    }
+  };
+
+  const handleApproveSubject = async (id) => {
+    try {
+      await API.patch(`/subjects/${id}/status`, { status: "approved" });
+      toast.success("Subject request approved successfully!");
+      fetchPendingSubjects();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to approve request");
+    }
+  };
+
+  const handleRejectSubject = async (id) => {
+    if (!window.confirm("Are you sure you want to reject this subject request?")) return;
+    try {
+      await API.patch(`/subjects/${id}/status`, { status: "rejected" });
+      toast.success("Subject request rejected.");
+      fetchPendingSubjects();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to reject request");
+    }
+  };
+
+  const handleDeleteSubject = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this subject template?")) return;
+    try {
+      await API.delete(`/subjects/${id}`);
+      toast.success("Subject template deleted successfully!");
+      fetchPendingSubjects();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete subject template");
+    }
+  };
+
   useEffect(() => {
     fetchBatches();
+    fetchPendingSubjects();
   }, []);
 
   // Stats cards
@@ -419,6 +463,14 @@ export default function AdminDashboard() {
           triggerConfirm={triggerConfirm}
         />
 
+        {/* Pending Subject Approvals */}
+        <PendingSubjectApprovals
+          pendingSubjects={pendingSubjects}
+          onApprove={handleApproveSubject}
+          onReject={handleRejectSubject}
+          onDelete={handleDeleteSubject}
+        />
+
         {/* Pending Approvals Alert */}
         {stats.pendingApprovals > 0 && (
           <PendingApprovalsAlert stats={stats} />
@@ -467,6 +519,65 @@ export default function AdminDashboard() {
         type={confirmState.type}
       />
     </div>
+  );
+}
+
+function PendingSubjectApprovals({ pendingSubjects, onApprove, onReject, onDelete }) {
+  if (pendingSubjects.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm space-y-4"
+      style={{ borderRadius: "12px" }}
+    >
+      <div className="flex items-center gap-2 pb-2 border-b border-[#F1F5F9]">
+        <BookOpen className="text-amber-500" size={20} />
+        <h2 className="font-semibold text-lg" style={{ color: "#1B2B4B", fontSize: "16px", fontWeight: "700" }}>
+          Pending Subject & Schedule Approvals ({pendingSubjects.length})
+        </h2>
+      </div>
+      <div className="space-y-3">
+        {pendingSubjects.map((subj) => (
+          <div
+            key={subj._id}
+            className="flex items-center justify-between p-4 bg-[#FFFDF5] border border-amber-200 rounded-lg hover:shadow-sm transition-all"
+            style={{ borderRadius: "8px" }}
+          >
+            <div>
+              <h3 className="font-bold text-sm text-[#1B2B4B]">{subj.name}</h3>
+              <p className="text-xs text-[#64748B] mt-0.5">
+                Requested by: <span className="font-semibold text-[#475569]">{subj.teacher?.name || "Teacher"}</span> ({subj.teacher?.email || ""})
+              </p>
+              <p className="text-[11px] text-[#94A3B8] mt-1">
+                {subj.lectures?.length || 0} Lectures planned
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onApprove(subj._id)}
+                className="px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => onReject(subj._id)}
+                className="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-600 border border-yellow-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+              >
+                Reject
+              </button>
+              <button
+                onClick={() => onDelete(subj._id)}
+                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
   );
 }
 
