@@ -59,7 +59,7 @@ export default function LectureSchedule() {
   const [isHomeworkModalOpen, setIsHomeworkModalOpen] = useState(false);
   const [activeHomeworkLecture, setActiveHomeworkLecture] = useState(null);
   const [homeworkIndex, setHomeworkIndex] = useState(null);
-  
+
   // Homework form states (Admin/Teacher)
   const [homeworkTitle, setHomeworkTitle] = useState("");
   const [homeworkDesc, setHomeworkDesc] = useState("");
@@ -286,7 +286,7 @@ export default function LectureSchedule() {
     const loadedLectures = tmpl.lectures.map((l, i) => {
       let nextDate = null;
       const isSatLec = l.isSaturdayLecture || false;
-      
+
       if (isSatLec) {
         const daysUntilSaturday = (6 - lastCalculatedDate.getDay() + 7) % 7 || 7;
         const base = new Date(lastCalculatedDate);
@@ -418,7 +418,7 @@ export default function LectureSchedule() {
   // Append new Saturday lecture row
   const addSaturdayLectureRow = () => {
     const list = [...lectures];
-    
+
     // Find base date for calculation
     let baseDate = new Date();
     for (let i = list.length - 1; i >= 0; i--) {
@@ -427,7 +427,7 @@ export default function LectureSchedule() {
         break;
       }
     }
-    
+
     // Find next Saturday after baseDate
     const nextSaturday = new Date(baseDate);
     const daysUntilSaturday = (6 - nextSaturday.getDay() + 7) % 7 || 7;
@@ -455,7 +455,7 @@ export default function LectureSchedule() {
   // Update field inside grid
   const handleCellChange = (index, field, value) => {
     const updated = [...lectures];
-    
+
     if (field === "isSaturdayLecture") {
       updated[index] = {
         ...updated[index],
@@ -485,7 +485,7 @@ export default function LectureSchedule() {
           }
         }
       }
-      
+
       updated[index] = {
         ...updated[index],
         date: adjustedDate
@@ -517,7 +517,7 @@ export default function LectureSchedule() {
         [field]: value
       };
     }
-    
+
     setLectures(updated);
   };
 
@@ -573,7 +573,7 @@ export default function LectureSchedule() {
           teacher: teacherId,
           lectures: sanitizedLectures
         });
-        
+
         // If other batches were selected in edit mode, create new schedules for them
         if (selectedBatchIds.length > 1) {
           const extraBatches = selectedBatchIds.slice(1);
@@ -588,14 +588,14 @@ export default function LectureSchedule() {
             )
           );
         }
-        
+
         if (role === "teacher") {
           toast.success("Sent for approval");
         } else {
           toast.success("Schedule changes successfully saved!");
         }
       }
-      
+
       setIsCreating(false);
       setSelectedSchedule(null);
       fetchSchedules();
@@ -698,7 +698,7 @@ export default function LectureSchedule() {
     const schedule = schedules.find(s => s._id === scheduleId);
     setTrackerSchedule(schedule);
     setTrackerSelectedStudentId("");
-    
+
     try {
       setLoadingTracker(true);
       const [subsRes, batchRes] = await Promise.all([
@@ -707,7 +707,7 @@ export default function LectureSchedule() {
       ]);
       setTrackerSubmissions(subsRes.data || []);
       setTrackerStudents(batchRes.data?.students || []);
-      
+
       const studentsList = batchRes.data?.students || [];
       if (studentsList.length > 0) {
         setTrackerSelectedStudentId(studentsList[0]._id);
@@ -724,8 +724,8 @@ export default function LectureSchedule() {
     try {
       const res = await API.patch(`/schedules/submissions/${submissionId}/review`);
       toast.success(res.data?.message || "Review status updated.");
-      
-      setTrackerSubmissions(prev => prev.map(s => 
+
+      setTrackerSubmissions(prev => prev.map(s =>
         s._id === submissionId ? { ...s, status: res.data?.submission?.status } : s
       ));
     } catch (err) {
@@ -764,7 +764,7 @@ export default function LectureSchedule() {
       } else {
         toast.success("Saved as subject template!");
       }
-      fetchDropdowns(); 
+      fetchDropdowns();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save template");
     }
@@ -970,7 +970,7 @@ export default function LectureSchedule() {
     try {
       setSubmittingHW(true); // Reuse submittingHW state for loading indication
       await API.delete(`/schedules/submissions/${submissionId}`);
-      
+
       toast.success("Submission deleted successfully!");
       fetchSubmissions(selectedSchedule._id, activeHomeworkLecture._id);
     } catch (err) {
@@ -985,7 +985,7 @@ export default function LectureSchedule() {
     try {
       const res = await API.patch(`/schedules/submissions/${subId}/review`);
       toast.success(res.data.message);
-      
+
       // Update in submissions list immediately
       setHomeworkSubmissions(prev =>
         prev.map(item => item._id === subId ? res.data.submission : item)
@@ -1011,14 +1011,14 @@ export default function LectureSchedule() {
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen p-6 font-[DM_Sans] space-y-6">
-      
+
       {/* HEADER SECTION */}
       <div className="flex justify-between items-center">
         <div>
           <div className="flex items-center gap-2 mb-1">
             {(selectedSchedule || isCreating || isViewingSubmissionsCenter) && (
-              <button 
-                onClick={handleBack} 
+              <button
+                onClick={handleBack}
                 className="p-1 text-[#64748B] hover:text-[#1B2B4B] hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
               >
                 <ArrowLeft size={18} />
@@ -1027,13 +1027,13 @@ export default function LectureSchedule() {
             <h1 className="text-[20px] font-bold text-[#1B2B4B]">Lecture Scheduler</h1>
           </div>
           <p className="text-[13px] text-[#64748B]">
-            {isViewingSubmissionsCenter 
+            {isViewingSubmissionsCenter
               ? "Global Homework Submissions Tracker for students and batches"
-              : isCreating 
-              ? "Generate and define a new course schedule calendar" 
-              : selectedSchedule 
-              ? `Viewing schedule for ${subject}` 
-              : "Manage and track lecture schedules across batches"}
+              : isCreating
+                ? "Generate and define a new course schedule calendar"
+                : selectedSchedule
+                  ? `Viewing schedule for ${subject}`
+                  : "Manage and track lecture schedules across batches"}
           </p>
         </div>
 
@@ -1061,7 +1061,7 @@ export default function LectureSchedule() {
                 <ArrowLeft size={16} /> View Schedules
               </button>
             )}
-            
+
             {!isViewingSubmissionsCenter && (
               <button
                 onClick={handleOpenCreate}
@@ -1135,7 +1135,7 @@ export default function LectureSchedule() {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
+
                 {/* Left Column: Master Students List */}
                 <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden flex flex-col">
                   <div className="p-4 border-b border-[#F1F5F9] bg-[#FAFBFC]">
@@ -1151,7 +1151,7 @@ export default function LectureSchedule() {
                     ) : (
                       trackerStudents.map(student => {
                         const isSelected = student._id === trackerSelectedStudentId;
-                        
+
                         // Count student's submissions for this schedule's homeworks
                         const scheduleHWCount = (trackerSchedule.lectures || []).filter(l => l.homework?.title).length;
                         const studentSubsCount = trackerSubmissions.filter(sub => sub.student?._id === student._id).length;
@@ -1160,9 +1160,8 @@ export default function LectureSchedule() {
                           <button
                             key={student._id}
                             onClick={() => setTrackerSelectedStudentId(student._id)}
-                            className={`w-full text-left p-4 transition-all flex flex-col gap-1 hover:bg-[#F8FAFC] cursor-pointer ${
-                              isSelected ? "bg-blue-50/70 border-r-4 border-[#2563EB]" : ""
-                            }`}
+                            className={`w-full text-left p-4 transition-all flex flex-col gap-1 hover:bg-[#F8FAFC] cursor-pointer ${isSelected ? "bg-blue-50/70 border-r-4 border-[#2563EB]" : ""
+                              }`}
                           >
                             <span className="text-xs font-bold text-[#1B2B4B]">
                               {student.name}
@@ -1224,7 +1223,7 @@ export default function LectureSchedule() {
                                     Lecture: {lecture.title} | Due: {lecture.homework.due_date ? new Date(lecture.homework.due_date).toLocaleDateString() : "No due date"}
                                   </p>
                                 </div>
-                                
+
                                 {/* Status badge */}
                                 {sub ? (
                                   sub.status === "reviewed" ? (
@@ -1274,11 +1273,10 @@ export default function LectureSchedule() {
 
                                     <button
                                       onClick={() => handleTrackerToggleReview(sub._id)}
-                                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm cursor-pointer ${
-                                        sub.status === "reviewed"
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm cursor-pointer ${sub.status === "reviewed"
                                           ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200"
                                           : "bg-[#10B981] hover:bg-[#059669] text-white border border-[#10B981]"
-                                      }`}
+                                        }`}
                                     >
                                       {sub.status === "reviewed" ? "Mark Pending" : "Mark Reviewed"}
                                     </button>
@@ -1333,139 +1331,139 @@ export default function LectureSchedule() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {schedules.map((schedule) => {
-              const lecturesList = schedule.lectures || [];
-              const total = lecturesList.length;
-              const done = lecturesList.filter(l => l.status === "Done").length;
-              const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+                const lecturesList = schedule.lectures || [];
+                const total = lecturesList.length;
+                const done = lecturesList.filter(l => l.status === "Done").length;
+                const percent = total > 0 ? Math.round((done / total) * 100) : 0;
 
-              return (
-                <div key={schedule._id} className="bg-white border border-[#E2E8F0] rounded-xl p-5 hover:shadow-md transition-all flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#2563EB] uppercase tracking-wider mb-2">
-                          {schedule.batch?.batch_name} #{schedule.batch?.batch_no}
-                        </span>
-                        <h3 className="text-base font-bold text-[#1B2B4B] leading-tight">
-                          {schedule.subject}
-                        </h3>
-                      </div>
-                      
-                      {(role === "admin" || (role === "teacher" && (schedule.teacher?._id === user?.id || schedule.teacher === user?.id))) && (
-                        <button
-                          onClick={() => handleDeleteSchedule(schedule._id)}
-                          className="text-[#94A3B8] hover:text-red-500 p-1 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="space-y-2 mt-4 text-xs text-[#64748B] border-t border-[#F1F5F9] pt-4">
-                      <div className="flex items-center gap-1.5">
-                        <User size={13} className="text-[#94A3B8]" />
-                        <span>Teacher: <strong className="text-[#475569]">{schedule.teacher?.name || "Unassigned"}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <ListTodo size={13} className="text-[#94A3B8]" />
-                        <span>Lectures: <strong className="text-[#475569]">{done}/{total} Done</strong></span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-[#F1F5F9]">
-                    <div className="flex items-center justify-between text-xs font-semibold text-[#475569] mb-1.5">
-                      <span>Schedule Progress</span>
-                      <span>{percent}%</span>
-                    </div>
-                    <div className="w-full bg-[#E2E8F0] rounded-full h-1.5 mb-4">
-                      <div className="bg-[#10B981] h-1.5 rounded-full transition-all duration-300" style={{ width: `${percent}%` }} />
-                    </div>
-
-                    <button
-                      onClick={() => handleOpenEdit(schedule)}
-                      className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
-                    >
-                      {role === "student" ? "View Lectures" : "Edit / Manage Schedule"} <ChevronRight size={13} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Subject Templates Section */}
-          {(role === "admin" || role === "teacher") && subjectTemplates.length > 0 && (
-            <div className="mt-12 animate-[fadeIn_0.3s_ease-out]">
-              <div className="flex items-center gap-2 mb-6">
-                <BookOpen className="text-[#2563EB]" size={20} />
-                <h3 className="text-lg font-bold text-[#1B2B4B]">Predefined Subject Templates</h3>
-                <span className="bg-[#F1F5F9] text-[#64748B] text-xs font-bold px-2 py-0.5 rounded-full ml-2">
-                  {subjectTemplates.length}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {subjectTemplates.map(tmpl => (
-                  <div key={tmpl._id} className="bg-white border border-[#E2E8F0] rounded-xl p-5 hover:shadow-md transition-all flex flex-col justify-between">
+                return (
+                  <div key={schedule._id} className="bg-white border border-[#E2E8F0] rounded-xl p-5 hover:shadow-md transition-all flex flex-col justify-between">
                     <div>
                       <div className="flex justify-between items-start mb-3">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 uppercase tracking-wider mb-2">
-                          Subject Template
-                        </span>
-                        {(role === "admin" || (role === "teacher" && (tmpl.createdBy === user?.id || tmpl.teacher === user?.id))) && (
+                        <div>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#2563EB] uppercase tracking-wider mb-2">
+                            {schedule.batch?.batch_name} #{schedule.batch?.batch_no}
+                          </span>
+                          <h3 className="text-base font-bold text-[#1B2B4B] leading-tight">
+                            {schedule.subject}
+                          </h3>
+                        </div>
+
+                        {(role === "admin" || (role === "teacher" && (schedule.teacher?._id === user?.id || schedule.teacher === user?.id))) && (
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSubjectTemplate(tmpl._id);
-                            }}
+                            onClick={() => handleDeleteSchedule(schedule._id)}
                             className="text-[#94A3B8] hover:text-red-500 p-1 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            title="Delete Template"
                           >
                             <Trash2 size={15} />
                           </button>
                         )}
                       </div>
-                      <h3 className="text-base font-bold text-[#1B2B4B] leading-tight">
-                        {tmpl.name}
-                      </h3>
-                      
+
                       <div className="space-y-2 mt-4 text-xs text-[#64748B] border-t border-[#F1F5F9] pt-4">
                         <div className="flex items-center gap-1.5">
                           <User size={13} className="text-[#94A3B8]" />
-                          <span>Teacher: <strong className="text-[#475569]">{teachers.find(t => t._id === tmpl.teacher)?.name || "Unassigned"}</strong></span>
+                          <span>Teacher: <strong className="text-[#475569]">{schedule.teacher?.name || "Unassigned"}</strong></span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <BookOpen size={13} className="text-[#94A3B8]" />
-                          <span>Lectures: <strong className="text-[#475569]">{tmpl.lectures?.length || 0} Topics</strong></span>
+                          <ListTodo size={13} className="text-[#94A3B8]" />
+                          <span>Lectures: <strong className="text-[#475569]">{done}/{total} Done</strong></span>
                         </div>
                       </div>
                     </div>
 
                     <div className="mt-6 pt-4 border-t border-[#F1F5F9]">
+                      <div className="flex items-center justify-between text-xs font-semibold text-[#475569] mb-1.5">
+                        <span>Schedule Progress</span>
+                        <span>{percent}%</span>
+                      </div>
+                      <div className="w-full bg-[#E2E8F0] rounded-full h-1.5 mb-4">
+                        <div className="bg-[#10B981] h-1.5 rounded-full transition-all duration-300" style={{ width: `${percent}%` }} />
+                      </div>
+
                       <button
-                        onClick={() => {
-                          handleOpenCreate();
-                          setSelectedTemplateId(tmpl._id);
-                          setSubject(tmpl.name);
-                        }}
+                        onClick={() => handleOpenEdit(schedule)}
                         className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
                       >
-                        Load into Setup <ChevronRight size={13} />
+                        {role === "student" ? "View Lectures" : "View / Edit Schedule"} <ChevronRight size={13} />
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          )}
+
+            {/* Subject Templates Section */}
+            {(role === "admin" || role === "teacher") && subjectTemplates.length > 0 && (
+              <div className="mt-12 animate-[fadeIn_0.3s_ease-out]">
+                <div className="flex items-center gap-2 mb-6">
+                  <BookOpen className="text-[#2563EB]" size={20} />
+                  <h3 className="text-lg font-bold text-[#1B2B4B]">Predefined Subject Templates</h3>
+                  <span className="bg-[#F1F5F9] text-[#64748B] text-xs font-bold px-2 py-0.5 rounded-full ml-2">
+                    {subjectTemplates.length}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {subjectTemplates.map(tmpl => (
+                    <div key={tmpl._id} className="bg-white border border-[#E2E8F0] rounded-xl p-5 hover:shadow-md transition-all flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 uppercase tracking-wider mb-2">
+                            Subject Template
+                          </span>
+                          {(role === "admin" || (role === "teacher" && (tmpl.createdBy === user?.id || tmpl.teacher === user?.id))) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSubjectTemplate(tmpl._id);
+                              }}
+                              className="text-[#94A3B8] hover:text-red-500 p-1 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              title="Delete Template"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                        </div>
+                        <h3 className="text-base font-bold text-[#1B2B4B] leading-tight">
+                          {tmpl.name}
+                        </h3>
+
+                        <div className="space-y-2 mt-4 text-xs text-[#64748B] border-t border-[#F1F5F9] pt-4">
+                          <div className="flex items-center gap-1.5">
+                            <User size={13} className="text-[#94A3B8]" />
+                            <span>Teacher: <strong className="text-[#475569]">{teachers.find(t => t._id === tmpl.teacher)?.name || "Unassigned"}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <BookOpen size={13} className="text-[#94A3B8]" />
+                            <span>Lectures: <strong className="text-[#475569]">{tmpl.lectures?.length || 0} Topics</strong></span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 pt-4 border-t border-[#F1F5F9]">
+                        <button
+                          onClick={() => {
+                            handleOpenCreate();
+                            setSelectedTemplateId(tmpl._id);
+                            setSubject(tmpl.name);
+                          }}
+                          className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          Load into Setup <ChevronRight size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )
       ) : (
-        
+
         /* SCHEDULER BUILDER & EDITOR WORKSPACE */
         <div className="space-y-6">
-          
+
           {/* SETUP BAR */}
           {(role === "admin" || role === "teacher") && (
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm">
@@ -1474,7 +1472,7 @@ export default function LectureSchedule() {
               </h2>
               <form onSubmit={handleGenerateSchedule} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  
+
                   {/* Subject */}
                   <div className="col-span-1 md:col-span-2 lg:col-span-1">
                     <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Subject</label>
@@ -1483,9 +1481,9 @@ export default function LectureSchedule() {
                         value={selectedTemplateId}
                         onChange={(e) => {
                           setSelectedTemplateId(e.target.value);
-                          if(e.target.value) {
+                          if (e.target.value) {
                             const tmpl = approvedTemplates.find(t => t._id === e.target.value);
-                            if(tmpl) setSubject(tmpl.name);
+                            if (tmpl) setSubject(tmpl.name);
                           } else {
                             setSubject("");
                           }
@@ -1530,16 +1528,16 @@ export default function LectureSchedule() {
                         {selectedBatchIds.length === 0
                           ? "-- Select Batches --"
                           : selectedBatchIds
-                              .map((id) => {
-                                const b = batches.find((x) => x._id === id);
-                                return b ? `${b.batch_name} #${b.batch_no}` : "";
-                              })
-                              .filter(Boolean)
-                              .join(", ")}
+                            .map((id) => {
+                              const b = batches.find((x) => x._id === id);
+                              return b ? `${b.batch_name} #${b.batch_no}` : "";
+                            })
+                            .filter(Boolean)
+                            .join(", ")}
                       </span>
                       <ChevronDown size={14} className="text-[#64748B] flex-shrink-0" />
                     </button>
-                    
+
                     {batchDropdownOpen && (
                       <>
                         <div
@@ -1656,50 +1654,50 @@ export default function LectureSchedule() {
 
                 </div>
 
-                  <div className="flex justify-between items-center pt-2">
-                    {selectedTemplateId ? (
-                      <div className="flex-1 pr-4">
-                        <button
-                          type="button"
-                          onClick={handleLoadSubjectTemplate}
-                          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer w-full justify-center"
-                        >
-                          Load Predefined Subject Lectures
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs font-bold text-[#475569] uppercase">Number of Lectures:</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={numLectures} 
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setNumLectures(val === "" ? "" : Number(val));
-                          }}
-                          className="w-16 px-2 py-1 bg-white border border-[#E2E8F0] rounded-lg text-center text-xs font-bold focus:outline-none focus:border-[#2563EB] text-[#1B2B4B]"
-                        />
-                      </div>
-                    )}
-
-                    {!selectedTemplateId && (
+                <div className="flex justify-between items-center pt-2">
+                  {selectedTemplateId ? (
+                    <div className="flex-1 pr-4">
                       <button
-                        type="submit"
-                        className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+                        type="button"
+                        onClick={handleLoadSubjectTemplate}
+                        className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer w-full justify-center"
                       >
-                        Generate Schedule Rows
+                        Load Predefined Subject Lectures
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-bold text-[#475569] uppercase">Number of Lectures:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={numLectures}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setNumLectures(val === "" ? "" : Number(val));
+                        }}
+                        className="w-16 px-2 py-1 bg-white border border-[#E2E8F0] rounded-lg text-center text-xs font-bold focus:outline-none focus:border-[#2563EB] text-[#1B2B4B]"
+                      />
+                    </div>
+                  )}
+
+                  {!selectedTemplateId && (
+                    <button
+                      type="submit"
+                      className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      Generate Schedule Rows
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
           )}
 
           {/* DYNAMIC STATS ROW */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            
+
             {/* Total Lectures */}
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex justify-between items-center">
               <div>
@@ -1779,17 +1777,16 @@ export default function LectureSchedule() {
                     lectures.map((lecture, index) => {
                       const isDone = lecture.status === "Done";
                       const hasHW = lecture.homework?.title;
-                      
+
                       return (
                         <tr key={lecture._id || index} className="hover:bg-[#F8FAFC]/50 transition-colors">
-                          
+
                           {/* # Index Badge */}
                           <td className="px-5 py-3.5 text-center">
-                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-colors ${
-                              isDone 
-                                ? "bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0]" 
+                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-colors ${isDone
+                                ? "bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0]"
                                 : "bg-[#F1F5F9] text-[#475569]"
-                            }`}>
+                              }`}>
                               {index + 1}
                             </span>
                           </td>
@@ -1889,11 +1886,10 @@ export default function LectureSchedule() {
                             {role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
                               <button
                                 onClick={() => openNotesModal(lecture, index)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                                  lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl
                                     ? "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7]"
                                     : "bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
-                                }`}
+                                  }`}
                               >
                                 <FileText size={13} />
                                 {role === "student" ? (lecture.notes_shared?.fileUrl ? "View Notes" : "No Notes") : (lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl ? "Edit Notes" : "Add Notes")}
@@ -1910,11 +1906,10 @@ export default function LectureSchedule() {
                             {role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
                               <button
                                 onClick={() => openHomeworkModal(lecture, index)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                                  hasHW
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${hasHW
                                     ? "bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE] hover:bg-[#E0E7FF]"
                                     : "bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
-                                }`}
+                                  }`}
                               >
                                 <BookOpen size={13} />
                                 {role === "student" ? (hasHW ? "View Homework" : "No HW") : (hasHW ? "Edit HW" : "Add HW")}
@@ -1935,26 +1930,24 @@ export default function LectureSchedule() {
                               <select
                                 value={lecture.status}
                                 onChange={(e) => handleCellChange(index, "status", e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg text-xs font-bold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer ${
-                                  lecture.status === "Done"
+                                className={`w-full px-3 py-2 border rounded-lg text-xs font-bold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer ${lecture.status === "Done"
                                     ? "bg-[#ECFDF5] border-[#A7F3D0] text-[#047857]"
                                     : lecture.status === "Scheduled"
-                                    ? "bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
-                                    : "bg-white border-[#E2E8F0] text-[#475569]"
-                                }`}
+                                      ? "bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
+                                      : "bg-white border-[#E2E8F0] text-[#475569]"
+                                  }`}
                               >
                                 <option value="Planned">Planned</option>
                                 <option value="Scheduled">Scheduled</option>
                                 <option value="Done">Done</option>
                               </select>
                             ) : (
-                              <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${
-                                lecture.status === "Done"
+                              <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${lecture.status === "Done"
                                   ? "bg-[#D1FAE5] border-[#A7F3D0] text-[#065F46]"
                                   : lecture.status === "Scheduled"
-                                  ? "bg-[#DBEAFE] border-[#BFDBFE] text-[#1E40AF]"
-                                  : "bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]"
-                              }`}>
+                                    ? "bg-[#DBEAFE] border-[#BFDBFE] text-[#1E40AF]"
+                                    : "bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]"
+                                }`}>
                                 {lecture.status}
                               </span>
                             )}
@@ -1983,7 +1976,7 @@ export default function LectureSchedule() {
 
           {/* ACTIONS BAR */}
           <div className="flex justify-between items-center border-t border-[#E2E8F0] pt-6 flex-wrap gap-4">
-            
+
             <div className="flex gap-2">
               {(role === "admin" || role === "teacher") && (
                 <>
@@ -1993,7 +1986,7 @@ export default function LectureSchedule() {
                   >
                     <Plus size={14} /> Add Lecture Row
                   </button>
- 
+
                   <button
                     onClick={addSaturdayLectureRow}
                     className="bg-[#D97706] hover:bg-[#B45309] text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
@@ -2054,7 +2047,7 @@ export default function LectureSchedule() {
       {isNotesModalOpen && activeNotesLecture && (
         <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-[#E2E8F0] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F5F9]">
               <div>
@@ -2073,14 +2066,14 @@ export default function LectureSchedule() {
 
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              
+
               {/* ADMIN / TEACHER EDIT VIEW */}
               {role !== "student" && (
                 <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-5 rounded-xl space-y-4">
                   <h4 className="text-xs font-bold text-[#475569] uppercase tracking-wider flex items-center gap-1">
                     <UploadCloud size={14} className="text-[#166534]" /> Upload Notes
                   </h4>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Shared Notes (Students & Teachers)</label>
@@ -2189,7 +2182,7 @@ export default function LectureSchedule() {
                   )}
                 </div>
               </div>
-              
+
             </div>
           </div>
         </div>
@@ -2199,7 +2192,7 @@ export default function LectureSchedule() {
       {isHomeworkModalOpen && activeHomeworkLecture && (
         <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-[#E2E8F0] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F5F9]">
               <div>
@@ -2218,17 +2211,17 @@ export default function LectureSchedule() {
 
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              
+
               {/* ADMIN / TEACHER EDIT VIEW */}
               {role !== "student" ? (
                 <div className="space-y-6">
-                  
+
                   {/* Homework Form */}
                   <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-5 rounded-xl space-y-4">
                     <h4 className="text-xs font-bold text-[#475569] uppercase tracking-wider flex items-center gap-1">
                       <FileText size={14} className="text-[#2563EB]" /> Assignment Config
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Homework Title</label>
@@ -2295,7 +2288,7 @@ export default function LectureSchedule() {
                     <h4 className="text-xs font-bold text-[#475569] uppercase tracking-wider">
                       Student Submissions ({homeworkSubmissions.length})
                     </h4>
-                    
+
                     {homeworkSubmissions.length === 0 ? (
                       <div className="border border-dashed border-[#E2E8F0] rounded-xl p-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
                         No student submissions uploaded yet.
@@ -2316,21 +2309,19 @@ export default function LectureSchedule() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${
-                                sub.status === "reviewed"
+                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${sub.status === "reviewed"
                                   ? "bg-[#D1FAE5] border-[#A7F3D0] text-[#065F46]"
                                   : "bg-[#FFF7ED] border-[#FED7AA] text-[#C2410C]"
-                              }`}>
+                                }`}>
                                 {sub.status}
                               </span>
 
                               <button
                                 onClick={() => handleToggleReview(sub._id)}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm transition-all cursor-pointer ${
-                                  sub.status === "reviewed"
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm transition-all cursor-pointer ${sub.status === "reviewed"
                                     ? "bg-white border border-[#CBD5E1] text-[#475569] hover:bg-[#F8FAFC]"
                                     : "bg-[#10B981] hover:bg-[#059669] text-white"
-                                }`}
+                                  }`}
                               >
                                 {sub.status === "reviewed" ? "Re-open" : "Mark Reviewed"}
                               </button>
@@ -2343,10 +2334,10 @@ export default function LectureSchedule() {
 
                 </div>
               ) : (
-                
+
                 /* STUDENT SUBMISSION VIEW */
                 <div className="space-y-6">
-                  
+
                   {/* Read-Only Assignment Details */}
                   {!activeHomeworkLecture.homework?.title ? (
                     <div className="bg-[#FFF7ED] border border-[#FED7AA] text-[#9A3412] p-5 rounded-xl text-center space-y-2">
@@ -2356,7 +2347,7 @@ export default function LectureSchedule() {
                     </div>
                   ) : (
                     <div className="space-y-6">
-                      
+
                       {/* Assignment card */}
                       <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-5 rounded-xl space-y-3">
                         <div className="flex justify-between items-start">
@@ -2372,12 +2363,12 @@ export default function LectureSchedule() {
                           <div className="text-right">
                             <span className="block text-[10px] font-bold text-[#64748B] uppercase mb-0.5">Due Date</span>
                             <span className="text-xs font-semibold text-[#EF4444]">
-                              {activeHomeworkLecture.homework.due_date 
+                              {activeHomeworkLecture.homework.due_date
                                 ? new Date(activeHomeworkLecture.homework.due_date).toLocaleDateString(undefined, {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric"
-                                  })
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric"
+                                })
                                 : "No due date set"}
                             </span>
                           </div>
@@ -2402,7 +2393,7 @@ export default function LectureSchedule() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          
+
                           {/* Green Confirmation banner if already submitted */}
                           {homeworkSubmissions.length > 0 && (
                             <div className="bg-[#ECFDF5] border border-[#A7F3D0] p-4 rounded-xl flex items-start justify-between gap-3 text-[#065F46] text-xs">
@@ -2437,9 +2428,9 @@ export default function LectureSchedule() {
                               onChange={handleFileChange}
                               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                             />
-                            
+
                             <UploadCloud className="mx-auto text-[#94A3B8]" size={36} />
-                            
+
                             <div>
                               <p className="text-xs font-bold text-[#1B2B4B]">
                                 {selectedFile ? `Selected: ${selectedFile.name}` : "Click or drag your assignment file here"}
@@ -2494,7 +2485,7 @@ export default function LectureSchedule() {
       {isDetailsModalOpen && activeDetailsLecture && (
         <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-[#E2E8F0] w-full max-w-xl rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F5F9]">
               <div>

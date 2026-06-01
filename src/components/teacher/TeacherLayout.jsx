@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { Menu } from "lucide-react";
+import { Toaster } from "react-hot-toast";
 import TeacherSidebar from "./TeacherSidebar";
 
 export default function TeacherLayout() {
@@ -91,6 +92,14 @@ export default function TeacherLayout() {
           <Outlet />
         </main>
       </div>
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: { fontFamily: "'DM Sans', sans-serif", fontSize: 13 },
+          duration: 3000,
+        }}
+      />
 
       {/* Responsive override */}
       <style>{`
