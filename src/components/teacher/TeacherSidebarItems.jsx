@@ -28,7 +28,6 @@ export const teacherSidebarItems = [
     name: "Topic Progress",
     icon: BarChart3,
     path: "/teacher/performance",
-    
   },
   {
     name: "Attendance",

@@ -95,6 +95,18 @@ export default function LectureSchedule() {
   const [trackerSelectedStudentId, setTrackerSelectedStudentId] = useState("");
   const [loadingTracker, setLoadingTracker] = useState(false);
 
+  // Preview Modal states
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewFileName, setPreviewFileName] = useState("");
+  const [previewFileUrl, setPreviewFileUrl] = useState("");
+
+  const handlePreviewFile = (fileName, fileUrl) => {
+    if (!fileUrl) return toast.error("No file URL available for preview");
+    setPreviewFileName(fileName);
+    setPreviewFileUrl(fileUrl);
+    setIsPreviewModalOpen(true);
+  };
+
   // Delete predefined subject template
   const handleDeleteSubjectTemplate = async (templateId) => {
     if (!window.confirm("Are you sure you want to delete this predefined subject template?")) return;
@@ -613,6 +625,28 @@ export default function LectureSchedule() {
       fetchSchedules();
     } catch (err) {
       toast.error("Failed to delete schedule.");
+    }
+  };
+
+  // Teacher verifies or rejects an admin-created schedule
+  const handleVerifySchedule = async (id, action) => {
+    try {
+      const res = await API.patch(`/schedules/${id}/verify`, { action });
+      toast.success(res.data.message || `Schedule ${action === "approve" ? "approved" : "rejected"} successfully.`);
+      fetchSchedules();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Verification failed");
+    }
+  };
+
+  // Teacher verifies or rejects an admin-created subject template
+  const handleVerifySubjectTemplate = async (id, action) => {
+    try {
+      const res = await API.patch(`/subjects/${id}/verify`, { action });
+      toast.success(res.data.message || `Subject ${action === "approve" ? "approved" : "rejected"} successfully.`);
+      fetchDropdowns();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Verification failed");
     }
   };
 
@@ -1209,7 +1243,7 @@ export default function LectureSchedule() {
                         .map((lecture, idx) => {
                           // Find submission for this lecture by selected student
                           const sub = trackerSubmissions.find(
-                            s => s.lecture_id === lecture._id && s.student?._id === trackerSelectedStudentId
+                            s => s.lectureId === lecture._id && s.student?._id === trackerSelectedStudentId
                           );
 
                           return (
@@ -1252,23 +1286,32 @@ export default function LectureSchedule() {
                                     <FileText size={16} className="text-[#2563EB]" />
                                     <div className="text-left">
                                       <p className="text-xs font-bold text-[#1B2B4B] max-w-[180px] truncate">
-                                        {sub.file_url ? (sub.file_url.split(",")[0].startsWith("data:") ? "student_submission_file" : sub.file_url) : "Uploaded File"}
+                                        {sub.fileName || "Uploaded File"}
                                       </p>
                                       <p className="text-[9px] text-[#64748B]">
-                                        Submitted at: {new Date(sub.submitted_at).toLocaleString()}
+                                        Submitted at: {sub.createdAt ? new Date(sub.createdAt).toLocaleString() : "TBD"}
                                       </p>
                                     </div>
                                   </div>
 
                                   <div className="flex gap-2">
-                                    {sub.file_url && (
-                                      <button
-                                        onClick={() => handleDownloadFile(sub.file_url.split(",")[0].startsWith("data:") ? "homework_solution.pdf" : "homework_solution", sub.file_url)}
-                                        className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
-                                        title="Download homework submission"
-                                      >
-                                        <Download size={13} /> Download
-                                      </button>
+                                    {sub.fileUrl && (
+                                      <>
+                                        <button
+                                          onClick={() => handlePreviewFile(sub.fileName || "homework_submission", sub.fileUrl)}
+                                          className="bg-[#EEF2FF] border border-[#C7D2FE] hover:bg-[#E0E7FF] text-[#4F46E5] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                                          title="Preview homework submission"
+                                        >
+                                          <Eye size={13} /> Preview
+                                        </button>
+                                        <button
+                                          onClick={() => handleDownloadFile(sub.fileName || "homework_solution.pdf", sub.fileUrl)}
+                                          className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                                          title="Download homework submission"
+                                        >
+                                          <Download size={13} /> Download
+                                        </button>
+                                      </>
                                     )}
 
                                     <button
@@ -1344,6 +1387,11 @@ export default function LectureSchedule() {
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#2563EB] uppercase tracking-wider mb-2">
                             {schedule.batch?.batch_name} #{schedule.batch?.batch_no}
                           </span>
+                          {schedule.verificationStatus === "pending_teacher" && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 uppercase tracking-wider mb-2 ml-2 animate-pulse">
+                              Pending Verification
+                            </span>
+                          )}
                           <h3 className="text-base font-bold text-[#1B2B4B] leading-tight">
                             {schedule.subject}
                           </h3>
@@ -1380,6 +1428,26 @@ export default function LectureSchedule() {
                         <div className="bg-[#10B981] h-1.5 rounded-full transition-all duration-300" style={{ width: `${percent}%` }} />
                       </div>
 
+                      {role === "teacher" && schedule.verificationStatus === "pending_teacher" && (
+                        <div className="mb-3 p-2 bg-amber-50/50 border border-amber-100 rounded-lg flex flex-col gap-2">
+                          <span className="text-[10px] font-bold text-amber-700">Verify this schedule:</span>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => handleVerifySchedule(schedule._id, "approve")}
+                              className="flex-1 bg-[#10B981] hover:bg-[#059669] text-white py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center justify-center gap-0.5 shadow-sm"
+                            >
+                              <Check size={11} /> Approve
+                            </button>
+                            <button
+                              onClick={() => handleVerifySchedule(schedule._id, "reject")}
+                              className="flex-1 bg-[#EF4444] hover:bg-[#DC2626] text-white py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center justify-center gap-0.5 shadow-sm"
+                            >
+                              <X size={11} /> Reject
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <button
                         onClick={() => handleOpenEdit(schedule)}
                         className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
@@ -1408,9 +1476,31 @@ export default function LectureSchedule() {
                     <div key={tmpl._id} className="bg-white border border-[#E2E8F0] rounded-xl p-5 hover:shadow-md transition-all flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start mb-3">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 uppercase tracking-wider mb-2">
-                            Subject Template
-                          </span>
+                          <div className="flex flex-wrap gap-1 items-center">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 uppercase tracking-wider">
+                              Subject Template
+                            </span>
+                            {tmpl.status === "pending_teacher" && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 uppercase tracking-wider animate-pulse">
+                                Pending Teacher
+                              </span>
+                            )}
+                            {tmpl.status === "pending" && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-600 uppercase tracking-wider">
+                                Pending Admin
+                              </span>
+                            )}
+                            {tmpl.status === "rejected_by_teacher" && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600 uppercase tracking-wider">
+                                Rejected by Teacher
+                              </span>
+                            )}
+                            {tmpl.status === "rejected" && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600 uppercase tracking-wider">
+                                Rejected by Admin
+                              </span>
+                            )}
+                          </div>
                           {(role === "admin" || (role === "teacher" && (tmpl.createdBy === user?.id || tmpl.teacher === user?.id))) && (
                             <button
                               onClick={(e) => {
@@ -1441,16 +1531,55 @@ export default function LectureSchedule() {
                       </div>
 
                       <div className="mt-6 pt-4 border-t border-[#F1F5F9]">
-                        <button
-                          onClick={() => {
-                            handleOpenCreate();
-                            setSelectedTemplateId(tmpl._id);
-                            setSubject(tmpl.name);
-                          }}
-                          className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
-                        >
-                          Load into Setup <ChevronRight size={13} />
-                        </button>
+                        {(tmpl.status === "approved" || !tmpl.status) ? (
+                          <button
+                            onClick={() => {
+                              handleOpenCreate();
+                              setSelectedTemplateId(tmpl._id);
+                              setSubject(tmpl.name);
+                            }}
+                            className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                          >
+                            Load into Setup <ChevronRight size={13} />
+                          </button>
+                        ) : role === "admin" && tmpl.status === "pending" ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleApproveRequest(tmpl._id)}
+                              className="flex-1 bg-[#10B981] hover:bg-[#059669] text-white py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm"
+                            >
+                              <Check size={13} /> Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectRequest(tmpl._id)}
+                              className="flex-1 bg-[#EF4444] hover:bg-[#DC2626] text-white py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm"
+                            >
+                              <X size={13} /> Reject
+                            </button>
+                          </div>
+                        ) : role === "teacher" && tmpl.status === "pending_teacher" ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleVerifySubjectTemplate(tmpl._id, "approve")}
+                              className="flex-1 bg-[#10B981] hover:bg-[#059669] text-white py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm"
+                            >
+                              <Check size={13} /> Approve
+                            </button>
+                            <button
+                              onClick={() => handleVerifySubjectTemplate(tmpl._id, "reject")}
+                              className="flex-1 bg-[#EF4444] hover:bg-[#DC2626] text-white py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm"
+                            >
+                              <X size={13} /> Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="text-center text-xs font-medium text-[#64748B] py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
+                            {tmpl.status === "pending" && "Awaiting admin approval"}
+                            {tmpl.status === "pending_teacher" && "Awaiting teacher verification"}
+                            {tmpl.status === "rejected" && "Rejected by admin"}
+                            {tmpl.status === "rejected_by_teacher" && "Rejected by teacher"}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1883,7 +2012,26 @@ export default function LectureSchedule() {
 
                           {/* Notes Action Column */}
                           <td className="px-5 py-3.5">
-                            {role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
+                            {role === "student" ? (
+                              lecture.status === "Done" ? (
+                                <button
+                                  onClick={() => openNotesModal(lecture, index)}
+                                  disabled={!lecture.notes_shared?.fileUrl}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                    lecture.notes_shared?.fileUrl
+                                      ? "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7] cursor-pointer"
+                                      : "bg-[#F8FAFC] text-[#94A3B8] border border-[#E2E8F0] cursor-not-allowed opacity-60"
+                                  }`}
+                                >
+                                  <FileText size={13} />
+                                  {lecture.notes_shared?.fileUrl ? "View Notes" : "No Notes"}
+                                </button>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-[#94A3B8] font-medium italic">
+                                  <Lock size={12} /> Locked
+                                </span>
+                              )
+                            ) : role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
                               <button
                                 onClick={() => openNotesModal(lecture, index)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl
@@ -1892,7 +2040,7 @@ export default function LectureSchedule() {
                                   }`}
                               >
                                 <FileText size={13} />
-                                {role === "student" ? (lecture.notes_shared?.fileUrl ? "View Notes" : "No Notes") : (lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl ? "Edit Notes" : "Add Notes")}
+                                {lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl ? "Edit Notes" : "Add Notes"}
                               </button>
                             ) : (
                               <span className="text-[11px] text-[#94A3B8] font-medium italic block leading-tight">
@@ -1901,9 +2049,21 @@ export default function LectureSchedule() {
                             )}
                           </td>
 
-                          {/* Homework Action Column */}
+                           {/* Homework Action Column */}
                           <td className="px-5 py-3.5">
-                            {role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
+                            {role === "student" ? (
+                              <button
+                                onClick={() => openHomeworkModal(lecture, index)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${hasHW
+                                    ? "bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE] hover:bg-[#E0E7FF]"
+                                    : "bg-[#F8FAFC] text-[#94A3B8] border border-[#E2E8F0] cursor-not-allowed opacity-60"
+                                  }`}
+                                disabled={!hasHW}
+                              >
+                                <BookOpen size={13} />
+                                {hasHW ? "View Homework" : "No HW"}
+                              </button>
+                            ) : role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
                               <button
                                 onClick={() => openHomeworkModal(lecture, index)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${hasHW
@@ -1912,7 +2072,7 @@ export default function LectureSchedule() {
                                   }`}
                               >
                                 <BookOpen size={13} />
-                                {role === "student" ? (hasHW ? "View Homework" : "No HW") : (hasHW ? "Edit HW" : "Add HW")}
+                                {hasHW ? "Edit HW" : "Add HW"}
                                 {hasHW && (
                                   <span className="w-1.5 h-1.5 bg-[#4F46E5] rounded-full inline-block animate-pulse" />
                                 )}
@@ -2300,12 +2460,22 @@ export default function LectureSchedule() {
                             <div>
                               <strong className="block text-[#1B2B4B]">{sub.student?.name}</strong>
                               <span className="text-[10px] text-[#64748B] block mt-0.5">{sub.student?.email}</span>
-                              <button
-                                onClick={() => handleDownloadFile(sub.fileName, sub.fileUrl)}
-                                className="text-[#2563EB] hover:underline flex items-center gap-1 mt-1 text-[10px] font-semibold text-left"
-                              >
-                                <Download size={11} /> {sub.fileName}
-                              </button>
+                              <span className="block text-gray-700 font-medium mt-1">{sub.fileName}</span>
+                              <div className="flex gap-2 items-center mt-1">
+                                <button
+                                  onClick={() => handlePreviewFile(sub.fileName, sub.fileUrl)}
+                                  className="text-[#4F46E5] hover:underline flex items-center gap-1 text-[10px] font-bold text-left cursor-pointer"
+                                >
+                                  <Eye size={11} /> Preview
+                                </button>
+                                <span className="text-gray-300 text-[10px]">|</span>
+                                <button
+                                  onClick={() => handleDownloadFile(sub.fileName, sub.fileUrl)}
+                                  className="text-[#2563EB] hover:underline flex items-center gap-1 text-[10px] font-bold text-left cursor-pointer"
+                                >
+                                  <Download size={11} /> Download
+                                </button>
+                              </div>
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -2534,6 +2704,117 @@ export default function LectureSchedule() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* FILE PREVIEW MODAL */}
+      {isPreviewModalOpen && (
+        <div className="fixed inset-0 bg-[#0F172A]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E2E8F0] w-full max-w-4xl rounded-2xl shadow-xl flex flex-col h-[85vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F5F9] shrink-0">
+              <div>
+                <span className="text-[10px] font-bold text-[#4F46E5] uppercase tracking-wider block mb-0.5">
+                  File Preview
+                </span>
+                <h3 className="text-sm font-extrabold text-[#1B2B4B] truncate max-w-[500px]">
+                  {previewFileName}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownloadFile(previewFileName, previewFileUrl)}
+                  className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                >
+                  <Download size={13} /> Download Original
+                </button>
+                <button
+                  onClick={() => setIsPreviewModalOpen(false)}
+                  className="text-[#94A3B8] hover:text-[#475569] p-1.5 hover:bg-[#F1F5F9] rounded-lg transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 bg-[#F8FAFC] overflow-auto p-6 flex items-center justify-center min-h-0">
+              {(() => {
+                const lowerName = previewFileName.toLowerCase();
+                const isImage = 
+                  lowerName.endsWith(".png") || 
+                  lowerName.endsWith(".jpg") || 
+                  lowerName.endsWith(".jpeg") || 
+                  lowerName.endsWith(".gif") || 
+                  lowerName.endsWith(".webp") || 
+                  lowerName.endsWith(".svg") ||
+                  previewFileUrl.startsWith("data:image/");
+                  
+                const isPdf = 
+                  lowerName.endsWith(".pdf") ||
+                  previewFileUrl.startsWith("data:application/pdf");
+                  
+                const isText = 
+                  lowerName.endsWith(".txt") ||
+                  lowerName.endsWith(".json") ||
+                  lowerName.endsWith(".js") ||
+                  lowerName.endsWith(".css") ||
+                  lowerName.endsWith(".html") ||
+                  previewFileUrl.startsWith("data:text/");
+
+                if (isImage) {
+                  return (
+                    <img 
+                      src={previewFileUrl} 
+                      alt={previewFileName} 
+                      className="max-w-full max-h-full object-contain rounded-lg shadow-sm border border-[#E2E8F0] bg-white" 
+                    />
+                  );
+                }
+
+                if (isPdf) {
+                  return (
+                    <iframe 
+                      src={previewFileUrl} 
+                      title={previewFileName} 
+                      className="w-full h-full border border-[#E2E8F0] rounded-lg bg-white"
+                    />
+                  );
+                }
+
+                if (isText) {
+                  // If base64 data URL, try to decode it for previewing
+                  let textContent = "";
+                  if (previewFileUrl.startsWith("data:text/")) {
+                    try {
+                      const base64Data = previewFileUrl.split(",")[1];
+                      textContent = atob(base64Data);
+                    } catch (e) {
+                      textContent = "Could not decode text file.";
+                    }
+                  } else {
+                    textContent = previewFileUrl;
+                  }
+                  
+                  return (
+                    <pre className="w-full h-full p-4 bg-white border border-[#E2E8F0] rounded-lg overflow-auto text-xs text-[#334155] font-mono leading-relaxed whitespace-pre-wrap text-left">
+                      {textContent}
+                    </pre>
+                  );
+                }
+
+                return (
+                  <div className="text-center p-8 bg-white border border-[#E2E8F0] rounded-2xl max-w-sm shadow-sm space-y-3">
+                    <AlertCircle className="mx-auto text-[#EA580C]" size={32} />
+                    <h4 className="text-sm font-bold text-[#1B2B4B]">No Preview Available</h4>
+                    <p className="text-xs text-[#64748B]">
+                      Direct preview is not supported for this file type ({lowerName.split(".").pop().toUpperCase() || "unknown"}). Please download the file to view its contents.
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}
