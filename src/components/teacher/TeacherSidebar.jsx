@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { teacherSidebarItems } from "./TeacherSidebarItems";
 
@@ -29,41 +29,32 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
       >
         {/* HEADER */}
         <div
-          className="flex flex-col border-b shrink-0"
+          className="h-20 flex items-center justify-between px-4 border-b shrink-0"
           style={{ borderColor: "#243452" }}
         >
           {sidebarOpen ? (
-            <div>
-              
-              {/* Menu toggle row */}
-              <div className="flex justify-end px-2 py-1">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-1.5 rounded-md transition hidden lg:block hover:bg-[#243452]"
-                >
-                  <Menu size={18} style={{ color: "#94A3B8" }} />
-                </button>
+            <>
+              <div className="text-white font-bold text-xl tracking-tight">
+                DASHBOARD
               </div>
-            </div>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 rounded-md transition hover:bg-[#243452] text-[#94A3B8]"
+              >
+                <X size={20} />
+              </button>
+            </>
           ) : (
             /* Collapsed — just the toggle button */
-            <div className="h-20 flex items-center justify-center">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-lg transition hidden lg:block"
-                style={{ backgroundColor: "transparent" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#243452")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
-              >
-                <Menu size={20} style={{ color: "#94A3B8" }} />
-              </button>
-            </div>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="w-full flex justify-center p-2 rounded-lg text-[#94A3B8] hover:bg-[#243452] transition"
+            >
+              <Menu size={24} />
+            </button>
           )}
         </div>
+
 
         {/* Teacher mini-profile */}
         {sidebarOpen && (

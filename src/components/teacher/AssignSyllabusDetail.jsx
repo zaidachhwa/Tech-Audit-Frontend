@@ -141,7 +141,7 @@ export default function AssignSyllabusDetail() {
       setShowTopicModal(false);
       refreshTopics();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to add topic");
+      toast.error(err?.response?.data?.message || "Failed to add lecture");
     }
   };
 
@@ -327,7 +327,7 @@ export default function AssignSyllabusDetail() {
                   onClick={() => setShowTopicModal(true)} 
                   style={{ background: "#2563EB", color: "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                 >
-                  <Plus size={14} /> Add Topic
+                  <Plus size={14} /> Add Lecture
                 </button>
                 <button 
                   onClick={handleDeleteSyllabus} 
@@ -440,7 +440,7 @@ export default function AssignSyllabusDetail() {
         <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyItems: "center", padding: 16, background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)", overflowY: "auto" }}>
           <div style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 600, margin: "auto", border: "1.5px solid #E2E8F0", boxShadow: "0 20px 60px rgba(0,0,0,0.15)", fontFamily: "'DM Sans', sans-serif" }}>
             <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1.5px solid #E2E8F0" }}>
-              <h2 style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 18, margin: 0 }}>Add Topic</h2>
+              <h2 style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 18, margin: 0 }}>Add Lecture</h2>
               <button onClick={() => setShowTopicModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748B" }}>
                 <X size={20} />
               </button>
@@ -462,7 +462,7 @@ export default function AssignSyllabusDetail() {
                     <input type="date" value={topicForm.dueDate} onChange={e => setTopicForm({...topicForm, dueDate: e.target.value})} style={S.input} />
                   </div>
                 </div>
-                <button type="submit" style={{ ...S.btn, alignSelf: "flex-end" }}><Plus size={14} /> Add Topic</button>
+                <button type="submit" style={{ ...S.btn, alignSelf: "flex-end" }}><Plus size={14} /> Add Lecture</button>
               </form>
             </div>
           </div>

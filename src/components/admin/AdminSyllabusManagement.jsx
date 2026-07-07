@@ -88,13 +88,13 @@ export default function AdminSyllabusManagement() {
     e.preventDefault();
     try {
       await API.post("/syllabus/topic", { ...topicForm, syllabusId: selectedSyllabus._id });
-      toast.success("Topic added successfully!");
+      toast.success("Lecture added successfully!");
       setTopicForm({ title: "", description: "", dueDate: "" });
       setShowTopicModal(false);
       fetchData();
     } catch (err) {
       console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to add topic");
+      toast.error(err?.response?.data?.message || "Failed to add lecture");
     }
   };
 
@@ -714,7 +714,7 @@ export default function AdminSyllabusManagement() {
                               }}
                             >
                               <Plus size={14} />
-                              Add Topic
+                              Add Lecture
                             </button>
                           </div>
                           <div className="space-y-2">
@@ -1013,11 +1013,11 @@ export default function AdminSyllabusManagement() {
           </Modal>
         )}
         {showTopicModal && selectedSyllabus && (
-          <Modal title={`Add Topic to ${selectedSyllabus.subject}`} onClose={() => setShowTopicModal(false)}>
+          <Modal title={`Add Lecture to ${selectedSyllabus.subject}`} onClose={() => setShowTopicModal(false)}>
             <form onSubmit={handleAddTopic} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
-                  Topic Title *
+                  Lecture Title *
                 </label>
                 <input
                   type="text"

@@ -62,7 +62,7 @@ export default function AssignSyllabus() {
             <div style={{ width: 4, height: 20, background: "#2563EB", borderRadius: 4 }} />
             <h1 style={S.heading}>Assign Syllabus</h1>
           </div>
-          <p style={S.sub}>Select a course batch to assign and manage syllabus topics.</p>
+          <p style={S.sub}>Select a course batch to assign and manage lectures.</p>
         </div>
       </div>
 

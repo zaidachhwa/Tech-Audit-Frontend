@@ -96,7 +96,7 @@ export function SyllabusCard({
             className="bg-[#2563EB] text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-blue-700"
           >
             <UserPlus size={14} />
-            Add Topic
+            Add Lecture
           </button>
         </div>
 
