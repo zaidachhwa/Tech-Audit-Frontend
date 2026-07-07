@@ -25,7 +25,7 @@ export const teacherSidebarItems = [
     path: "/teacher/student-management",
   },
   {
-    name: "Topic Progress",
+    name: "Lecture Progress",
     icon: BarChart3,
     path: "/teacher/performance",
   },
@@ -50,7 +50,7 @@ export const teacherSidebarItems = [
     path: "/teacher/announcements",
   },
   {
-    name: "Assign Task",
+    name: "Assign Homework",
     icon: ClipboardList,
     path: "/teacher/assign-task",
   },

@@ -44,7 +44,7 @@ export const adminSidebarItems = [
     icon: CalendarDays,
   },
   {
-    name: "Assign Task",
+    name: "Assign Homework",
     path: "/admin/assign-task",
     icon: ClipboardList,
   },

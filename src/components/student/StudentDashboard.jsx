@@ -5,21 +5,21 @@ import { RefreshCw, Layers, CheckCircle2, Clock, FileText, TrendingUp, Calendar 
 import { useAuth } from "../../context/AuthContext";
 
 const S = {
-  page: { 
-    minHeight: "100vh", 
-    background: "#F8FAFC", 
+  page: {
+    minHeight: "100vh",
+    background: "#F8FAFC",
     padding: "16px", // Reduced padding so content fits on small screens
     fontFamily: "'DM Sans', sans-serif",
     width: "100%",
     boxSizing: "border-box",
     overflowX: "hidden" // Prevents horizontal scroll
   },
-  card: { 
-    background: "#fff", 
-    border: "1.5px solid #E2E8F0", 
-    borderRadius: 12, 
+  card: {
+    background: "#fff",
+    border: "1.5px solid #E2E8F0",
+    borderRadius: 12,
     boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    boxSizing: "border-box" 
+    boxSizing: "border-box"
   },
   pageTitle: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 },
   label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },
@@ -99,11 +99,11 @@ export default function StudentDashboard() {
       {/* Stat Cards - Forced Wrap for Mobile */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
         {statCards.map((s) => (
-          <div key={s.label} style={{ 
-            ...S.card, 
-            padding: "16px", 
+          <div key={s.label} style={{
+            ...S.card,
+            padding: "16px",
             flex: "1 1 calc(50% - 12px)", // Desktop: 4 per row | Mobile: 2 per row
-            minWidth: "140px" 
+            minWidth: "140px"
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <p style={{ ...S.label, fontSize: 10 }}>{s.label}</p>
@@ -119,7 +119,7 @@ export default function StudentDashboard() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <TrendingUp size={16} color="#2563EB" />
-            <span style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14 }}>Overall Progress</span>
+            <span style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14 }}>Subject Progress</span>
           </div>
           <span style={{ fontSize: 14, fontWeight: 800, color: "#2563EB" }}>{total ? Math.round((completed / total) * 100) : 0}%</span>
         </div>

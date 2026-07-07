@@ -174,7 +174,7 @@ export default function Projects() {
                   {/* Progress */}
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#64748B" }}>Overall Progress</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#64748B" }}>Subject Progress</span>
                       <span style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{progress}%</span>
                     </div>
                     <div style={{ height: 7, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>

@@ -10,10 +10,10 @@ import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const S = {
-  page: { 
-    minHeight: "100vh", 
-    background: "#F8FAFC", 
-    padding: "clamp(16px, 4vw, 32px)", 
+  page: {
+    minHeight: "100vh",
+    background: "#F8FAFC",
+    padding: "clamp(16px, 4vw, 32px)",
     fontFamily: "'DM Sans', sans-serif",
     width: "100%",
     boxSizing: "border-box",
@@ -347,7 +347,7 @@ export default function StudentDashboard() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <TrendingUp size={16} color="#2563EB" />
-            <span style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14 }}>Overall Progress</span>
+            <span style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14 }}>Subject Progress</span>
           </div>
           <span style={{ fontSize: 14, fontWeight: 800, color: "#2563EB" }}>{total ? Math.round((completed / total) * 100) : 0}%</span>
         </div>
@@ -360,7 +360,7 @@ export default function StudentDashboard() {
       {/* Two-column grid */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 20, marginBottom: 20 }}>
         {/* Upcoming Deadlines */}
-        <div style={{...S.card, flex: "1 1 320px"}}>
+        <div style={{ ...S.card, flex: "1 1 320px" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Upcoming Deadlines</p>
@@ -388,7 +388,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div style={{...S.card, flex: "1 1 320px"}}>
+        <div style={{ ...S.card, flex: "1 1 320px" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Recent Activity</p>

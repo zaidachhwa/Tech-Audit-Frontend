@@ -395,7 +395,7 @@ export default function TeacherSyllabusDashboard() {
               <TrendingUp size={20} color="#2563EB" />
             </div>
             <div>
-              <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Overall Progress</p>
+              <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Subject Progress</p>
               <p style={{ color: "#64748B", fontSize: 12, margin: 0 }}>{stats.completed} of {stats.total} topics completed</p>
             </div>
           </div>
