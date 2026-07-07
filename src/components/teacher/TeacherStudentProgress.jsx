@@ -96,7 +96,7 @@ export default function TeacherStudentProgress() {
             <div style={{ width: 4, height: 20, background: "#2563EB", borderRadius: 4 }} />
             <h1 style={S.pageTitle}>Student Progress</h1>
           </div>
-          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Review batch progress and topic completion for your students.</p>
+          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Review batch progress and lecture completion for your students.</p>
         </div>
         <button style={S.secondaryBtn} onClick={() => { if (selectedBatchId) fetchTopicsForSelectedBatch(selectedBatchId); }}>
           <RefreshCw size={14} className={loadingTopics ? "animate-spin" : ""} /> Refresh
@@ -109,7 +109,7 @@ export default function TeacherStudentProgress() {
           { label: "Assigned Batches", value: batches.length, icon: <Users size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
           { label: "Students in Batch", value: selectedBatch?.studentsCount ?? "—", icon: <Users size={20} />, tint: "#ECFDF5", iconColor: "#10B981" },
           { label: "Completion Rate", value: `${rate}%`, icon: <BarChart3 size={20} />, tint: "#FEF3C7", iconColor: "#F59E0B" },
-          { label: "Topics Completed", value: completed, icon: <CheckCircle2 size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
+          { label: "Lectures Completed", value: completed, icon: <CheckCircle2 size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
         ].map((s) => (
           <div key={s.label} style={{ ...S.card, padding: "18px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -129,7 +129,7 @@ export default function TeacherStudentProgress() {
             <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Batch Selection</p>
           </div>
-          <p style={{ color: "#64748B", fontSize: 12, margin: "0 0 16px" }}>Choose a batch to view topic status.</p>
+          <p style={{ color: "#64748B", fontSize: 12, margin: "0 0 16px" }}>Choose a batch to view lecture status.</p>
 
           {loading ? (
             <div style={{ textAlign: "center", padding: "30px 0", color: "#94A3B8", fontSize: 13 }}>Loading batches…</div>
@@ -206,7 +206,7 @@ export default function TeacherStudentProgress() {
               <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
               <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Current Progress</p>
             </div>
-            <span style={{ background: "#EFF6FF", color: "#1E40AF", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600 }}>{total} topics tracked</span>
+            <span style={{ background: "#EFF6FF", color: "#1E40AF", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600 }}>{total} lectures tracked</span>
           </div>
 
           <div style={{ padding: 22 }}>
@@ -216,7 +216,7 @@ export default function TeacherStudentProgress() {
                 <p style={{ color: "#64748B", fontSize: 13 }}>Loading progress...</p>
               </div>
             ) : total === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 0", color: "#94A3B8", fontSize: 13 }}>Pick a batch to view topic progress.</div>
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#94A3B8", fontSize: 13 }}>Pick a batch to view lecture progress.</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
@@ -246,7 +246,7 @@ export default function TeacherStudentProgress() {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: "#F8FAFC" }}>
-                        {["Topic", "Status", "Due Date", "Batch"].map((h) => (
+                        {["Lecture", "Status", "Due Date", "Batch"].map((h) => (
                           <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, color: "#64748B", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>{h}</th>
                         ))}
                       </tr>

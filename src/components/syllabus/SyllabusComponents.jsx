@@ -32,7 +32,7 @@ export function EmptyState({ onCreateClick }) {
         No Syllabi Created Yet
       </h3>
       <p className="text-gray-600 mb-6 max-w-md mx-auto">
-        Get started by creating your first syllabus template. You can add topics
+        Get started by creating your first syllabus template. You can add lectures
         and assign them to batches later.
       </p>
       <button
@@ -234,7 +234,7 @@ export function SyllabusCard({
                   className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-indigo-700 transition flex items-center gap-2"
                 >
                   <Plus size={16} />
-                  Add Topic
+                  Add Lecture
                 </button>
               </div>
 
@@ -242,7 +242,7 @@ export function SyllabusCard({
                 <div className="text-center py-8 text-gray-500">
                   <AlertCircle size={32} className="mx-auto mb-2 opacity-50" />
                   <p className="text-sm">
-                    No topics yet. Click "Add Topic" to get started.
+                    No lectures yet. Click "Add Lecture" to get started.
                   </p>
                 </div>
               ) : (
