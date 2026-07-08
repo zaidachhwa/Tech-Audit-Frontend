@@ -1,189 +1,268 @@
 import { useEffect, useState } from "react";
 import { API } from "../../api/axios";
-import toast from "react-hot-toast";
-import { RefreshCw, Layers, CheckCircle2, Clock, FileText, TrendingUp, Calendar } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
-
-const S = {
-  page: {
-    minHeight: "100vh",
-    background: "#F8FAFC",
-    padding: "16px", // Reduced padding so content fits on small screens
-    fontFamily: "'DM Sans', sans-serif",
-    width: "100%",
-    boxSizing: "border-box",
-    overflowX: "hidden" // Prevents horizontal scroll
-  },
-  card: {
-    background: "#fff",
-    border: "1.5px solid #E2E8F0",
-    borderRadius: 12,
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    boxSizing: "border-box"
-  },
-  pageTitle: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 },
-  label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },
-  secondaryBtn: { background: "#fff", color: "#1B2B4B", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 18px", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "'DM Sans', sans-serif" },
-};
+import { motion } from "framer-motion";
+import {
+  RefreshCw, ClipboardList, BookOpen, Clock, Calendar,
+  TrendingUp, CheckSquare, Award, AlertCircle, PlayCircle,
+  HelpCircle, User
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function StudentDashboard() {
   const { user: authUser } = useAuth();
   const [me, setMe] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [reports, setReports] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const fetchAll = async () => {
     try {
       setLoading(true);
-      const meRes = await API.get("/students/me");
-      const student = meRes.data.student || meRes.data;
-      setMe(student);
-      const studentId = student?.id || student?._id;
-      const [projectRes, reportsRes] = await Promise.allSettled([
-        API.get(`/projects/student/${studentId}`),
-        API.get(`/reports/student/${studentId}`),
+      const [meRes, dbRes] = await Promise.all([
+        API.get("/students/me"),
+        API.get("/dashboard/student")
       ]);
-      if (projectRes.status === "fulfilled") setProjects(projectRes.value.data?.projects || projectRes.value.data || []);
-      if (reportsRes.status === "fulfilled") setReports(reportsRes.value.data?.reports || reportsRes.value.data || []);
+      setMe(meRes.data.student || meRes.data);
+      setDashboardData(dbRes.data);
     } catch (err) {
-      toast.error("Failed to load dashboard data");
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll();
+  }, []);
 
-  const total = projects.length;
-  const inProgress = projects.filter((p) => p.overallStatus === "In Progress").length;
-  const completed = projects.filter((p) => ["Completed", "Approved"].includes(p.overallStatus)).length;
-  const upcomingDeadlines = projects.filter((p) => p.dueDate).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)).slice(0, 5);
+  // Compute stat metrics
+  const homework = dashboardData?.homework || [];
+  const totalHomework = homework.length;
+  const submittedHomework = homework.filter(h => (h.status || "").toLowerCase() !== "assigned").length;
+  const pendingHomework = homework.filter(h => ["pending approval", "pending_approval", "submitted"].includes((h.status || "").toLowerCase())).length;
+  const approvedHomework = homework.filter(h => ["approved", "completed"].includes((h.status || "").toLowerCase())).length;
+  const rejectedHomework = homework.filter(h => (h.status || "").toLowerCase() === "rejected").length;
 
-  const statCards = [
-    { label: "Total Projects", value: total, icon: <Layers size={18} />, tint: "#EFF6FF", ic: "#2563EB" },
-    { label: "In Progress", value: inProgress, icon: <Clock size={18} />, tint: "#FEF3C7", ic: "#F59E0B" },
-    { label: "Completed", value: completed, icon: <CheckCircle2 size={18} />, tint: "#ECFDF5", ic: "#10B981" },
-    { label: "Reports", value: reports.length, icon: <FileText size={18} />, tint: "#EFF6FF", ic: "#2563EB" },
-  ];
+  const lectures = dashboardData?.todayLectures || [];
+  const normalLectures = lectures.filter(l => (l.lectureType || "Normal") === "Normal");
+  const refLectures = lectures.filter(l => (l.lectureType || "Normal") === "Reference");
+  const totalLectures = normalLectures.length;
+  const completedLectures = normalLectures.filter(l => l.completionStatus === "Completed").length;
+  const remainingLectures = totalLectures - completedLectures;
+  const refCompleted = refLectures.filter(l => l.completionStatus === "Completed").length;
 
-  const statusBadge = (status) => {
-    const map = {
-      "In Progress": { bg: "#EFF6FF", color: "#1E40AF" },
-      "Completed": { bg: "#ECFDF5", color: "#065F46" },
-      "Approved": { bg: "#ECFDF5", color: "#065F46" },
-      "Submitted": { bg: "#F5F3FF", color: "#6D28D9" },
-      "Pending": { bg: "#FEF3C7", color: "#92400E" },
-    };
-    return map[status] || { bg: "#F1F5F9", color: "#64748B" };
+  const attendance = dashboardData?.attendance || { present: 0, absent: 0, percentage: 0 };
+  const totalClasses = attendance.present + attendance.absent;
+
+  const getStatusBadge = (status) => {
+    const s = (status || "").toLowerCase();
+    switch (s) {
+      case "approved":
+      case "completed":
+        return { bg: "bg-emerald-50 text-emerald-700 border-emerald-100", label: "Approved" };
+      case "rejected":
+        return { bg: "bg-rose-50 text-rose-700 border-rose-100", label: "Rejected" };
+      case "submitted":
+      case "pending approval":
+      case "pending_approval":
+        return { bg: "bg-blue-50 text-blue-700 border-blue-100", label: "Pending" };
+      default:
+        return { bg: "bg-amber-50 text-amber-700 border-amber-100", label: "Assigned" };
+    }
   };
 
   return (
-    <div style={S.page}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); @keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div className="p-6 space-y-6 bg-slate-50 min-h-screen font-sans" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      `}</style>
+      <Toaster position="top-center" />
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
+      {/* TOP HEADER */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <div style={{ width: 4, height: 20, background: "#2563EB", borderRadius: 4 }} />
-            <h1 style={S.pageTitle}>Welcome back, {me?.name || authUser?.name || "Student"} 👋</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1.5 h-6 bg-[#0F3C8A] rounded-full" />
+            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+              Welcome back, {me?.name || authUser?.name || "Student"} 👋
+            </h1>
           </div>
-          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Here's your project & report overview.</p>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+            {me?.batch_name ? `${me.batch_name} (No. ${me.batch_no})` : "Student Dashboard"}
+          </p>
         </div>
-        <button style={S.secondaryBtn} onClick={fetchAll} disabled={loading}>
-          <RefreshCw size={14} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} /> Refresh
+        <button
+          onClick={fetchAll}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition shadow-sm"
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
 
-      {/* Stat Cards - Forced Wrap for Mobile */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
-        {statCards.map((s) => (
-          <div key={s.label} style={{
-            ...S.card,
-            padding: "16px",
-            flex: "1 1 calc(50% - 12px)", // Desktop: 4 per row | Mobile: 2 per row
-            minWidth: "140px"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <p style={{ ...S.label, fontSize: 10 }}>{s.label}</p>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: s.tint, display: "flex", alignItems: "center", justifyContent: "center", color: s.ic }}>{s.icon}</div>
+      {/* RENDER STATS CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Attendance Summary */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Attendance Percentage</span>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#0F3C8A] flex items-center justify-center"><CheckSquare size={16} /></div>
+          </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <span className="text-3xl font-black text-slate-800">{attendance.percentage}%</span>
+              <p className="text-[10px] text-slate-400 mt-1 font-semibold">
+                Present on {attendance.present} of {totalClasses} classes
+              </p>
             </div>
-            <p style={{ fontSize: 24, fontWeight: 800, color: "#1B2B4B", margin: 0 }}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress Bar */}
-      <div style={{ ...S.card, padding: "20px", marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <TrendingUp size={16} color="#2563EB" />
-            <span style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14 }}>Subject Progress</span>
-          </div>
-          <span style={{ fontSize: 14, fontWeight: 800, color: "#2563EB" }}>{total ? Math.round((completed / total) * 100) : 0}%</span>
-        </div>
-        <div style={{ height: 8, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${total ? Math.round((completed / total) * 100) : 0}%`, background: "linear-gradient(90deg,#2563EB,#60A5FA)", borderRadius: 99, transition: "width 0.5s" }} />
-        </div>
-        <p style={{ fontSize: 12, color: "#94A3B8", margin: "8px 0 0" }}>{completed} of {total} projects completed</p>
-      </div>
-
-      {/* Two-column grid - Stacks on Mobile */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
-        <div style={{ ...S.card, flex: "1 1 320px", width: "100%" }}>
-          <div style={{ padding: "16px 20px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
-            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Upcoming Deadlines</p>
-          </div>
-          <div style={{ padding: 16 }}>
-            {upcomingDeadlines.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "30px 0", color: "#94A3B8", fontSize: 13 }}>No upcoming deadlines.</div>
+            {attendance.percentage >= 75 ? (
+              <span className="text-[9px] bg-emerald-50 text-emerald-600 font-extrabold uppercase px-2 py-0.5 rounded border border-emerald-100">Good Status</span>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {upcomingDeadlines.map((p) => (
-                  <div key={p._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px", borderRadius: 8, border: "1.5px solid #F1F5F9", background: "#F8FAFC", flexWrap: "wrap", gap: 8 }}>
-                    <div>
-                      <p style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 13, margin: "0 0 3px" }}>{p.title}</p>
-                      <p style={{ color: "#94A3B8", fontSize: 11, margin: 0 }}>{p.description?.slice(0, 40) || ""}...</p>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#64748B", fontSize: 11 }}>
-                      <Calendar size={12} /> {p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "—"}
+              <span className="text-[9px] bg-rose-50 text-rose-600 font-extrabold uppercase px-2 py-0.5 rounded border border-rose-100">Low Attendance</span>
+            )}
+          </div>
+        </div>
+
+        {/* Homework Overview */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Homework Status</span>
+            <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#FF6B00] flex items-center justify-center"><ClipboardList size={16} /></div>
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-center text-xs">
+            <div>
+              <span className="block text-[9px] font-bold text-slate-400 uppercase">Assigned</span>
+              <span className="text-slate-800 font-black text-base">{totalHomework}</span>
+            </div>
+            <div>
+              <span className="block text-[9px] font-bold text-blue-400 uppercase">Pending</span>
+              <span className="text-blue-600 font-black text-base">{pendingHomework}</span>
+            </div>
+            <div>
+              <span className="block text-[9px] font-bold text-emerald-400 uppercase">Approved</span>
+              <span className="text-emerald-600 font-black text-base">{approvedHomework}</span>
+            </div>
+            <div>
+              <span className="block text-[9px] font-bold text-rose-400 uppercase">Rejected</span>
+              <span className="text-rose-600 font-black text-base">{rejectedHomework}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Lecture Progress */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lectures progress</span>
+            <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center"><BookOpen size={16} /></div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div>
+              <span className="block text-[9px] font-bold text-slate-400 uppercase">Total Normal</span>
+              <span className="text-slate-800 font-black text-base">{totalLectures}</span>
+            </div>
+            <div>
+              <span className="block text-[9px] font-bold text-emerald-400 uppercase">Completed</span>
+              <span className="text-emerald-600 font-black text-base">{completedLectures}</span>
+            </div>
+            <div>
+              <span className="block text-[9px] font-bold text-indigo-400 uppercase">Ref Done</span>
+              <span className="text-indigo-600 font-black text-base">{refCompleted}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* SUBJECT PROGRESS GRAPH */}
+      <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-extrabold text-[#0F3C8A] uppercase tracking-wider flex items-center gap-1.5">
+            <TrendingUp size={16} /> Syllabus Progress
+          </span>
+          <span className="text-sm font-black text-[#0F3C8A]">{dashboardData?.progress || 0}%</span>
+        </div>
+        <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500 bg-[#0F3C8A]"
+            style={{ width: `${dashboardData?.progress || 0}%` }}
+          />
+        </div>
+      </div>
+
+      {/* DOUBLE GRID LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Left Column: Lectures List */}
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+            <div className="w-1 h-4 bg-[#0F3C8A] rounded-full" />
+            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Batch Lectures list</h3>
+          </div>
+          <div className="p-6 flex-1 space-y-3 max-h-96 overflow-y-auto">
+            {lectures.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-12">No lectures assigned to your batch yet.</p>
+            ) : (
+              lectures.map((lec) => (
+                <div key={lec._id} className="p-3.5 border border-slate-100 bg-slate-50/50 rounded-xl flex justify-between items-center gap-3">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-slate-700">{lec.title}</span>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold">
+                      <span>{lec.syllabus?.subject || "Subject"}</span>
+                      <span>•</span>
+                      <span>{lec.lectureDuration || lec.duration || 60} mins</span>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <span className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border ${
+                    lec.completionStatus === "Completed"
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                      : "bg-slate-100 text-slate-600 border-slate-200"
+                  }`}>
+                    {lec.completionStatus || "Pending"}
+                  </span>
+                </div>
+              ))
             )}
           </div>
         </div>
 
-        <div style={{ ...S.card, flex: "1 1 320px", width: "100%" }}>
-          <div style={{ padding: "16px 20px", borderBottom: "1.5px solid #F1F5F9", background: "#F8FAFC", borderRadius: "12px 12px 0 0", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 4, height: 16, background: "#2563EB", borderRadius: 4 }} />
-            <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Recent Activity</p>
+        {/* Right Column: Homework Assignments */}
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-4 bg-[#0F3C8A] rounded-full" />
+              <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">My Homework tasks</h3>
+            </div>
+            <Link to="/student/homework" className="text-xs font-bold text-[#FF6B00] hover:underline">View All</Link>
           </div>
-          <div style={{ padding: 16 }}>
-            {projects.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "30px 0", color: "#94A3B8", fontSize: 13 }}>No activity yet.</div>
+          <div className="p-6 flex-1 space-y-3 max-h-96 overflow-y-auto">
+            {homework.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-12">No homework tasks assigned to you yet.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {projects.slice(0, 6).map((p) => {
-                  const badge = statusBadge(p.overallStatus);
-                  return (
-                    <div key={p._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px", borderRadius: 8, border: "1.5px solid #F1F5F9", flexWrap: "wrap", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#2563EB" }} />
-                        <p style={{ fontWeight: 600, color: "#1B2B4B", fontSize: 13, margin: 0 }}>{p.title}</p>
+              homework.slice(0, 6).map((hw) => {
+                const badge = getStatusBadge(hw.status);
+                return (
+                  <div key={hw._id} className="p-3.5 border border-slate-100 bg-slate-50/50 rounded-xl flex justify-between items-center gap-3">
+                    <div className="space-y-1">
+                      <span className="text-xs font-bold text-slate-700">{hw.title}</span>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold">
+                        <span>Due: {new Date(hw.dueDate).toLocaleDateString()}</span>
                       </div>
-                      <span style={{ ...badge, borderRadius: 20, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>{p.overallStatus}</span>
                     </div>
-                  );
-                })}
-              </div>
+                    <span className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border ${badge.bg}`}>
+                      {badge.label}
+                    </span>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
+
       </div>
+
     </div>
   );
 }

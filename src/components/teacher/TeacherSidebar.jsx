@@ -40,9 +40,21 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
             <h2 className="text-center font-extrabold text-xs tracking-tight text-[#0F3C8A] px-2 leading-snug uppercase">
               Nexcore Institute of Technology
             </h2>
-            {/* <p className="text-center text-[9px] font-black uppercase tracking-widest text-[#FF6B00] mt-1">
-              Syllabus Tracker
-            </p> */}
+            <span
+              style={{
+                marginTop: 6,
+                background: "linear-gradient(90deg, #047857, #059669)",
+                color: "#fff",
+                fontSize: 9,
+                fontWeight: 800,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                padding: "3px 10px",
+                borderRadius: 99,
+              }}
+            >
+              Teacher Panel
+            </span>
             <button
               onClick={() => setSidebarOpen(false)}
               className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition lg:hidden"

@@ -14,12 +14,14 @@ const S = {
 };
 
 function getStatusBadge(status) {
-  switch (status) {
+  const s = (status || "assigned").toLowerCase();
+  switch (s) {
     case "approved":
       return { bg: "#ECFDF5", color: "#065F46", text: "Approved" };
     case "rejected":
       return { bg: "#FEF2F2", color: "#991B1B", text: "Rejected" };
     case "submitted":
+    case "pending approval":
     case "pending_approval":
       return { bg: "#EFF6FF", color: "#1D4ED8", text: "Pending Review" };
     default:
@@ -34,7 +36,7 @@ function HomeworkCard({ homework, onSubmitted }) {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const status = homework.status || "assigned";
+  const status = (homework.status || "assigned").toLowerCase();
   const badge = getStatusBadge(status);
 
   // Prefill if editing/updating submission
@@ -311,11 +313,11 @@ export default function StudentAssignments() {
       const matchesSearch = hw.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
         hw.subject?.subject?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const status = hw.status || "assigned";
+      const status = (hw.status || "assigned").toLowerCase();
       if (activeTab === "assigned") {
         return matchesSearch && (status === "assigned" || status === "rejected");
       } else {
-        return matchesSearch && (status === "submitted" || status === "pending_approval" || status === "approved");
+        return matchesSearch && (status === "submitted" || status === "pending approval" || status === "pending_approval" || status === "approved");
       }
     });
   }, [homeworkList, searchQuery, activeTab]);
