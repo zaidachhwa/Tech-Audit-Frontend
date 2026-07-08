@@ -210,7 +210,7 @@ export default function StudentDashboard() {
                   <div className="space-y-1">
                     <span className="text-xs font-bold text-slate-700">{lec.title}</span>
                     <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold">
-                      <span>{lec.syllabus?.subject || "Subject"}</span>
+                      <span>{lec.syllabus?.subject || lec.syllabus?.name || lec.subjectName || "General"}</span>
                       <span>•</span>
                       <span>{lec.lectureDuration || lec.duration || 60} mins</span>
                     </div>
@@ -235,7 +235,7 @@ export default function StudentDashboard() {
               <div className="w-1 h-4 bg-[#0F3C8A] rounded-full" />
               <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">My Homework tasks</h3>
             </div>
-            <Link to="/student/homework" className="text-xs font-bold text-[#FF6B00] hover:underline">View All</Link>
+            <Link to="/student/assignments" className="text-xs font-bold text-[#FF6B00] hover:underline">View All</Link>
           </div>
           <div className="p-6 flex-1 space-y-3 max-h-96 overflow-y-auto">
             {homework.length === 0 ? (
@@ -243,15 +243,23 @@ export default function StudentDashboard() {
             ) : (
               homework.slice(0, 6).map((hw) => {
                 const badge = getStatusBadge(hw.status);
+                // Subject: try lecture.syllabus.subject, then lecture.title, then hw.batchName
+                const subjectName =
+                  hw.lecture?.syllabus?.subject ||
+                  hw.lecture?.title ||
+                  hw.batchName ||
+                  "—";
                 return (
                   <div key={hw._id} className="p-3.5 border border-slate-100 bg-slate-50/50 rounded-xl flex justify-between items-center gap-3">
-                    <div className="space-y-1">
-                      <span className="text-xs font-bold text-slate-700">{hw.title}</span>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold">
+                    <div className="space-y-1 min-w-0">
+                      <span className="text-xs font-bold text-slate-700 block truncate">{hw.title}</span>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold flex-wrap">
+                        <span className="text-indigo-500 font-bold">{subjectName}</span>
+                        <span>•</span>
                         <span>Due: {new Date(hw.dueDate).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <span className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border ${badge.bg}`}>
+                    <span className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border ${badge.bg} whitespace-nowrap`}>
                       {badge.label}
                     </span>
                   </div>

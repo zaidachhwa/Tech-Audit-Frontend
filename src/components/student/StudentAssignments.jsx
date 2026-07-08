@@ -126,7 +126,8 @@ function HomeworkCard({ homework, onSubmitted }) {
             <h3 className="font-bold text-[#1B2B4B] text-[15px]">{homework.title}</h3>
             <div className="flex items-center gap-4 text-xs text-[#64748B] mt-1">
               <span className="flex items-center gap-1">
-                <BookOpen size={13} /> {homework.subject?.subject || "Subject"}
+                <BookOpen size={13} />
+                {homework.lecture?.syllabus?.subject || homework.lecture?.title || homework.batchName || "General"}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
@@ -294,10 +295,20 @@ export default function StudentAssignments() {
     setLoading(true);
     API.get("/student-homework")
       .then((res) => {
-        setHomeworkList(res.data || []);
+        // Handle both array response and wrapped { data: [] } shape
+        const data = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data?.homework)
+          ? res.data.homework
+          : [];
+        console.log("[My Homework] Fetched:", data.length, "records", data);
+        setHomeworkList(data);
       })
       .catch((err) => {
-        toast.error("Failed to load homework assignments");
+        console.error("[My Homework] Error:", err.response?.data || err.message);
+        toast.error(err.response?.data?.message || "Failed to load homework assignments");
       })
       .finally(() => {
         setLoading(false);
@@ -310,14 +321,29 @@ export default function StudentAssignments() {
 
   const filteredHomework = useMemo(() => {
     return homeworkList.filter((hw) => {
-      const matchesSearch = hw.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        hw.subject?.subject?.toLowerCase().includes(searchQuery.toLowerCase());
-      
+      const subjectName = hw.lecture?.syllabus?.subject || hw.lecture?.title || hw.batchName || "";
+      const matchesSearch =
+        hw.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        subjectName.toLowerCase().includes(searchQuery.toLowerCase());
+
       const status = (hw.status || "assigned").toLowerCase();
       if (activeTab === "assigned") {
-        return matchesSearch && (status === "assigned" || status === "rejected");
+        // Show anything that needs action: assigned, rejected, or pending
+        return matchesSearch && (
+          status === "assigned" ||
+          status === "rejected" ||
+          status === "pending" ||
+          status === "pending_approval" ||
+          status === "pending approval"
+        );
       } else {
-        return matchesSearch && (status === "submitted" || status === "pending approval" || status === "pending_approval" || status === "approved");
+        // History: submitted or approved
+        return matchesSearch && (
+          status === "submitted" ||
+          status === "approved" ||
+          status === "pending approval" ||
+          status === "pending_approval"
+        );
       }
     });
   }, [homeworkList, searchQuery, activeTab]);

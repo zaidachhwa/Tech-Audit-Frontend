@@ -28,7 +28,7 @@ export default function AdminLayout() {
   const initials = userName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: "#F8FAFC", fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen flex" style={{ height: "100vh", overflow: "hidden", backgroundColor: "#F8FAFC", fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
       `}</style>
@@ -39,9 +39,10 @@ export default function AdminLayout() {
 
       {/* MAIN WRAPPER */}
       <div
-        className={`flex-1 transition-all duration-300 ${
+        className={`transition-all duration-300 ${
           sidebarOpen ? "lg:ml-64" : "lg:ml-20"
         }`}
+        style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
       >
         {/* ─── TOP HEADER BAR (ALL SCREENS) ─── */}
         <header
@@ -173,8 +174,10 @@ export default function AdminLayout() {
         </header>
 
         {/* ⭐ ALL ADMIN PAGES RENDER HERE */}
-        <main className="p-6" style={{ backgroundColor: "#F8FAFC" }}>
-          <Outlet />
+        <main style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+          <div className="p-6" style={{ backgroundColor: "#F8FAFC" }}>
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

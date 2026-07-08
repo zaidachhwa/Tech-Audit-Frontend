@@ -11,7 +11,7 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import StudentLogin from './components/student/StudentLogin';
 import StudentSignup from './components/student/StudentSignup';
 import StudentLayout from './components/student/StudentLayout';
-import Dashboard from './components/student/Dashboard';
+import StudentDashboard from './components/student/StudentDashboard';
 import Projects from './components/student/Projects';
 import Reports from './components/student/Reports';
 import StudentProfile from './components/student/StudentProfile';
@@ -75,7 +75,7 @@ export default function App() {
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard"    element={<Dashboard />} />
+          <Route path="dashboard"    element={<StudentDashboard />} />
           <Route path="assignments"  element={<StudentAssignments />} />
           <Route path="announcements" element={<StudentAnnouncements />} />
           <Route path="projects"     element={<Projects />} />

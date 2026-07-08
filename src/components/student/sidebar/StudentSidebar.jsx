@@ -12,10 +12,17 @@ const navLinks = [
   { name: "Profile", path: "/student/profile", icon: User },
 ];
 
-export default function StudentSidebar({ currentPath, onNavigate, user }) {
+export default function StudentSidebar({ currentPath, onNavigate, user, collapsed: collapsedProp, onCollapsedChange }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsedInternal, setCollapsedInternal] = useState(false);
   const auth = useAuth();
+
+  // Use controlled prop if provided, otherwise internal state
+  const collapsed = collapsedProp !== undefined ? collapsedProp : collapsedInternal;
+  const setCollapsed = (val) => {
+    setCollapsedInternal(val);
+    onCollapsedChange?.(val);
+  };
 
   const handleNavigate = (path) => { onNavigate(path); setMobileOpen(false); };
 
@@ -53,8 +60,9 @@ export default function StudentSidebar({ currentPath, onNavigate, user }) {
           borderRight: "1.5px solid #F1F5F9",
           display: "flex",
           flexDirection: "column",
-          position: "sticky",
+          position: "fixed",
           top: 0,
+          left: 0,
           transition: "width 0.3s, min-width 0.3s",
           overflow: "hidden",
           fontFamily: "'DM Sans', sans-serif",

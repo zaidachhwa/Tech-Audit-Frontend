@@ -39,7 +39,8 @@ export default function TeacherLayout() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
         background: "#F8FAFC",
         fontFamily: "'DM Sans', sans-serif",
         display: "flex",
@@ -54,7 +55,8 @@ export default function TeacherLayout() {
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          minHeight: "100vh",
+          height: "100vh",
+          overflow: "hidden",
           transition: "margin-left 0.3s",
           marginLeft: sidebarOpen ? 256 : 64,
         }}
@@ -96,7 +98,7 @@ export default function TeacherLayout() {
             <div style={{ width: 1, height: 24, background: "#E2E8F0" }} />
 
             {/* Panel badge — green for Teacher */}
-            <span
+            {/* <span
               style={{
                 background: "linear-gradient(90deg, #047857, #059669)",
                 color: "#fff",
@@ -109,7 +111,7 @@ export default function TeacherLayout() {
               }}
             >
               Teacher Panel
-            </span>
+            </span> */}
 
             <div style={{ width: 1, height: 24, background: "#E2E8F0", display: "none" }} className="sm-divider" />
 
@@ -183,7 +185,7 @@ export default function TeacherLayout() {
           </div>
         </header>
 
-        <main style={{ flex: 1 }}>
+        <main style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           <Outlet />
         </main>
       </div>
