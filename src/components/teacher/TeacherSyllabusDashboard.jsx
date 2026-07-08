@@ -29,10 +29,9 @@ import { Link } from "react-router-dom";
 
 const S = {
   page: {
-    minHeight: "100vh",
-    background: "#F8FAFC",
-    padding: "28px 32px",
-    fontFamily: "'DM Sans', sans-serif",
+    display: "flex",
+    flexDirection: "column",
+    gap: "24px",
   },
   card: {
     background: "#fff",

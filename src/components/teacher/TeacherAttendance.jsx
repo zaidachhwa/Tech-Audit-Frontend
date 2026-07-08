@@ -85,19 +85,7 @@ export default function TeacherAttendance() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  // Lock body/html scroll on mount, restore on unmount
-  useEffect(() => {
-    const originalBodyOverflow = document.body.style.overflow;
-    const originalHtmlOverflow = document.documentElement.style.overflow;
-    
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    
-    return () => {
-      document.body.style.overflow = originalBodyOverflow;
-      document.documentElement.style.overflow = originalHtmlOverflow;
-    };
-  }, []);
+
 
   // Fetch batches
   useEffect(() => {
@@ -398,21 +386,14 @@ export default function TeacherAttendance() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         
         .page-container {
-          background: #FAF9F5;
-          height: 100vh;
-          padding: 24px;
           font-family: 'DM Sans', sans-serif;
           color: #1F2421;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
         }
         @media (max-width: 1023px) {
           .page-container {
-            height: calc(100vh - 56px);
-            padding: 16px;
-            overflow: hidden;
           }
         }
         .stats-grid {

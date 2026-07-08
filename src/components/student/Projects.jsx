@@ -7,9 +7,6 @@ import { Send, CheckCircle2, Clock, AlertCircle, Target, Award, GitBranch, Exter
 
 const S = {
   page: { 
-    minHeight: "100vh", 
-    background: "#F8FAFC", 
-    padding: "clamp(16px, 4vw, 32px)", 
     fontFamily: "'DM Sans', sans-serif",
     width: "100%",
     boxSizing: "border-box",

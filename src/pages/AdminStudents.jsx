@@ -286,7 +286,7 @@ export default function AdminStudents() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen p-6 font-[DM_Sans] space-y-6">
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -322,118 +322,270 @@ export default function AdminStudents() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Total", value: total },
-          { label: "Active", value: status?.totalActive },
-          { label: "Pending", value: status?.totalPending },
+          { label: "Total Students", value: total },
+          { label: "Active Students", value: status?.totalActive },
+          { label: "Pending Approvals", value: status?.totalPending },
         ].map((s, i) => (
-          <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-[11px] uppercase text-[#64748B]">{s.label}</p>
-            <p className="text-[28px] font-extrabold text-[#1B2B4B]">{s.value}</p>
+          <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#64748B]">{s.label}</p>
+            <p className="text-[28px] font-extrabold text-[#1B2B4B] mt-1">{s.value || 0}</p>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex gap-3">
+      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex flex-col sm:flex-row gap-3 shadow-sm">
         <div className="flex-1 relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+            placeholder="Search by student name or email..."
+            className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm bg-[#F8FAFC]"
           />
         </div>
 
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm"
+          className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-white cursor-pointer"
         >
-          <option value="all">All</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
+          <option value="all">All Statuses</option>
+          <option value="active">Active Only</option>
+          <option value="pending">Pending Only</option>
         </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+      {/* Table (Desktop View) */}
+      <div className="hidden md:block bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm">
         <table className="w-full">
-          <thead className="bg-[#F8FAFC] text-[#64748B] text-[11px] uppercase">
+          <thead className="bg-[#F8FAFC] text-[#64748B] text-[11px] uppercase tracking-wider border-b border-[#E2E8F0]">
             <tr>
-              <th className="px-6 py-3 text-left">Student</th>
-              <th className="px-6 py-3 text-left">Email</th>
-              <th className="px-6 py-3 text-left">Batch</th>
-              <th className="px-6 py-3 text-left">Status</th>
-              <th className="px-6 py-3 text-right">Actions</th>
+              <th className="px-6 py-3.5 text-left font-bold">Student</th>
+              <th className="px-6 py-3.5 text-left font-bold">Email</th>
+              <th className="px-6 py-3.5 text-left font-bold">Batch</th>
+              <th className="px-6 py-3.5 text-left font-bold">Status</th>
+              <th className="px-6 py-3.5 text-right font-bold">Actions</th>
             </tr>
           </thead>
 
-          <tbody>
-            {filteredStudents.map((s, i) => (
-              <tr key={s._id} className={`${i % 2 === 0 ? "" : "bg-[#F8FAFC]"}`}>
-                <td className="px-6 py-4 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-sm font-bold">
-                    {s.name.charAt(0)}
-                  </div>
-                  <Link to={`/admin/student/${s._id}`} className="text-[14px] text-[#2563EB] font-bold hover:underline">
-                    {s.name}
-                  </Link>
-                </td>
-
-                <td className="px-6 py-4 text-[#64748B] text-[14px]">{s.email}</td>
-
-                <td className="px-6 py-4 text-[#64748B] text-[14px]">
-                  {s.batch_name} #{s.batch_no}
-                </td>
-
-                <td className="px-6 py-4">
-                  <span className={`px-3 py-[3px] rounded-full text-[12px] font-semibold ${
-                    s.isActive
-                      ? "bg-[#ECFDF5] text-[#065F46]"
-                      : "bg-[#EFF6FF] text-[#1E40AF]"
-                  }`}>
-                    {s.isActive ? "Active" : "Pending"}
-                  </span>
-                </td>
-
-                <td className="px-6 py-4 text-right flex justify-end gap-2">
-                  {!s.isActive && (
-                    <button 
-                      onClick={() => toggleApproval(s._id, s.isActive, s.name)}
-                      className="text-[#10B981] hover:bg-[#ECFDF5] p-2 rounded"
-                    >
-                      <Check size={14} />
-                    </button>
-                  )}
-                  {s.isActive && (
-                    <button 
-                      onClick={() => toggleApproval(s._id, s.isActive, s.name)}
-                      className="text-[#F59E0B] hover:bg-[#FEF3C7] p-2 rounded"
-                    >
-                      <XCircle size={14} />
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => handleEditClick(s)}
-                    className="text-[#2563EB] hover:bg-[#EFF6FF] p-2 rounded"
-                  >
-                    <Edit2 size={14} />
-                  </button>
-                  <button 
-                    onClick={() => setDeleteConfirm(s._id)}
-                    className="text-[#EF4444  ] hover:bg-[#FEE2E2] p-2 rounded"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+          <tbody className="divide-y divide-slate-100">
+            {filteredStudents.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500">
+                  No students found.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredStudents.map((s, i) => (
+                <tr key={s._id} className="hover:bg-slate-50/50 transition duration-150">
+                  <td className="px-6 py-4 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
+                      {s.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <Link to={`/admin/student/${s._id}`} className="text-[13px] text-[#2563EB] font-bold hover:underline block truncate">
+                        {s.name}
+                      </Link>
+                      <span className="text-[10px] text-slate-400 block truncate">ID: {s._id}</span>
+                    </div>
+                  </td>
+
+                  <td className="px-6 py-4 text-[#64748B] text-[13px] truncate max-w-[200px]">{s.email}</td>
+
+                  <td className="px-6 py-4 text-[#64748B] text-[13px] font-medium">
+                    {s.batch_name} #{s.batch_no}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <span className={`px-2.5 py-[3px] rounded-full text-[11px] font-bold ${
+                      s.isActive
+                        ? "bg-[#ECFDF5] text-[#065F46]"
+                        : "bg-[#EFF6FF] text-[#1E40AF]"
+                    }`}>
+                      {s.isActive ? "Active" : "Pending"}
+                    </span>
+                  </td>
+
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button 
+                        onClick={() => toggleApproval(s._id, s.isActive, s.name)}
+                        className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                          s.isActive 
+                            ? "text-[#F59E0B] border-[#FEF3C7] hover:bg-[#FEF3C7]"
+                            : "text-[#10B981] border-[#ECFDF5] hover:bg-[#ECFDF5]"
+                        }`}
+                        title={s.isActive ? "Deactivate Account" : "Approve Account"}
+                      >
+                        {s.isActive ? <XCircle size={14} /> : <Check size={14} />}
+                      </button>
+                      <button 
+                        onClick={() => handleEditClick(s)}
+                        className="text-[#2563EB] border border-[#EFF6FF] hover:bg-[#EFF6FF] p-1.5 rounded-lg transition cursor-pointer"
+                        title="Edit Details"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button 
+                        onClick={() => setDeleteConfirm(s._id)}
+                        className="text-[#EF4444] border border-[#FEE2E2] hover:bg-[#FEE2E2] p-1.5 rounded-lg transition cursor-pointer"
+                        title="Delete Student"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Table (Mobile Card View) */}
+      <div className="block md:hidden space-y-4">
+        {filteredStudents.length === 0 ? (
+          <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-slate-500 shadow-sm">
+            No students found.
+          </div>
+        ) : (
+          filteredStudents.map((s) => (
+            <div key={s._id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 space-y-3 shadow-sm">
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                    {s.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <Link to={`/admin/student/${s._id}`} className="text-sm font-bold text-[#2563EB] hover:underline block truncate">
+                      {s.name}
+                    </Link>
+                    <span className="text-[10px] text-slate-400 block truncate">ID: {s._id}</span>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                  s.isActive
+                    ? "bg-[#ECFDF5] text-[#065F46]"
+                    : "bg-[#EFF6FF] text-[#1E40AF]"
+                }`}>
+                  {s.isActive ? "Active" : "Pending"}
+                </span>
+              </div>
+
+              <div className="text-xs space-y-1.5 text-slate-600 border-t border-slate-100 pt-2.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-medium">Email:</span>
+                  <span className="font-semibold text-slate-700 truncate max-w-[200px]">{s.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 font-medium">Batch:</span>
+                  <span className="font-semibold text-slate-700">{s.batch_name} #{s.batch_no}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => toggleApproval(s._id, s.isActive, s.name)}
+                  className={`flex-1 py-2 px-2.5 rounded-lg border text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
+                    s.isActive
+                      ? "bg-rose-50 border-rose-200 text-[#EF4444] hover:bg-rose-100"
+                      : "bg-emerald-50 border-emerald-200 text-[#10B981] hover:bg-emerald-100"
+                  }`}
+                >
+                  {s.isActive ? (
+                    <>
+                      <XCircle size={14} /> Deactivate
+                    </>
+                  ) : (
+                    <>
+                      <Check size={14} /> Approve
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => handleEditClick(s)}
+                  className="flex-1 py-2 px-2.5 bg-blue-50 border border-blue-200 text-[#2563EB] rounded-lg hover:bg-blue-100 transition text-xs font-bold flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <Edit2 size={14} /> Edit
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(s._id)}
+                  className="p-2 bg-red-50 border border-red-200 text-[#EF4444] rounded-lg hover:bg-red-100 transition flex items-center justify-center cursor-pointer shrink-0"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-xl shadow-sm">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs text-slate-700">
+                Showing page <span className="font-semibold">{page}</span> of{" "}
+                <span className="font-semibold">{totalPages}</span> (Total <span className="font-semibold">{total}</span> students)
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 cursor-pointer"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {[...Array(totalPages).keys()].map((n) => {
+                  const pNum = n + 1;
+                  return (
+                    <button
+                      key={pNum}
+                      onClick={() => setPage(pNum)}
+                      className={`relative inline-flex items-center px-4 py-2 text-xs font-semibold focus:z-20 cursor-pointer ${
+                        pNum === page
+                          ? "z-10 bg-[#2563EB] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
+                          : "text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:outline-offset-0"
+                      }`}
+                    >
+                      {pNum}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 cursor-pointer"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Student Modal */}
       {showCreate && (

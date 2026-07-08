@@ -145,7 +145,7 @@ export default function AdminTeachers() {
   };
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen p-6 font-[DM_Sans] space-y-6">
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -175,127 +175,210 @@ export default function AdminTeachers() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Total",   value: stats.total },
-          { label: "Active",  value: stats.active },
-          { label: "Pending", value: stats.pending },
+          { label: "Total Teachers",   value: stats.total },
+          { label: "Active Teachers",  value: stats.active },
+          { label: "Pending Approvals", value: stats.pending },
         ].map((s, i) => (
-          <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-[11px] uppercase text-[#64748B]">{s.label}</p>
-            <p className="text-[28px] font-extrabold text-[#1B2B4B]">{s.value}</p>
+          <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#64748B]">{s.label}</p>
+            <p className="text-[28px] font-extrabold text-[#1B2B4B] mt-1">{s.value}</p>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex gap-3">
+      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex flex-col sm:flex-row gap-3 shadow-sm">
         <div className="flex-1 relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or email..."
-            className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm"
+            placeholder="Search by teacher name or email..."
+            className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm bg-[#F8FAFC]"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-white"
+          className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-white cursor-pointer"
         >
-          <option value="all">All</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
+          <option value="all">All Statuses</option>
+          <option value="active">Active Only</option>
+          <option value="pending">Pending Only</option>
         </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+      {/* Table & Mobile Card View */}
+      <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm">
         {loading ? (
           <div className="text-center py-12 text-[#64748B] text-sm">Loading...</div>
         ) : filteredTeachers.length === 0 ? (
           <div className="text-center py-12 text-[#64748B] text-sm">No teachers found.</div>
         ) : (
-          <table className="w-full">
-            <thead className="bg-[#F8FAFC] text-[#64748B] text-[11px] uppercase">
-              <tr>
-                <th className="px-6 py-3 text-left">Teacher</th>
-                <th className="px-6 py-3 text-left">Email</th>
-                <th className="px-6 py-3 text-left">Phone</th>
-                <th className="px-6 py-3 text-left">Subjects</th>
-                <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTeachers.map((t, i) => (
-                <tr key={t._id} className={`${i % 2 === 0 ? "" : "bg-[#F8FAFC]"} border-t border-[#F1F5F9]`}>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-sm font-bold">
+          <>
+            {/* Desktop View */}
+            <div className="hidden md:block">
+              <table className="w-full">
+                <thead className="bg-[#F8FAFC] text-[#64748B] text-[11px] uppercase tracking-wider border-b border-[#E2E8F0]">
+                  <tr>
+                    <th className="px-6 py-3.5 text-left font-bold">Teacher</th>
+                    <th className="px-6 py-3.5 text-left font-bold">Email</th>
+                    <th className="px-6 py-3.5 text-left font-bold">Phone</th>
+                    <th className="px-6 py-3.5 text-left font-bold">Subjects</th>
+                    <th className="px-6 py-3.5 text-left font-bold">Status</th>
+                    <th className="px-6 py-3.5 text-right font-bold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredTeachers.map((t) => (
+                    <tr key={t._id} className="hover:bg-slate-50/50 transition duration-150">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                            {t.name.charAt(0).toUpperCase()}
+                          </div>
+                          <button
+                            onClick={() => navigate(`/admin/teacher/${t._id}`)}
+                            className="font-bold text-[#2563EB] hover:underline transition-colors cursor-pointer border-none bg-transparent"
+                          >
+                            {t.name}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-[#64748B] text-[13px]">{t.email}</td>
+                      <td className="px-6 py-4 text-[#64748B] text-[13px]">{t.phone || "—"}</td>
+                      <td className="px-6 py-4 text-[#64748B] text-[13px]">
+                        <div className="flex flex-wrap gap-1">
+                          {t.subjects?.map((sub, idx) => (
+                            <span key={idx} className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-medium">
+                              {sub}
+                            </span>
+                          )) || "—"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-[3px] rounded-full text-[11px] font-bold ${
+                          t.isActive ? "bg-[#ECFDF5] text-[#065F46]" : "bg-[#FEF3C7] text-[#92400E]"
+                        }`}>
+                          {t.isActive ? "Active" : "Pending"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            onClick={() => handleToggleStatus(t._id)}
+                            title={t.isActive ? "Deactivate Account" : "Approve Account"}
+                            className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                              t.isActive
+                                ? "text-[#F59E0B] border-[#FEF3C7] hover:bg-[#FEF3C7]"
+                                : "text-[#10B981] border-[#ECFDF5] hover:bg-[#ECFDF5]"
+                            }`}
+                          >
+                            {t.isActive ? <XCircle size={14} /> : <Check size={14} />}
+                          </button>
+                          <button
+                            onClick={() => handleEdit(t)}
+                            title="Edit"
+                            className="text-[#2563EB] border border-[#EFF6FF] hover:bg-[#EFF6FF] p-1.5 rounded-lg transition cursor-pointer"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(t._id)}
+                            title="Delete"
+                            className="text-[#EF4444] border border-[#FEE2E2] hover:bg-[#FEE2E2] p-1.5 rounded-lg transition cursor-pointer"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="block md:hidden divide-y divide-slate-100 p-4 space-y-4 bg-slate-50/50">
+              {filteredTeachers.map((t) => (
+                <div key={t._id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 space-y-3 shadow-sm first:mt-0">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-xs font-bold shrink-0">
                         {t.name.charAt(0).toUpperCase()}
                       </div>
-                      <button
-                        onClick={() => navigate(`/admin/teacher/${t._id}`)}
-                        className="font-bold text-[#2563EB] hover:underline transition-colors"
-                      >
-                        {t.name}
-                      </button>
+                      <div className="min-w-0">
+                        <button
+                          onClick={() => navigate(`/admin/teacher/${t._id}`)}
+                          className="text-sm font-bold text-[#2563EB] hover:underline text-left block truncate cursor-pointer border-none bg-transparent"
+                        >
+                          {t.name}
+                        </button>
+                        <span className="text-[10px] text-slate-400 block truncate">ID: {t._id}</span>
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-[#64748B] text-[14px]">{t.email}</td>
-                  <td className="px-6 py-4 text-[#64748B] text-[14px]">{t.phone || "—"}</td>
-                  <td className="px-6 py-4 text-[#64748B] text-[14px]">{t.subjects?.slice(0, 2).join(", ") || "—"}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-[3px] rounded-full text-[12px] font-semibold ${
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
                       t.isActive ? "bg-[#ECFDF5] text-[#065F46]" : "bg-[#FEF3C7] text-[#92400E]"
                     }`}>
                       {t.isActive ? "Active" : "Pending"}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      {/* Toggle active/pending */}
-                      {!t.isActive ? (
-                        <button
-                          onClick={() => handleToggleStatus(t._id)}
-                          title="Approve"
-                          className="text-[#10B981] hover:bg-[#ECFDF5] p-2 rounded"
-                        >
-                          <Check size={14} />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleToggleStatus(t._id)}
-                          title="Deactivate"
-                          className="text-[#F59E0B] hover:bg-[#FEF3C7] p-2 rounded"
-                        >
-                          <XCircle size={14} />
-                        </button>
-                      )}
-                      {/* Edit */}
-                      <button
-                        onClick={() => handleEdit(t)}
-                        title="Edit"
-                        className="text-[#2563EB] hover:bg-[#EFF6FF] p-2 rounded"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      {/* Delete */}
-                      <button
-                        onClick={() => handleDelete(t._id)}
-                        title="Delete"
-                        className="text-[#EF4444] hover:bg-[#FEE2E2] p-2 rounded"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                  </div>
+
+                  <div className="text-xs space-y-1.5 text-slate-600 border-t border-slate-100 pt-2.5">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">Email:</span>
+                      <span className="font-semibold text-slate-700 truncate max-w-[180px]">{t.email}</span>
                     </div>
-                  </td>
-                </tr>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">Phone:</span>
+                      <span className="font-semibold text-slate-700">{t.phone || "—"}</span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="text-slate-400 font-medium shrink-0">Subjects:</span>
+                      <span className="font-semibold text-slate-700 text-right truncate max-w-[180px]">
+                        {t.subjects?.join(", ") || "—"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      onClick={() => handleToggleStatus(t._id)}
+                      className={`flex-1 py-2 px-2.5 rounded-lg border text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
+                        t.isActive
+                          ? "bg-rose-50 border-rose-200 text-[#EF4444] hover:bg-rose-100"
+                          : "bg-emerald-50 border-emerald-200 text-[#10B981] hover:bg-emerald-100"
+                      }`}
+                    >
+                      {t.isActive ? (
+                        <>
+                          <XCircle size={14} /> Deactivate
+                        </>
+                      ) : (
+                        <>
+                          <Check size={14} /> Approve
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleEdit(t)}
+                      className="flex-1 py-2 px-2.5 bg-blue-50 border border-blue-200 text-[#2563EB] rounded-lg hover:bg-blue-100 transition text-xs font-bold flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Edit2 size={14} /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(t._id)}
+                      className="p-2 bg-red-50 border border-red-200 text-[#EF4444] rounded-lg hover:bg-red-100 transition flex items-center justify-center cursor-pointer shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 

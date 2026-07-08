@@ -9,7 +9,7 @@ import {
 import toast from "react-hot-toast";
 
 const S = {
-  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
+  page: { fontFamily: "'DM Sans', sans-serif" },
   card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" },
 };
 

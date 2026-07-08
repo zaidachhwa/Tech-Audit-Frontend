@@ -1046,10 +1046,10 @@ export default function LectureSchedule() {
   const myRequests = subjectTemplates.filter(t => t.status === "pending" || t.status === "rejected");
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen p-6 font-[DM_Sans] space-y-6">
+    <div className="space-y-6">
 
       {/* HEADER SECTION */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             {(selectedSchedule || isCreating || isViewingSubmissionsCenter) && (
@@ -1074,7 +1074,7 @@ export default function LectureSchedule() {
         </div>
 
         {(role === "admin" || role === "teacher") && !selectedSchedule && !isCreating && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2.5 items-center">
             {!isViewingSubmissionsCenter ? (
               <button
                 onClick={() => {

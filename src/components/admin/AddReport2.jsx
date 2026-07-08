@@ -3,27 +3,27 @@ import { API } from "../../api/axios";
 import { toast, Toaster } from "react-hot-toast";
 
 const S = {
-  page: { minHeight: "100vh", background: "#F8FAFC", padding: "24px 32px" },
-  pageTitle: { fontSize: 20, fontWeight: 500, color: "#0F172A", marginBottom: 2 },
+  page: {},
+  pageTitle: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", marginBottom: 2 },
   pageSubtitle: { fontSize: 13, color: "#64748B", marginBottom: 20 },
-  card: { background: "#fff", border: "0.5px solid #E2E8F0", borderRadius: 12, padding: 20, marginBottom: 16 },
+  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
   sectionHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: "0.5px solid #E2E8F0" },
   sectionHeaderRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 12, borderBottom: "0.5px solid #E2E8F0" },
   dot: { width: 8, height: 8, borderRadius: "50%", background: "#2563EB", flexShrink: 0 },
-  sectionTitle: { fontSize: 13, fontWeight: 500, color: "#0F172A" },
-  label: { fontSize: 11, fontWeight: 500, color: "#64748B", marginBottom: 5, display: "block", textTransform: "uppercase", letterSpacing: "0.4px" },
-  input: { width: "100%", border: "0.5px solid #CBD5E1", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#0F172A", outline: "none", background: "#fff" },
-  select: { width: "100%", border: "0.5px solid #CBD5E1", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#0F172A", outline: "none", background: "#fff" },
-  textarea: { width: "100%", border: "0.5px solid #CBD5E1", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#0F172A", outline: "none", background: "#fff", minHeight: 80, resize: "vertical", lineHeight: 1.5 },
+  sectionTitle: { fontSize: 13, fontWeight: 500, color: "#1B2B4B" },
+  label: { fontSize: 11, fontWeight: 600, color: "#64748B", marginBottom: 5, display: "block", textTransform: "uppercase", letterSpacing: "0.06em" },
+  input: { width: "100%", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#1B2B4B", outline: "none", background: "#fff" },
+  select: { width: "100%", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#1B2B4B", outline: "none", background: "#fff" },
+  textarea: { width: "100%", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#1B2B4B", outline: "none", background: "#fff", minHeight: 80, resize: "vertical", lineHeight: 1.5 },
   grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 },
   paramRow: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 },
-  scoreInput: { width: 90, border: "0.5px solid #CBD5E1", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#0F172A", outline: "none", background: "#fff", flexShrink: 0 },
-  removeBtn: { width: 28, height: 28, borderRadius: 8, border: "0.5px solid #E2E8F0", background: "#F8FAFC", color: "#94A3B8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 },
+  scoreInput: { width: 90, border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#1B2B4B", outline: "none", background: "#fff", flexShrink: 0 },
+  removeBtn: { width: 28, height: 28, borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#94A3B8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 },
   addParamBtn: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#2563EB", background: "none", border: "none", cursor: "pointer", padding: "4px 0", fontWeight: 500 },
-  previewBtn: { fontSize: 12, padding: "5px 14px", borderRadius: 8, border: "0.5px solid #BFDBFE", background: "#EFF6FF", color: "#1D4ED8", cursor: "pointer", fontWeight: 500 },
+  previewBtn: { fontSize: 12, padding: "5px 14px", borderRadius: 8, border: "1.5px solid #BFDBFE", background: "#EFF6FF", color: "#1D4ED8", cursor: "pointer", fontWeight: 500 },
   btnRow: { display: "flex", gap: 10, marginTop: 4 },
-  btnDraft: { padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "0.5px solid #FDE68A", background: "#FEF9C3", color: "#92400E" },
-  btnSave: { padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "0.5px solid #BBF7D0", background: "#DCFCE7", color: "#166534" },
+  btnDraft: { padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "1.5px solid #FDE68A", background: "#FEF9C3", color: "#92400E" },
+  btnSave: { padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "1.5px solid #BBF7D0", background: "#DCFCE7", color: "#166534" },
   btnPdf: { padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none", background: "#2563EB", color: "#fff" },
 };
 
@@ -248,7 +248,7 @@ export default function AddReport2() {
   };
 
   return (
-    <div style={S.page}>
+    <div className="space-y-6">
       <Toaster />
 
       <p style={S.pageTitle}>Add Report</p>
@@ -289,7 +289,7 @@ export default function AddReport2() {
           <span style={S.sectionTitle}>Batch Information</span>
         </div>
 
-        <div style={S.grid3}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
             <label style={S.label}>Batch Name</label>
             <select style={S.select} value={form.batch_name} onChange={(e) => setForm({ ...form, batch_name: e.target.value, batch_no: "", studentId: "" })}>
@@ -321,16 +321,16 @@ export default function AddReport2() {
 
       {/* Parameters */}
       <div style={S.card}>
-        <div style={S.sectionHeaderRow}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#E2E8F0] mb-4">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={S.dot} />
             <span style={S.sectionTitle}>Parameters</span>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button style={{ ...S.previewBtn, background: "#fff", color: "#64748B", border: "0.5px solid #E2E8F0" }} onClick={saveParametersToLocal}>Save Preset</button>
-            <button style={{ ...S.previewBtn, background: "#fff", color: "#64748B", border: "0.5px solid #E2E8F0" }} onClick={loadParametersFromLocal}>Load Preset</button>
+          <div className="flex flex-wrap gap-2 items-center">
+            <button style={{ ...S.previewBtn, background: "#fff", color: "#64748B", border: "1.5px solid #E2E8F0" }} onClick={saveParametersToLocal}>Save Preset</button>
+            <button style={{ ...S.previewBtn, background: "#fff", color: "#64748B", border: "1.5px solid #E2E8F0" }} onClick={loadParametersFromLocal}>Load Preset</button>
             <button style={S.previewBtn} onClick={handlePreview}>Preview PDF</button>
-            <button style={{ ...S.addParamBtn, border: "0.5px solid #E2E8F0", padding: "5px 12px", borderRadius: 8 }} onClick={addParameter}>+ Add</button>
+            <button style={{ ...S.addParamBtn, border: "1.5px solid #E2E8F0", padding: "5px 12px", borderRadius: 8 }} onClick={addParameter}>+ Add</button>
           </div>
         </div>
 
@@ -384,7 +384,7 @@ export default function AddReport2() {
       </div>
 
       {/* Buttons */}
-      <div style={S.btnRow}>
+      <div className="flex flex-wrap gap-3 mt-4">
         <button style={S.btnDraft} onClick={handleSaveDraft}>Draft</button>
         <button style={S.btnSave} onClick={handleSubmit}>Save</button>
         <button style={S.btnPdf} onClick={handleDownload}>PDF</button>

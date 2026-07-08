@@ -74,10 +74,7 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-slate-50 min-h-screen font-sans" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-      `}</style>
+    <div className="space-y-6">
       <Toaster position="top-center" />
 
       {/* TOP HEADER */}

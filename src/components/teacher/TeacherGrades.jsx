@@ -5,7 +5,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { TrendingUp, Users, Award, ChevronDown, Save, RefreshCw, Star, Search } from "lucide-react";
 
 const S = {
-  page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
+  page: { fontFamily: "'DM Sans', sans-serif" },
   card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
   pageTitle: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", margin: 0 },
   label: { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748B" },

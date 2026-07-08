@@ -139,7 +139,7 @@ export default function ProjectTracking() {
       </div>
 
       {/* ── STAT PILLS ── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           {
             label: "Courses",
@@ -343,7 +343,7 @@ export default function ProjectTracking() {
                           borderTop: "1px solid #F1F5F9",
                         }}
                       >
-                        <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                           {courseBatches.map((batch) => (
                             <motion.button
                               key={batch._id}

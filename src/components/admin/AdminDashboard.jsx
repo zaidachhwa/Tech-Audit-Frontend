@@ -287,18 +287,14 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="space-y-5" style={{ backgroundColor: "#F8FAFC", fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", padding: "24px" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-      `}</style>
-
+    <div className="space-y-6">
       {/* Top Bar / Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-bold text-5xl" style={{ color: "#1B2B4B", fontSize: "20px", fontWeight: "700" }}>
+          <h1 className="font-bold text-slate-800" style={{ fontSize: "20px", fontWeight: "700" }}>
             Dashboard
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: "#64748B", fontSize: "13px" }}>
+          <p className="text-sm text-slate-500 mt-0.5">
             Welcome back, Admin
           </p>
         </div>
@@ -326,7 +322,7 @@ export default function AdminDashboard() {
       {/* Content */}
       <div className="space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
           {statsCards.map((stat, index) => (
             <motion.div
               key={stat.title}
@@ -334,7 +330,7 @@ export default function AdminDashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={stat.onClick}
-              className="rounded-3xl p-6 transition"
+              className="rounded-3xl p-6 transition flex flex-col justify-between"
               style={{
                 backgroundColor: "#FFFFFF",
                 border: "1.5px solid #E2E8F0",
@@ -374,7 +370,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <span
-                  className="text-xs font-medium px-2 py-1 rounded-full"
+                  className="text-xs font-medium px-2 py-1 rounded-full shrink-0"
                   style={{
                     backgroundColor: stat.changeType === "positive" ? "#ECFDF5" : "#FEF3C7",
                     color: stat.changeType === "positive" ? "#065F46" : "#92400E",
@@ -383,12 +379,14 @@ export default function AdminDashboard() {
                   {stat.change}
                 </span>
               </div>
-              <h3 className="font-black mb-1" style={{ color: "#1B2B4B", fontSize: "28px", fontWeight: "800" }}>
-                {stat.value}
-              </h3>
-              <p className="text-sm" style={{ color: "#64748B", fontSize: "11px", fontWeight: "600", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                {stat.title}
-              </p>
+              <div>
+                <h3 className="font-black mb-1" style={{ color: "#1B2B4B", fontSize: "28px", fontWeight: "800", lineHeight: 1.1 }}>
+                  {stat.value}
+                </h3>
+                <p className="text-[10px]" style={{ color: "#64748B", fontWeight: "600", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  {stat.title}
+                </p>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -398,7 +396,7 @@ export default function AdminDashboard() {
           <h2 className="font-semibold mb-4" style={{ color: "#1B2B4B", fontSize: "20px", fontWeight: "700" }}>
             Quick Actions
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {quickActions.map((action, index) => (
               <motion.button
                 key={action.title}

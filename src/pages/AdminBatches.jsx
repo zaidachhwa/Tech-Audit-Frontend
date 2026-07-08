@@ -159,7 +159,7 @@ export default function AdminBatches() {
   };
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen p-6 font-[DM_Sans] space-y-6">
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -180,7 +180,7 @@ export default function AdminBatches() {
 
           <button
             onClick={() => setShowCreate(true)}
-            className="bg-[#2563EB] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 whitespace-nowrap shadow-sm hover:bg-[#1E40AF] transition-colors"
+            className="bg-[#2563EB] text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 whitespace-nowrap shadow-sm hover:bg-[#1E40AF] transition-colors cursor-pointer"
           >
             <Plus size={16} strokeWidth={3} />
             <span>Create</span>
@@ -189,62 +189,117 @@ export default function AdminBatches() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Batches", value: stats.total },
-          { label: "Students", value: stats.totalStudents },
-          { label: "Avg/Batch", value: stats.avgStudents },
+          { label: "Total Batches", value: stats.total },
+          { label: "Total Students", value: stats.totalStudents },
+          { label: "Avg Students / Batch", value: stats.avgStudents },
         ].map((s, i) => (
-          <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-[11px] uppercase text-[#64748B]">{s.label}</p>
-            <p className="text-[28px] font-extrabold text-[#1B2B4B]">{s.value}</p>
+          <div key={i} className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#64748B]">{s.label}</p>
+            <p className="text-[28px] font-extrabold text-[#1B2B4B] mt-1">{s.value}</p>
           </div>
         ))}
       </div>
 
       {/* Search */}
-      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+            placeholder="Search by batch name or number..."
+            className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm bg-[#F8FAFC]"
           />
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-[#F8FAFC] text-[#64748B] text-[11px] uppercase">
-            <tr>
-              <th className="px-6 py-3 text-left">Batch</th>
-              <th className="px-6 py-3 text-left">No</th>
-              <th className="px-6 py-3 text-left">Students</th>
-              <th className="px-6 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredBatches.map((b, i) => (
-              <tr key={b._id} className={`${i % 2 === 0 ? "" : "bg-[#F8FAFC]"}`}>
-                <td className="px-6 py-4 text-[14px] font-bold text-[#2563EB] cursor-pointer hover:underline" onClick={() => navigate(`/admin/project-tracking/batch/${b._id}`)}>
-                  {b.batch_name}
-                </td>
-                <td className="px-6 py-4 text-[14px] text-[#64748B]">#{b.batch_no}</td>
-                <td className="px-6 py-4 text-[14px] text-[#64748B]">
-                  {b.students?.length || 0}
-                </td>
-                <td className="px-6 py-4 text-right flex justify-end gap-2">
-                  <button onClick={() => openEdit(b)} className="text-[#2563EB] hover:bg-[#EFF6FF] p-2 rounded"> <Edit2 size={14} /> </button>
-                  <button onClick={() => handleDelete(b._id)} className="text-[#EF4444] hover:bg-[#FEE2E2] p-2 rounded"> <Trash2 size={14} /> </button>
-                </td>
+      {/* Table & Mobile Card View */}
+      <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm">
+        {/* Desktop View */}
+        <div className="hidden md:block">
+          <table className="w-full">
+            <thead className="bg-[#F8FAFC] text-[#64748B] text-[11px] uppercase tracking-wider border-b border-[#E2E8F0]">
+              <tr>
+                <th className="px-6 py-3.5 text-left font-bold">Batch</th>
+                <th className="px-6 py-3.5 text-left font-bold">No</th>
+                <th className="px-6 py-3.5 text-left font-bold">Students</th>
+                <th className="px-6 py-3.5 text-right font-bold">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100">
+              {filteredBatches.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-10 text-center text-sm text-slate-500">
+                    No batches found.
+                  </td>
+                </tr>
+              ) : (
+                filteredBatches.map((b) => (
+                  <tr key={b._id} className="hover:bg-slate-50/50 transition duration-150">
+                    <td className="px-6 py-4 text-[13px] font-bold text-[#2563EB] cursor-pointer hover:underline" onClick={() => navigate(`/admin/project-tracking/batch/${b._id}`)}>
+                      {b.batch_name}
+                    </td>
+                    <td className="px-6 py-4 text-[13px] text-[#64748B]">#{b.batch_no}</td>
+                    <td className="px-6 py-4 text-[13px] text-[#64748B] font-semibold">
+                      {b.students?.length || 0} students
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-1.5">
+                        <button onClick={() => openEdit(b)} className="text-[#2563EB] border border-[#EFF6FF] hover:bg-[#EFF6FF] p-1.5 rounded-lg transition cursor-pointer" title="Edit Batch"> <Edit2 size={14} /> </button>
+                        <button onClick={() => handleDelete(b._id)} className="text-[#EF4444] border border-[#FEE2E2] hover:bg-[#FEE2E2] p-1.5 rounded-lg transition cursor-pointer" title="Delete Batch"> <Trash2 size={14} /> </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="block md:hidden divide-y divide-slate-100 p-4 space-y-4 bg-slate-50/50">
+          {filteredBatches.length === 0 ? (
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 text-center text-sm text-slate-500">
+              No batches found.
+            </div>
+          ) : (
+            filteredBatches.map((b) => (
+              <div key={b._id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 space-y-3 shadow-sm first:mt-0">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <button
+                      onClick={() => navigate(`/admin/project-tracking/batch/${b._id}`)}
+                      className="text-sm font-bold text-[#2563EB] hover:underline text-left block cursor-pointer border-none bg-transparent"
+                    >
+                      {b.batch_name}
+                    </button>
+                    <span className="text-[11px] text-[#64748B] block mt-0.5 font-medium">Batch No: #{b.batch_no}</span>
+                  </div>
+                  <span className="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
+                    {b.students?.length || 0} Enrolled
+                  </span>
+                </div>
+                <div className="flex gap-2 pt-2.5 border-t border-slate-100">
+                  <button
+                    onClick={() => openEdit(b)}
+                    className="flex-1 py-2 px-2.5 bg-blue-50 border border-blue-200 text-[#2563EB] rounded-lg hover:bg-blue-100 transition text-xs font-bold flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Edit2 size={14} /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(b._id)}
+                    className="py-2 px-2.5 bg-red-50 border border-red-200 text-[#EF4444] rounded-lg hover:bg-red-100 transition text-xs font-bold flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Create Batch Modal */}
