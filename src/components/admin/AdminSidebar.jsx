@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Menu, LogOut, X } from "lucide-react"; // Added X for close button
+import { LogOut, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { adminSidebarItems } from "./sidebarItems";
 
@@ -14,9 +14,8 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
       `}</style>
 
       {/* 1. MOBILE OVERLAY (Backdrop) */}
-      {/* This darkens the background when the menu is open on mobile */}
       <div
-        className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        className={`fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           }`}
         onClick={() => setSidebarOpen(false)}
       />
@@ -29,36 +28,37 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
             : "w-20 -translate-x-full lg:translate-x-0"
           }`}
         style={{
-          backgroundColor: "#1B2B4B",
-          borderRight: "1px solid #243452",
+          backgroundColor: "#FFFFFF",
+          borderRight: "1.5px solid #F1F5F9",
           fontFamily: "'DM Sans', sans-serif",
-          borderRadius: sidebarOpen ? "0px 20px 20px 0px" : "0px",
+          boxShadow: sidebarOpen ? "0 4px 20px rgba(15, 30, 54, 0.05)" : "none",
         }}
       >
-        {/* LOGO & TOGGLE SECTION */}
-        <div className="h-20 flex items-center justify-between px-4 border-b border-[#243452]">
-          {sidebarOpen ? (
-            <>
-              <div className="text-white font-bold text-xl tracking-tight">DASHBOARD</div>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-[#243452] text-[#94A3B8] transition"
-              >
-                <X size={20} />
-              </button>
-            </>
-          ) : (
+        {/* LOGO & BRANDING SECTION */}
+        {sidebarOpen ? (
+          <div className="p-5 border-b border-[#F1F5F9] relative flex flex-col items-center">
+            <img src="/logo.png" alt="Nexcore logo" className="h-20 w-20 object-cover mb-3" />
+            <h2 className="text-center font-extrabold text-xs tracking-tight text-[#0F3C8A] px-2 leading-snug uppercase">
+              Nexcore Institute of Technology
+            </h2>
+            {/* <p className="text-center text-[9px] font-black uppercase tracking-widest text-[#FF6B00] mt-1">
+              Syllabus Tracker
+            </p> */}
             <button
-              onClick={() => setSidebarOpen(true)}
-              className="w-full flex justify-center p-2 rounded-lg text-[#94A3B8] hover:bg-[#243452] transition"
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition lg:hidden"
             >
-              <Menu size={24} />
+              <X size={18} />
             </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="h-24 flex items-center justify-center border-b border-[#F1F5F9] cursor-pointer" onClick={() => setSidebarOpen(true)}>
+            <img src="/logo.png" alt="Nexcore logo" className="h-10 w-10 object-contain hover:scale-105 transition duration-200" />
+          </div>
+        )}
 
         {/* NAVIGATION LINKS */}
-        <nav className="flex-1 py-6 px-3 overflow-y-auto space-y-2">
+        <nav className="flex-1 py-4 px-2 overflow-y-auto space-y-1">
           {adminSidebarItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -67,25 +67,25 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
               <NavLink
                 key={item.path}
                 to={item.path}
-                // Close sidebar on mobile after clicking a link
                 onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
-                className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative group"
+                className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 relative group font-semibold text-xs"
                 style={{
-                  backgroundColor: isActive ? "#2563EB" : "transparent",
-                  color: isActive ? "#FFFFFF" : "#94A3B8",
+                  backgroundColor: isActive ? "#EFF6FF" : "transparent",
+                  color: isActive ? "#0F3C8A" : "#64748B",
+                  borderLeft: isActive ? "4px solid #FF6B00" : "4px solid transparent",
                 }}
               >
-                <Icon size={22} className="shrink-0" />
+                <Icon size={20} className="shrink-0 transition-colors duration-200" style={{ color: isActive ? "#FF6B00" : "#94A3B8" }} />
 
-                {/* Text only shows when open OR on hover if you wanted tooltips */}
-                <span className={`font-medium text-sm transition-opacity duration-200 ${sidebarOpen ? "opacity-100" : "opacity-0 lg:hidden"
+                <span className={`transition-opacity duration-200 ${sidebarOpen ? "opacity-100" : "opacity-0 lg:hidden"
                   }`}>
                   {item.name}
                 </span>
 
-                {/* Active Indicator Line */}
-                {isActive && sidebarOpen && (
-                  <div className="absolute right-0 w-1 h-6 bg-white rounded-l-full" />
+                {!sidebarOpen && (
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition duration-150 pointer-events-none whitespace-nowrap z-50">
+                    {item.name}
+                  </div>
                 )}
               </NavLink>
             );
@@ -93,13 +93,13 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
         </nav>
 
         {/* LOGOUT SECTION */}
-        <div className="p-4 border-t border-[#243452]">
+        <div className="p-4 border-t border-[#F1F5F9]">
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[#94A3B8] hover:bg-red-500/10 hover:text-red-500 transition-colors group"
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 font-semibold text-xs cursor-pointer"
           >
-            <LogOut size={22} className="shrink-0" />
-            {sidebarOpen && <span className="font-medium text-sm">Logout</span>}
+            <LogOut size={20} className="shrink-0" />
+            {sidebarOpen && <span>Logout</span>}
           </button>
         </div>
       </aside>

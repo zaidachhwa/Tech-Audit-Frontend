@@ -79,6 +79,10 @@ export default function AdminDashboard() {
     totalBatches: 0,
     totalTeachers: 0,
     recentActivity: 0,
+    totalSubjects: 0,
+    totalLectures: 0,
+    totalHomework: 0,
+    pendingHomework: 0,
   });
 
   const createBatch = async () => {
@@ -98,7 +102,7 @@ export default function AdminDashboard() {
       setBatches((prev) => [created, ...prev]);
       setAddBatchOpen(false);
       setNewBatch({ batch_name: "", batch_no: "" });
-      calculateStats([created, ...batches]);
+      fetchBatches();
     } catch (err) {
       console.error(err);
       toast.error("Failed to create batch");
@@ -111,35 +115,28 @@ export default function AdminDashboard() {
       const res = await API.get("/batches");
       const batchesData = res.data?.batches || res.data || [];
       setBatches(batchesData);
-      calculateStats(batchesData);
+
+      // Fetch V2 dashboard stats
+      const statsRes = await API.get("/dashboard/admin");
+      const d = statsRes.data;
+      setStats({
+        totalStudents: d.totalStudents || 0,
+        activeStudents: d.totalStudents || 0,
+        pendingApprovals: d.pendingHomework || 0,
+        totalBatches: d.totalBatches || batchesData.length,
+        totalTeachers: d.totalTeachers || 0,
+        totalSubjects: d.totalSubjects || 0,
+        totalLectures: d.totalLectures || 0,
+        totalHomework: d.totalHomework || 0,
+        pendingHomework: d.pendingHomework || 0,
+        recentActivity: d.pendingHomework || 0,
+      });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load batches");
+      toast.error("Failed to load batches or dashboard data");
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateStats = (batchesData) => {
-    const totalStudents = batchesData.reduce(
-      (acc, batch) => acc + (batch.students?.length || 0),
-      0
-    );
-    const activeStudents = batchesData.reduce(
-      (acc, batch) =>
-        acc + (batch.students?.filter((s) => s.isActive).length || 0),
-      0
-    );
-    const pendingApprovals = totalStudents - activeStudents;
-
-    setStats({
-      totalStudents,
-      activeStudents,
-      pendingApprovals,
-      totalBatches: batchesData.length,
-      totalTeachers: 0, // You can fetch this from API
-      recentActivity: pendingApprovals,
-    });
   };
 
   const fetchStudentReports = async (id) => {
@@ -206,60 +203,54 @@ export default function AdminDashboard() {
   // Stats cards
   const statsCards = [
     {
+      title: "Total Subjects",
+      value: stats.totalSubjects,
+      icon: BookOpen,
+      color: "bg-blue-500",
+      bgLight: "bg-blue-50",
+      textColor: "text-blue-600",
+      change: `+${stats.totalSubjects}`,
+      changeType: "positive",
+    },
+    {
+      title: "Total Lectures",
+      value: stats.totalLectures,
+      icon: BookMarked,
+      color: "bg-purple-500",
+      bgLight: "bg-purple-50",
+      textColor: "text-purple-600",
+      change: `+${stats.totalLectures}`,
+      changeType: "positive",
+    },
+    {
+      title: "Total Teachers",
+      value: stats.totalTeachers,
+      icon: UserCheck,
+      color: "bg-green-500",
+      bgLight: "bg-green-50",
+      textColor: "text-green-600",
+      change: `Active: ${stats.totalTeachers}`,
+      changeType: "positive",
+    },
+    {
       title: "Total Students",
       value: stats.totalStudents,
       icon: GraduationCap,
       color: "bg-blue-500",
       bgLight: "bg-blue-50",
       textColor: "text-blue-600",
-      change: "+12%",
+      change: `Enrolled: ${stats.totalStudents}`,
       changeType: "positive",
-      onClick: () => {
-        setDirectoryViewMode("all");
-        setStudentDirectoryOpen(true);
-      },
     },
     {
-      title: "Active Students",
-      value: stats.activeStudents,
-      icon: CheckCircle2,
-      color: "bg-green-500",
-      bgLight: "bg-green-50",
-      textColor: "text-green-600",
-      change: "+8%",
-      changeType: "positive",
-      onClick: () => {
-        setDirectoryViewMode("active");
-        setStudentDirectoryOpen(true);
-      },
-    },
-    {
-      title: "Pending Approvals",
-      value: stats.pendingApprovals,
+      title: "Pending Homework",
+      value: stats.pendingHomework,
       icon: Clock,
       color: "bg-yellow-500",
       bgLight: "bg-yellow-50",
       textColor: "text-yellow-600",
-      change: stats.pendingApprovals > 0 ? "Needs attention" : "All clear",
-      changeType: stats.pendingApprovals > 0 ? "warning" : "positive",
-      onClick: () => {
-        setDirectoryViewMode("pending");
-        setStudentDirectoryOpen(true);
-      },
-    },
-    {
-      title: "Total Batches",
-      value: stats.totalBatches,
-      icon: Users,
-      color: "bg-purple-500",
-      bgLight: "bg-purple-50",
-      textColor: "text-purple-600",
-      change: "+3",
-      changeType: "positive",
-      onClick: () => {
-        setDirectoryViewMode("batches");
-        setStudentDirectoryOpen(true);
-      },
+      change: stats.pendingHomework > 0 ? "Needs Review" : "All Clear",
+      changeType: stats.pendingHomework > 0 ? "warning" : "positive",
     },
   ];
 
@@ -335,7 +326,7 @@ export default function AdminDashboard() {
       {/* Content */}
       <div className="space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {statsCards.map((stat, index) => (
             <motion.div
               key={stat.title}

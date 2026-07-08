@@ -49,7 +49,7 @@ export default function AdminLayout() {
             >
               <Menu size={20} style={{ color: "#94A3B8" }} />
             </button>
-            <h1 className="font-semibold" style={{ color: "#1B2B4B", fontSize: "18px", fontWeight: "700" }}>
+            <h1 className="font-semibold" style={{ color: "#0F3C8A", fontSize: "18px", fontWeight: "700" }}>
               Admin Panel
             </h1>
           </div>

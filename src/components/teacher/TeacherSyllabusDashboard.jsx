@@ -372,7 +372,7 @@ export default function TeacherSyllabusDashboard() {
       {/* STAT CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         {[
-          { label: "Total Topics", value: stats.total, icon: <BookOpen size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
+          { label: "Total Lectures", value: stats.total, icon: <BookOpen size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
           { label: "Completed", value: stats.completed, icon: <CheckCircle2 size={20} />, tint: "#ECFDF5", iconColor: "#10B981" },
           { label: "In Progress", value: stats.inProgress, icon: <Clock size={20} />, tint: "#FEF3C7", iconColor: "#F59E0B" },
           { label: "Pending", value: stats.pending, icon: <AlertCircle size={20} />, tint: "#FEF2F2", iconColor: "#EF4444" },
@@ -396,7 +396,7 @@ export default function TeacherSyllabusDashboard() {
             </div>
             <div>
               <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>Subject Progress</p>
-              <p style={{ color: "#64748B", fontSize: 12, margin: 0 }}>{stats.completed} of {stats.total} topics completed</p>
+              <p style={{ color: "#64748B", fontSize: 12, margin: 0 }}>{stats.completed} of {stats.total} lectures completed</p>
             </div>
           </div>
           <p style={{ fontSize: 28, fontWeight: 800, color: "#2563EB", margin: 0 }}>{completionRate}%</p>
@@ -406,7 +406,7 @@ export default function TeacherSyllabusDashboard() {
         </div>
         {completionRate === 100 && stats.total > 0 && (
           <div style={{ marginTop: 12, background: "#ECFDF5", border: "1.5px solid #A7F3D0", borderRadius: 8, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, color: "#065F46", fontSize: 13, fontWeight: 600 }}>
-            <CheckCircle2 size={16} /> Congratulations! All topics completed!
+            <CheckCircle2 size={16} /> Congratulations! All lectures completed!
           </div>
         )}
       </div>

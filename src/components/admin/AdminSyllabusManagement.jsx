@@ -24,6 +24,62 @@ import {
 } from "./SyllabusComponents";
 import BatchAssignmentsPanel from "./BatchAssignmentsPanel";
 
+const SearchableSelect = ({ value, onChange, options, placeholder }) => {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const selectedOption = options.find(opt => opt.value === value);
+  const filteredOptions = options.filter(opt =>
+    opt.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative">
+      <div
+        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white cursor-pointer flex justify-between items-center"
+        onClick={() => setOpen(!open)}
+      >
+        <span className={selectedOption ? "text-gray-800" : "text-gray-400"}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <span className="text-gray-400 text-xs">▼</span>
+      </div>
+
+      {open && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-1">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full px-2.5 py-1.5 border border-gray-100 rounded text-xs bg-slate-50 focus:outline-none mb-1"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {filteredOptions.length === 0 ? (
+            <p className="text-xs text-gray-400 p-2">No matching lectures found</p>
+          ) : (
+            filteredOptions.map(opt => (
+              <div
+                key={opt.value}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                  setSearch("");
+                }}
+                className={`px-3 py-2 rounded text-xs cursor-pointer hover:bg-slate-50 transition ${
+                  value === opt.value ? "bg-blue-50 text-blue-700 font-semibold" : "text-gray-700"
+                }`}
+              >
+                {opt.label}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function AdminSyllabusManagement() {
   const [syllabi, setSyllabi] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -41,13 +97,61 @@ export default function AdminSyllabusManagement() {
   const [expandedSyllabi, setExpandedSyllabi] = useState(new Set());
 
   const [syllabusForm, setSyllabusForm] = useState({ subject: "", description: "" });
-  const [topicForm, setTopicForm] = useState({ title: "", description: "", dueDate: "" });
+  const [subTitleInput, setSubTitleInput] = useState("");
+  const [subDurationInput, setSubDurationInput] = useState("");
+  const [topicForm, setTopicForm] = useState({
+    title: "",
+    description: "",
+    dueDate: "",
+    duration: 60,
+    lectureType: "Normal",
+    batchIds: [],
+    teacherId: "",
+    order: 0,
+    status: "active",
+    chapterId: "",
+    referenceTo: "",
+    subLectures: []
+  });
   const [assignForm, setAssignForm] = useState({ teacherId: "" });
   const [assignTeacherForm, setAssignTeacherForm] = useState({ teacherId: "" });
   const [assignBatchForm, setAssignBatchForm] = useState({ batchId: "", notes: "", dueDate: "" });
   const [editForm, setEditForm] = useState({ subject: "", description: "" });
-  const [editTopicForm, setEditTopicForm] = useState({ title: "", description: "", dueDate: "" });
+  const [editTopicForm, setEditTopicForm] = useState({
+    title: "",
+    description: "",
+    dueDate: "",
+    duration: 60,
+    lectureType: "Normal",
+    batchIds: [],
+    teacherId: "",
+    order: 0,
+    status: "active",
+    chapterId: "",
+    referenceTo: "",
+    subLectures: []
+  });
   const [activeTab, setActiveTab] = useState("templates");
+
+  const [chapters, setChapters] = useState([]);
+  const [loadingChapters, setLoadingChapters] = useState(false);
+
+  useEffect(() => {
+    const targetSyllabusId = selectedSyllabus?._id || selectedTopic?.syllabus;
+    if ((showTopicModal || showEditTopicModal) && targetSyllabusId) {
+      setLoadingChapters(true);
+      API.get(`/chapters?subjectId=${targetSyllabusId}`)
+        .then((res) => {
+          setChapters(res.data || []);
+        })
+        .catch(() => {
+          setChapters([]);
+        })
+        .finally(() => {
+          setLoadingChapters(false);
+        });
+    }
+  }, [showTopicModal, showEditTopicModal, selectedSyllabus, selectedTopic]);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -86,10 +190,26 @@ export default function AdminSyllabusManagement() {
 
   const handleAddTopic = async (e) => {
     e.preventDefault();
+    if (topicForm.lectureType === "Reference" && !topicForm.referenceTo) {
+      return toast.error("Please select the lecture this reference lecture belongs to.");
+    }
     try {
       await API.post("/syllabus/topic", { ...topicForm, syllabusId: selectedSyllabus._id });
       toast.success("Lecture added successfully!");
-      setTopicForm({ title: "", description: "", dueDate: "" });
+      setTopicForm({
+        title: "",
+        description: "",
+        dueDate: "",
+        duration: 60,
+        lectureType: "Normal",
+        batchIds: [],
+        teacherId: "",
+        order: 0,
+        status: "active",
+        chapterId: "",
+        referenceTo: "",
+        subLectures: []
+      });
       setShowTopicModal(false);
       fetchData();
     } catch (err) {
@@ -175,6 +295,9 @@ export default function AdminSyllabusManagement() {
 
   const handleEditTopic = async (e) => {
     e.preventDefault();
+    if (editTopicForm.lectureType === "Reference" && !editTopicForm.referenceTo) {
+      return toast.error("Please select the lecture this reference lecture belongs to.");
+    }
     try {
       await API.put(
         `/syllabus/topic/${selectedTopic._id}`,
@@ -184,7 +307,20 @@ export default function AdminSyllabusManagement() {
       toast.success("Topic updated successfully!");
       setShowEditTopicModal(false);
       setSelectedTopic(null);
-      setEditTopicForm({ title: "", description: "", dueDate: "" });
+      setEditTopicForm({
+        title: "",
+        description: "",
+        dueDate: "",
+        duration: 60,
+        lectureType: "Normal",
+        batchIds: [],
+        teacherId: "",
+        order: 0,
+        status: "active",
+        chapterId: "",
+        referenceTo: "",
+        subLectures: []
+      });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -244,6 +380,15 @@ export default function AdminSyllabusManagement() {
       title: topic.title,
       description: topic.description || "",
       dueDate: topic.dueDate ? new Date(topic.dueDate).toISOString().split("T")[0] : "",
+      duration: topic.duration || topic.lectureDuration || 60,
+      lectureType: topic.lectureType || "Normal",
+      batchIds: topic.batchIds || [],
+      teacherId: topic.assignedTo?._id || topic.assignedTo || "",
+      order: topic.order || 0,
+      status: topic.status || "active",
+      chapterId: topic.chapterId || "",
+      subLectures: topic.subLectures || [],
+      referenceTo: topic.referenceTo?._id || topic.referenceTo || ""
     });
     setShowEditTopicModal(true);
   };
@@ -771,6 +916,26 @@ export default function AdminSyllabusManagement() {
                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                   <div className="flex items-center gap-3 flex-wrap">
                                     <StatusBadge status={topic.completionStatus} />
+                                    
+                                    <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
+                                      <span>{topic.duration || topic.lectureDuration || 60} mins</span>
+                                      <span>•</span>
+                                      <span className="text-[10px] font-bold uppercase">{topic.lectureType || "Normal"}</span>
+                                      {topic.lectureType === "Reference" && topic.referenceTo && (
+                                        <span className="text-[10px] font-bold bg-[#EFF6FF] text-[#0F3C8A] px-2 py-0.5 rounded border border-[#BFDBFE]">
+                                          Ref To: {typeof topic.referenceTo === "object" ? topic.referenceTo.title : (syllabus.topics?.find(t => t._id === topic.referenceTo)?.title || topic.referenceTo)}
+                                        </span>
+                                      )}
+                                      {topic.status && (
+                                        <>
+                                          <span>•</span>
+                                          <span className={`text-[10px] font-bold uppercase ${
+                                            topic.status === "active" ? "text-green-600" : "text-gray-500"
+                                          }`}>{topic.status}</span>
+                                        </>
+                                      )}
+                                    </div>
+
                                     <div
                                       className="flex items-center gap-1 text-xs"
                                       style={{ color: "#94A3B8" }}
@@ -812,6 +977,22 @@ export default function AdminSyllabusManagement() {
                                     </button>
                                   )}
                                 </div>
+
+                                {topic.subLectures && topic.subLectures.length > 0 && (
+                                  <div className="mt-3 pl-4 border-l-2 border-gray-100 space-y-1.5 bg-gray-50/50 p-2.5 rounded-lg">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sub-Lectures ({topic.subLectures.length})</p>
+                                    {topic.subLectures.map((sub, sIdx) => (
+                                      <div key={sIdx} className="flex items-center justify-between text-xs text-gray-600 bg-white border border-gray-100 px-2 py-1 rounded">
+                                        <span>{sub.title} ({sub.duration || 0} mins)</span>
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                                          sub.completionStatus === "Completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                                        }`}>
+                                          {sub.completionStatus || "Pending"}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -1014,9 +1195,39 @@ export default function AdminSyllabusManagement() {
         )}
         {showTopicModal && selectedSyllabus && (
           <Modal title={`Add Lecture to ${selectedSyllabus.subject}`} onClose={() => setShowTopicModal(false)}>
-            <form onSubmit={handleAddTopic} className="space-y-4">
+            <form onSubmit={handleAddTopic} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedSyllabus.subject}
+                    disabled
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                    Chapter
+                  </label>
+                  <select
+                    value={topicForm.chapterId}
+                    onChange={(e) => setTopicForm({...topicForm, chapterId: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  >
+                    <option value="">Select Chapter (Optional)</option>
+                    {chapters.map(ch => (
+                      <option key={ch._id} value={ch._id}>{ch.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
                   Lecture Title *
                 </label>
                 <input
@@ -1025,104 +1236,232 @@ export default function AdminSyllabusManagement() {
                   value={topicForm.title}
                   onChange={(e) => setTopicForm({...topicForm, title: e.target.value})}
                   required
-                  className="w-full px-3 py-2 rounded-lg outline-none text-sm transition"
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "1.5px solid #E2E8F0",
-                    borderRadius: "8px",
-                    color: "#1B2B4B",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#2563EB";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "#E2E8F0";
-                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
                   Description
                 </label>
                 <textarea
-                  placeholder="Describe the topic..."
+                  placeholder="Describe the lecture..."
                   value={topicForm.description}
                   onChange={(e) => setTopicForm({...topicForm, description: e.target.value})}
-                  rows={3}
-                  className="w-full px-3 py-2 rounded-lg outline-none resize-none text-sm transition"
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "1.5px solid #E2E8F0",
-                    borderRadius: "8px",
-                    color: "#1B2B4B",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#2563EB";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "#E2E8F0";
-                  }}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none"
                 />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                    Due Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={topicForm.dueDate}
+                    onChange={(e) => setTopicForm({...topicForm, dueDate: e.target.value})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                    Duration (mins) *
+                  </label>
+                  <input
+                    type="number"
+                    value={topicForm.duration}
+                    onChange={(e) => setTopicForm({...topicForm, duration: Number(e.target.value) || 0})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                    Lecture Type
+                  </label>
+                  <select
+                    value={topicForm.lectureType}
+                    onChange={(e) => setTopicForm({...topicForm, lectureType: e.target.value, referenceTo: e.target.value === "Normal" ? "" : topicForm.referenceTo})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  >
+                    <option value="Normal">Normal</option>
+                    <option value="Reference">Reference</option>
+                  </select>
+                </div>
+              </div>
+
+              {topicForm.lectureType === "Reference" && (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                    Reference To (Previous Lecture) *
+                  </label>
+                  <SearchableSelect
+                    value={topicForm.referenceTo}
+                    onChange={(val) => setTopicForm({ ...topicForm, referenceTo: val })}
+                    placeholder="Select Normal Lecture..."
+                    options={(selectedSyllabus?.topics || [])
+                      .filter(t => (t.lectureType || "Normal") === "Normal")
+                      .map(t => ({ value: t._id, label: t.title }))}
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                    Assigned Teacher
+                  </label>
+                  <select
+                    value={topicForm.teacherId}
+                    onChange={(e) => setTopicForm({...topicForm, teacherId: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  >
+                    <option value="">Select Teacher (Optional)</option>
+                    {teachers.map(t => (
+                      <option key={t._id} value={t._id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                    Order
+                  </label>
+                  <input
+                    type="number"
+                    value={topicForm.order}
+                    onChange={(e) => setTopicForm({...topicForm, order: Number(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={topicForm.status}
+                    onChange={(e) => setTopicForm({...topicForm, status: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
-                  Due Date *
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
+                  Propagate to Batches
                 </label>
-                <input
-                  type="date"
-                  value={topicForm.dueDate}
-                  onChange={(e) => setTopicForm({...topicForm, dueDate: e.target.value})}
-                  required
-                  className="w-full px-3 py-2 rounded-lg outline-none text-sm transition"
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "1.5px solid #E2E8F0",
-                    borderRadius: "8px",
-                    color: "#1B2B4B",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#2563EB";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "#E2E8F0";
-                  }}
-                />
+                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                  {batches.map(b => {
+                    const isSelected = topicForm.batchIds.includes(b._id);
+                    return (
+                      <button
+                        key={b._id}
+                        type="button"
+                        onClick={() => {
+                          setTopicForm({
+                            ...topicForm,
+                            batchIds: isSelected
+                              ? topicForm.batchIds.filter(id => id !== b._id)
+                              : [...topicForm.batchIds, b._id]
+                          });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${
+                          isSelected
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {b.batch_name} (#{b.batch_no})
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex gap-2">
+
+              {/* Nested Sub Lectures Section */}
+              <div className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50/50">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700">Nested Sub-Lectures</h4>
+                
+                {topicForm.subLectures.length > 0 && (
+                  <div className="space-y-2">
+                    {topicForm.subLectures.map((sub, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-white border border-gray-100 px-3 py-2 rounded-lg">
+                        <span className="text-xs font-semibold text-gray-800">{sub.title} ({sub.duration} mins)</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTopicForm({
+                              ...topicForm,
+                              subLectures: topicForm.subLectures.filter((_, i) => i !== idx)
+                            });
+                          }}
+                          className="text-rose-500 font-bold hover:text-rose-700 text-sm"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Sub-lecture title"
+                    value={subTitleInput}
+                    onChange={(e) => setSubTitleInput(e.target.value)}
+                    className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Duration (mins)"
+                    value={subDurationInput}
+                    onChange={(e) => setSubDurationInput(e.target.value)}
+                    className="w-24 px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!subTitleInput.trim()) return;
+                      setTopicForm({
+                        ...topicForm,
+                        subLectures: [
+                          ...topicForm.subLectures,
+                          { title: subTitleInput.trim(), duration: Number(subDurationInput) || 0, order: topicForm.subLectures.length }
+                        ]
+                      });
+                      setSubTitleInput("");
+                      setSubDurationInput("");
+                    }}
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-xs hover:bg-blue-700 transition"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowTopicModal(false)}
-                  className="flex-1 px-4 py-2 rounded-lg font-medium transition text-sm"
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "1.5px solid #E2E8F0",
-                    color: "#1B2B4B",
-                    borderRadius: "8px",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "#F8FAFC";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "#FFFFFF";
-                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl font-semibold border border-gray-200 text-gray-700 text-sm bg-white hover:bg-gray-50 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg text-white font-medium transition text-sm"
-                  style={{
-                    backgroundColor: "#2563EB",
-                    borderRadius: "8px",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "#1E40AF";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "#2563EB";
-                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-white font-semibold text-sm bg-blue-600 hover:bg-blue-700 transition"
                 >
-                  Add Topic
+                  Create Lecture
                 </button>
               </div>
             </form>
@@ -1202,6 +1541,43 @@ export default function AdminSyllabusManagement() {
                   }}
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                  Lecture Type
+                </label>
+                <select
+                  value={editTopicForm.lectureType}
+                  onChange={(e) => setEditTopicForm({...editTopicForm, lectureType: e.target.value, referenceTo: e.target.value === "Normal" ? "" : editTopicForm.referenceTo})}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1.5px solid #E2E8F0",
+                    borderRadius: "8px",
+                    color: "#1B2B4B",
+                  }}
+                >
+                  <option value="Normal">Normal</option>
+                  <option value="Reference">Reference</option>
+                </select>
+              </div>
+
+              {editTopicForm.lectureType === "Reference" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
+                    Reference To (Previous Lecture) *
+                  </label>
+                  <SearchableSelect
+                    value={editTopicForm.referenceTo}
+                    onChange={(val) => setEditTopicForm({ ...editTopicForm, referenceTo: val })}
+                    placeholder="Select Normal Lecture..."
+                    options={(() => {
+                      const activeSyllabusForEdit = syllabi.find(s => s._id === (selectedTopic?.syllabus?._id || selectedTopic?.syllabus));
+                      const editNormalLectures = activeSyllabusForEdit?.topics?.filter(t => (t.lectureType || "Normal") === "Normal" && t._id !== selectedTopic?._id) || [];
+                      return editNormalLectures.map(t => ({ value: t._id, label: t.title }));
+                    })()}
+                  />
+                </div>
+              )}
               <div className="flex gap-2">
                 <button
                   type="button"

@@ -74,17 +74,17 @@ export default function TeacherLayout() {
               cursor: "pointer"
             }}
           >
-            <Menu size={20} color="#1B2B4B" />
+            <Menu size={20} color="#0F3C8A" />
           </button>
           <span
             style={{
               marginLeft: 12,
               fontWeight: 700,
-              color: "#1B2B4B",
+              color: "#0F3C8A",
               fontSize: 15,
             }}
           >
-            NexCore Teacher
+            Nexcore Teacher
           </span>
         </div>
 

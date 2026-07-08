@@ -167,18 +167,20 @@ export default function LectureSchedule() {
         const [batchesRes, teachersRes, subjectsRes] = await Promise.all([
           API.get("/batches"),
           API.get("/teachers/list"),
-          API.get("/subjects")
+          API.get("/subjects?type=scheduling")
         ]);
         setBatches(batchesRes.data?.batches || []);
         setTeachers(teachersRes.data?.teachers || []);
-        setSubjectTemplates(subjectsRes.data || []);
+        const data = subjectsRes.data;
+        setSubjectTemplates(Array.isArray(data) ? data : (data?.subjects || data?.syllabi || []));
       } else if (role === "teacher") {
         const [batchesRes, subjectsRes] = await Promise.all([
           API.get("/batches"),
-          API.get("/subjects")
+          API.get("/subjects?type=scheduling")
         ]);
         setBatches(batchesRes.data?.batches || []);
-        setSubjectTemplates(subjectsRes.data || []);
+        const data = subjectsRes.data;
+        setSubjectTemplates(Array.isArray(data) ? data : (data?.subjects || data?.syllabi || []));
         // For teacher, they can only assign themselves. 
         // We set the teachers list to just the current teacher.
         setTeachers([{

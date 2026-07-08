@@ -3,7 +3,7 @@ import { API } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
-import { Lock, Mail, Loader2, Shield, BarChart2, Users, Settings, GraduationCap, UserCircle } from "lucide-react";
+import { Lock, Mail, Loader2, Shield, GraduationCap, UserCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AdminLogin() {
@@ -29,301 +29,191 @@ export default function AdminLogin() {
     }
   };
 
-  const features = [
-    {
-      icon: <Shield size={18} />,
-      color: "#3B82F6",
-      title: "User Management",
-      desc: "Control access and permissions",
-    },
-    {
-      icon: <BarChart2 size={18} />,
-      color: "#F59E0B",
-      title: "System Analytics",
-      desc: "Monitor performance & activity",
-    },
-    {
-      icon: <Users size={18} />,
-      color: "#10B981",
-      title: "Team Oversight",
-      desc: "Manage roles and departments",
-    },
-  ];
-
   return (
     <div
-      className="min-h-screen flex"
-      style={{ fontFamily: "'DM Sans', sans-serif", backgroundColor: "#F1F5F9" }}
+      className="min-h-screen flex items-center justify-center p-6 relative"
+      style={{
+        fontFamily: "'DM Sans', sans-serif",
+        backgroundColor: "#F8FAFC",
+      }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; }
+        input:focus {
+          border-color: #0F3C8A !important;
+          box-shadow: 0 0 0 3px rgba(15, 60, 138, 0.1);
+        }
       `}</style>
       <Toaster position="top-center" />
 
-      <div style={{ position: "fixed", top: 24, right: 24, display: "flex", alignItems: "center", gap: 12, zIndex: 100 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#64748B", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.02em" }}>Sign in as:</span>
+      {/* Role Switcher (Top Right) */}
+      <div style={{ position: "absolute", top: 24, right: 24, display: "flex", alignItems: "center", gap: 12, zIndex: 100 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#64748B", letterSpacing: "0.02em" }}>Sign in as:</span>
         <Link to="/student/login" style={{ textDecoration: "none" }}>
           <motion.button
-            whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+            whileHover={{ y: -1, boxShadow: "0 4px 12px rgba(15,60,138,0.08)" }}
             whileTap={{ scale: 0.98 }}
             style={{
-              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700,
-              border: "1px solid #1B2B4B", background: "#1B2B4B", color: "#fff",
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+              padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+              border: "1.5px solid #0F3C8A", background: "#0F3C8A", color: "#fff",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
               fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
             }}>
-            <GraduationCap size={16} /> Student
+            <GraduationCap size={14} /> Student
           </motion.button>
         </Link>
         <Link to="/teacher/login" style={{ textDecoration: "none" }}>
           <motion.button
-            whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+            whileHover={{ y: -1, boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}
             whileTap={{ scale: 0.98 }}
             style={{
-              padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700,
-              border: "1px solid #E2E8F0", background: "#fff", color: "#1B2B4B",
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+              padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+              border: "1.5px solid #E2E8F0", background: "#fff", color: "#0F3C8A",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
               fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
             }}>
-            <UserCircle size={16} /> Teacher
+            <UserCircle size={14} /> Teacher
           </motion.button>
         </Link>
       </div>
 
-      {/* Left Panel */}
-      <div
-        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden"
-        style={{ backgroundColor: "#0F172A" }}
+      {/* Centered Login Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{ width: "100%", maxWidth: "440px" }}
       >
-        {/* Background blobs */}
         <div
           style={{
-            position: "absolute", top: "-80px", right: "-80px",
-            width: "320px", height: "320px", borderRadius: "50%",
-            backgroundColor: "#1E3A5F", opacity: 0.6, filter: "blur(2px)",
+            backgroundColor: "#FFFFFF",
+            borderRadius: "16px",
+            padding: "40px 32px",
+            boxShadow: "0 10px 25px -5px rgba(15, 30, 54, 0.04), 0 8px 10px -6px rgba(15, 30, 54, 0.04)",
+            border: "1px solid #F1F5F9",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center"
           }}
-        />
-        <div
-          style={{
-            position: "absolute", bottom: "-60px", left: "-60px",
-            width: "260px", height: "260px", borderRadius: "50%",
-            backgroundColor: "#1E3A5F", opacity: 0.4,
-          }}
-        />
-
-        {/* Logo */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative", zIndex: 1 }}
         >
-          <div
-            style={{
-              width: "40px", height: "40px", borderRadius: "10px",
-              backgroundColor: "#2563EB", display: "flex",
-              alignItems: "center", justifyContent: "center",
-            }}
-          >
-            <Shield size={20} color="#fff" />
-          </div>
-          <div>
-            <p style={{ color: "#FFFFFF", fontWeight: "700", fontSize: "15px", margin: 0 }}>AdminCore</p>
-            <p style={{ color: "#94A3B8", fontSize: "12px", margin: 0 }}>Management Suite</p>
-          </div>
-        </motion.div>
+          {/* Logo */}
+          <img
+            src="/logo.png"
+            alt="Nexcore Institute of Technology"
+            style={{ width: "90px", height: "90px", objectFit: "cover", marginBottom: "16px" }}
+          />
 
-        {/* Main text */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          style={{ position: "relative", zIndex: 1 }}
-        >
-          <h1
-            style={{
-              color: "#FFFFFF", fontSize: "42px", fontWeight: "800",
-              lineHeight: "1.2", marginBottom: "16px",
-            }}
-          >
-            Admin Portal
-          </h1>
-          <p style={{ color: "#94A3B8", fontSize: "15px", lineHeight: "1.7", marginBottom: "40px" }}>
-            Your command centre for managing users, monitoring systems, and controlling operations.
+          {/* Brand Labels */}
+          <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#0F3C8A", margin: 0, textTransform: "uppercase", tracking: "-0.01em", textAlign: "center" }}>
+            Nexcore Institute of Technology
+          </h2>
+          {/* <p style={{ fontSize: "13px", fontWeight: "800", color: "#FF6B00", margin: "4px 0 0", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center" }}>
+            Syllabus Tracker
           </p>
+          <p style={{ fontSize: "11px", fontWeight: "500", color: "#64748B", margin: "2px 0 28px", textTransform: "uppercase", letterSpacing: "0.04em", textAlign: "center" }}>
+            Academic Management System
+          </p> */}
 
-          {/* Feature cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {features.map((f, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
-                style={{
-                  display: "flex", alignItems: "center", gap: "14px",
-                  backgroundColor: "#1E293B", borderRadius: "12px",
-                  padding: "14px 16px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "36px", height: "36px", borderRadius: "8px",
-                    backgroundColor: f.color + "22",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: f.color, flexShrink: 0,
-                  }}
-                >
-                  {f.icon}
-                </div>
-                <div>
-                  <p style={{ color: "#F1F5F9", fontWeight: "600", fontSize: "14px", margin: 0 }}>{f.title}</p>
-                  <p style={{ color: "#64748B", fontSize: "12px", margin: 0 }}>{f.desc}</p>
-                </div>
-              </motion.div>
-            ))}
+          {/* Form Header */}
+          <div style={{ alignSelf: "flex-start", width: "100%", marginBottom: "20px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#1E293B", margin: 0 }}>
+              Admin Sign In
+            </h3>
+            <p style={{ color: "#64748B", fontSize: "12px", margin: "4px 0 0" }}>
+              Access administrative settings and trackers
+            </p>
           </div>
-        </motion.div>
 
-        <div style={{ position: "relative", zIndex: 1 }} />
-      </div>
-
-      {/* Right Panel */}
-      <div
-        className="w-full lg:w-1/2 flex items-center justify-center p-8"
-        style={{ backgroundColor: "#F1F5F9" }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ width: "100%", maxWidth: "420px" }}
-        >
-          {/* Card */}
-          <div
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: "20px",
-              padding: "40px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
-            }}
-          >
-            {/* Card logo */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "28px" }}>
-              <div
-                style={{
-                  width: "36px", height: "36px", borderRadius: "9px",
-                  backgroundColor: "#0F172A", display: "flex",
-                  alignItems: "center", justifyContent: "center",
-                }}
-              >
-                <Shield size={18} color="#fff" />
+          {/* Form */}
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px", width: "100%" }}>
+            {/* Email */}
+            <div>
+              <label style={{ fontSize: "11px", fontWeight: "700", color: "#475569", letterSpacing: "0.05em", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                Email Address
+              </label>
+              <div style={{ position: "relative" }}>
+                <Mail
+                  size={15}
+                  style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }}
+                />
+                <input
+                  type="email"
+                  placeholder="admin@nexcore.com"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  required
+                  style={{
+                    width: "100%", padding: "10px 12px 10px 36px",
+                    border: "1.5px solid #E2E8F0", borderRadius: "8px",
+                    fontSize: "13px", color: "#1E293B", outline: "none",
+                    backgroundColor: "#FFFFFF", transition: "all 0.2s",
+                  }}
+                />
               </div>
-              <span style={{ fontWeight: "700", fontSize: "15px", color: "#0F172A" }}>AdminCore</span>
             </div>
 
-            {/* Heading */}
-            <h2 style={{ fontSize: "24px", fontWeight: "800", color: "#0F172A", margin: "0 0 4px" }}>
-              Sign in
-            </h2>
-            <p style={{ color: "#94A3B8", fontSize: "13px", marginBottom: "28px" }}>
-              Enter your credentials to access the admin panel
-            </p>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-              {/* Email */}
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: "700", color: "#64748B", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
-                  Email Address
-                </label>
-                <div style={{ position: "relative" }}>
-                  <Mail
-                    size={16}
-                    style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }}
-                  />
-                  <input
-                    type="email"
-                    placeholder="admin@nexcore.com"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    required
-                    style={{
-                      width: "100%", padding: "10px 12px 10px 36px",
-                      border: "1.5px solid #E2E8F0", borderRadius: "8px",
-                      fontSize: "14px", color: "#0F172A", outline: "none",
-                      backgroundColor: "#FFFFFF", transition: "border-color 0.2s",
-                    }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#2563EB"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; }}
-                  />
-                </div>
+            {/* Password */}
+            <div>
+              <label style={{ fontSize: "11px", fontWeight: "700", color: "#475569", letterSpacing: "0.05em", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                Password
+              </label>
+              <div style={{ position: "relative" }}>
+                <Lock
+                  size={15}
+                  style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }}
+                />
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  required
+                  style={{
+                    width: "100%", padding: "10px 12px 10px 36px",
+                    border: "1.5px solid #E2E8F0", borderRadius: "8px",
+                    fontSize: "13px", color: "#1E293B", outline: "none",
+                    backgroundColor: "#FFFFFF", transition: "all 0.2s",
+                  }}
+                />
               </div>
+            </div>
 
-              {/* Password */}
-              <div>
-                <label style={{ fontSize: "11px", fontWeight: "700", color: "#64748B", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
-                  Password
-                </label>
-                <div style={{ position: "relative" }}>
-                  <Lock
-                    size={16}
-                    style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }}
-                  />
-                  <input
-                    type="password"
-                    placeholder="Enter your password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    required
-                    style={{
-                      width: "100%", padding: "10px 12px 10px 36px",
-                      border: "1.5px solid #E2E8F0", borderRadius: "8px",
-                      fontSize: "14px", color: "#0F172A", outline: "none",
-                      backgroundColor: "#FFFFFF", transition: "border-color 0.2s",
-                    }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = "#2563EB"; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; }}
-                  />
-                </div>
-              </div>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%", padding: "11px",
+                backgroundColor: "#0F3C8A", color: "#FFFFFF",
+                border: "none", borderRadius: "8px",
+                fontWeight: "600", fontSize: "13px",
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.7 : 1,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                transition: "background-color 0.2s",
+                marginTop: "6px"
+              }}
+              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#0b2c66"; }}
+              onMouseLeave={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#0F3C8A"; }}
+            >
+              {loading ? (
+                <><Loader2 size={15} className="animate-spin" /> Signing in...</>
+              ) : (
+                <><Shield size={15} /> Sign In as Admin</>
+              )}
+            </button>
+          </form>
 
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: "100%", padding: "11px",
-                  backgroundColor: "#2563EB", color: "#FFFFFF",
-                  border: "none", borderRadius: "8px",
-                  fontWeight: "600", fontSize: "14px",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  opacity: loading ? 0.7 : 1,
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                  transition: "background-color 0.2s",
-                }}
-                onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#1D4ED8"; }}
-                onMouseLeave={(e) => { if (!loading) e.currentTarget.style.backgroundColor = "#2563EB"; }}
-              >
-                {loading ? (
-                  <><Loader2 size={16} className="animate-spin" /> Signing in...</>
-                ) : (
-                  <><Shield size={16} /> Sign In</>
-                )}
-              </button>
-            </form>
-
-            {/* Footer link */}
-            <p style={{ textAlign: "center", marginTop: "20px", fontSize: "13px", color: "#94A3B8" }}>
-              Need access?{" "}
-              <a href="/contact" style={{ color: "#2563EB", fontWeight: "600", textDecoration: "none" }}>
-                Contact Support
-              </a>
-            </p>
-          </div>
-        </motion.div>
-      </div>
+          {/* Contact Support */}
+          <p style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", color: "#94A3B8" }}>
+            Authorized access only.{" "}
+            <a href="/contact" style={{ color: "#FF6B00", fontWeight: "600", textDecoration: "none" }}>
+              Contact Admin Support
+            </a>
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }
