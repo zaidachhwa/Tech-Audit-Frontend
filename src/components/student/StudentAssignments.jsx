@@ -7,27 +7,14 @@ import {
   Search, FileText, Send, Upload, Paperclip
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { getHomeworkStatusBadge } from "../../utils/statusHelper";
 
 const S = {
   page: { fontFamily: "'DM Sans', sans-serif" },
   card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" },
 };
 
-function getStatusBadge(status) {
-  const s = (status || "assigned").toLowerCase();
-  switch (s) {
-    case "approved":
-      return { bg: "#ECFDF5", color: "#065F46", text: "Approved" };
-    case "rejected":
-      return { bg: "#FEF2F2", color: "#991B1B", text: "Rejected" };
-    case "submitted":
-    case "pending approval":
-    case "pending_approval":
-      return { bg: "#EFF6FF", color: "#1D4ED8", text: "Pending Review" };
-    default:
-      return { bg: "#FFFBEB", color: "#92400E", text: "Assigned" };
-  }
-}
+// Reusable status badge is imported from statusHelper
 
 function HomeworkCard({ homework, onSubmitted }) {
   const [open, setOpen] = useState(false);
@@ -37,7 +24,7 @@ function HomeworkCard({ homework, onSubmitted }) {
   const [submitting, setSubmitting] = useState(false);
 
   const status = (homework.status || "assigned").toLowerCase();
-  const badge = getStatusBadge(status);
+  const badge = getHomeworkStatusBadge(status);
 
   // Prefill if editing/updating submission
   useEffect(() => {
@@ -113,7 +100,7 @@ function HomeworkCard({ homework, onSubmitted }) {
           cursor: "pointer",
           background: open ? "#F8FAFC" : "#fff",
           borderLeft: `4px solid ${
-            status === "approved" ? "#10B981" : status === "rejected" ? "#EF4444" : "#F59E0B"
+            status === "approved" ? "#10B981" : status === "rejected" ? "#EF4444" : status === "pending_review" ? "#3B82F6" : "#F59E0B"
           }`,
           transition: "all 0.2s"
         }}
@@ -326,24 +313,18 @@ export default function StudentAssignments() {
         hw.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         subjectName.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const status = (hw.status || "assigned").toLowerCase();
+      const s = (hw.status || "assigned").toLowerCase();
+      const isPending = s === "pending_review" || s === "pending approval" || s === "pending_approval" || s === "submitted";
+      const isApproved = s === "approved" || s === "completed";
+      const isRejected = s === "rejected";
+      const isAssigned = s === "assigned";
+
       if (activeTab === "assigned") {
         // Show anything that needs action: assigned, rejected, or pending
-        return matchesSearch && (
-          status === "assigned" ||
-          status === "rejected" ||
-          status === "pending" ||
-          status === "pending_approval" ||
-          status === "pending approval"
-        );
+        return matchesSearch && (isAssigned || isRejected || isPending);
       } else {
-        // History: submitted or approved
-        return matchesSearch && (
-          status === "submitted" ||
-          status === "approved" ||
-          status === "pending approval" ||
-          status === "pending_approval"
-        );
+        // History: approved or pending
+        return matchesSearch && (isApproved || isPending);
       }
     });
   }, [homeworkList, searchQuery, activeTab]);

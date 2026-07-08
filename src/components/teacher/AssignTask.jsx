@@ -6,6 +6,7 @@ import {
   CheckCircle, Clock, BookOpen, AlertCircle, Calendar,
   FileText, Upload, Check, RefreshCw
 } from "lucide-react";
+import { getHomeworkStatusBadge } from "../../utils/statusHelper";
 
 const S = {
   page: { minHeight: "100vh", background: "#F8FAFC", padding: "28px 32px", fontFamily: "'DM Sans', sans-serif" },
@@ -53,14 +54,14 @@ export default function AssignTask() {
         // syllabus-tracker uses 'syllabi' wrapper
         setSubjects(res.data?.syllabi || res.data || []);
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // Load batches
     API.get("/batches")
       .then((res) => {
         setBatches(res.data?.batches || res.data || []);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Load lectures when subject & batches are selected
@@ -75,7 +76,7 @@ export default function AssignTask() {
       .then((res) => {
         setLectures(res.data?.lectures || res.data || []);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [selectedSubject]);
 
   // Load submissions for review
@@ -210,7 +211,7 @@ export default function AssignTask() {
   return (
     <div style={S.page}>
       <Toaster position="top-right" />
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -222,17 +223,15 @@ export default function AssignTask() {
         <div className="flex bg-[#E2E8F0] p-1 rounded-xl">
           <button
             onClick={() => setActiveTab("assign")}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${
-              activeTab === "assign" ? "bg-white text-[#1B2B4B] shadow-sm" : "text-gray-600"
-            }`}
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "assign" ? "bg-white text-[#1B2B4B] shadow-sm" : "text-gray-600"
+              }`}
           >
             Assign Homework
           </button>
           <button
             onClick={() => setActiveTab("review")}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${
-              activeTab === "review" ? "bg-white text-[#1B2B4B] shadow-sm" : "text-gray-600"
-            }`}
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "review" ? "bg-white text-[#1B2B4B] shadow-sm" : "text-gray-600"
+              }`}
           >
             Review Submissions
           </button>
@@ -244,7 +243,7 @@ export default function AssignTask() {
           {/* Targets */}
           <div style={S.card} className="space-y-4">
             <h3 style={S.sectionTitle}><BookOpen size={16} /> Homework Target</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label style={S.label}>Subject</label>
@@ -286,11 +285,10 @@ export default function AssignTask() {
                       key={batch._id}
                       type="button"
                       onClick={() => handleBatchToggle(batch._id)}
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition ${
-                        isSelected
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition ${isSelected
                           ? "bg-blue-600 border-blue-600 text-white"
                           : "bg-white border-[#E2E8F0] text-gray-700 hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       {batch.batch_name} (#{batch.batch_no})
                     </button>
@@ -385,7 +383,9 @@ export default function AssignTask() {
           ) : (
             submissions.map((sub) => {
               const isExpanded = expandedSubmission === sub._id;
-              const isPending = sub.status === "submitted" || sub.status === "pending_approval";
+              const s = (sub.status || "").toLowerCase();
+              const isPending = s === "pending_review" || s === "submitted" || s === "pending_approval";
+              const badge = getHomeworkStatusBadge(sub.status);
               return (
                 <div key={sub._id} style={S.card} className="overflow-hidden p-0">
                   <div
@@ -405,10 +405,14 @@ export default function AssignTask() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        isPending ? "bg-amber-100 text-amber-800" : sub.status === "approved" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
-                      }`}>
-                        {sub.status}
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-semibold"
+                        style={{
+                          backgroundColor: badge.bg,
+                          color: badge.color,
+                        }}
+                      >
+                        {badge.text}
                       </span>
                     </div>
                   </div>
@@ -446,7 +450,7 @@ export default function AssignTask() {
                       {isPending ? (
                         <div className="bg-white p-5 rounded-xl border border-[#E2E8F0] space-y-4">
                           <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Review & Grade</h5>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-1">
                               <label className="text-xs font-bold text-gray-500">Marks / Score</label>

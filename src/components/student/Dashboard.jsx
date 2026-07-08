@@ -52,7 +52,7 @@ export default function StudentDashboard() {
 
   const statCards = [
     { label: "Subject Progress", value: `${avgProgress}%`, icon: <TrendingUp size={18} />, tint: "#EFF6FF", ic: "#2563EB" },
-    { label: "Assigned Homework", value: homework.filter(h => h.status === "assigned").length, icon: <FileText size={18} />, tint: "#FEF3C7", ic: "#F59E0B" },
+    { label: "Assigned Homework", value: homework.filter(h => (h.status || "").toLowerCase() === "assigned").length, icon: <FileText size={18} />, tint: "#FEF3C7", ic: "#F59E0B" },
     { label: "Attendance Summary", value: `${attendance.percentage}%`, icon: <UserCheck size={18} />, tint: "#ECFDF5", ic: "#10B981" },
     { label: "Total Subjects", value: progressList.length, icon: <BookOpen size={18} />, tint: "#F5F3FF", ic: "#8B5CF6" },
   ];

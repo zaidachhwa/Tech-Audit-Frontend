@@ -7,6 +7,7 @@ import { getStudentProjects, deleteProject, approveProject } from "../../api/pro
 import { getAssignmentsByStudent } from "../../api/assignment.api";
 import toast, { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { getHomeworkStatusBadge } from "../../utils/statusHelper";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
@@ -617,17 +618,21 @@ export default function StudentProfileView() {
                         {hw.remarks && <p className="text-[10px] text-slate-500 italic mt-1">Remark: "{hw.remarks}"</p>}
                       </div>
                       <div className="text-right space-y-1">
-                        <span className={`inline-block px-2 py-0.5 text-[9px] font-extrabold uppercase rounded-full border ${
-                          hw.status === "Approved" || hw.status === "Completed"
-                            ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                            : hw.status === "Pending Approval" || hw.status === "Submitted"
-                            ? "bg-amber-50 text-amber-600 border-amber-200"
-                            : hw.status === "Rejected"
-                            ? "bg-rose-50 text-rose-600 border-rose-200"
-                            : "bg-slate-50 text-slate-600 border-slate-200"
-                        }`}>
-                          {hw.status}
-                        </span>
+                        {(() => {
+                          const badge = getHomeworkStatusBadge(hw.status);
+                          return (
+                            <span
+                              className="inline-block px-2 py-0.5 text-[9px] font-extrabold uppercase rounded-full border"
+                              style={{
+                                backgroundColor: badge.bg,
+                                color: badge.color,
+                                borderColor: `${badge.color}20`,
+                              }}
+                            >
+                              {badge.text}
+                            </span>
+                          );
+                        })()}
                         <p className="text-[9px] text-slate-400 font-bold">{new Date(hw.updatedAt).toLocaleDateString()}</p>
                       </div>
                     </div>

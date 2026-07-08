@@ -3,6 +3,7 @@ import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { motion } from "framer-motion";
+import { getHomeworkStatusBadge } from "../../utils/statusHelper";
 import {
   RefreshCw, ClipboardList, BookOpen, Clock, Calendar,
   TrendingUp, CheckSquare, Award, AlertCircle, PlayCircle,
@@ -41,8 +42,14 @@ export default function StudentDashboard() {
   const homework = dashboardData?.homework || [];
   const totalHomework = homework.length;
   const submittedHomework = homework.filter(h => (h.status || "").toLowerCase() !== "assigned").length;
-  const pendingHomework = homework.filter(h => ["pending approval", "pending_approval", "submitted"].includes((h.status || "").toLowerCase())).length;
-  const approvedHomework = homework.filter(h => ["approved", "completed"].includes((h.status || "").toLowerCase())).length;
+  const pendingHomework = homework.filter(h => {
+    const s = (h.status || "").toLowerCase();
+    return s === "pending_review" || s === "pending approval" || s === "pending_approval" || s === "submitted";
+  }).length;
+  const approvedHomework = homework.filter(h => {
+    const s = (h.status || "").toLowerCase();
+    return s === "approved" || s === "completed";
+  }).length;
   const rejectedHomework = homework.filter(h => (h.status || "").toLowerCase() === "rejected").length;
 
   const lectures = dashboardData?.todayLectures || [];
@@ -55,23 +62,6 @@ export default function StudentDashboard() {
 
   const attendance = dashboardData?.attendance || { present: 0, absent: 0, percentage: 0 };
   const totalClasses = attendance.present + attendance.absent;
-
-  const getStatusBadge = (status) => {
-    const s = (status || "").toLowerCase();
-    switch (s) {
-      case "approved":
-      case "completed":
-        return { bg: "bg-emerald-50 text-emerald-700 border-emerald-100", label: "Approved" };
-      case "rejected":
-        return { bg: "bg-rose-50 text-rose-700 border-rose-100", label: "Rejected" };
-      case "submitted":
-      case "pending approval":
-      case "pending_approval":
-        return { bg: "bg-blue-50 text-blue-700 border-blue-100", label: "Pending" };
-      default:
-        return { bg: "bg-amber-50 text-amber-700 border-amber-100", label: "Assigned" };
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -239,7 +229,7 @@ export default function StudentDashboard() {
               <p className="text-xs text-slate-400 text-center py-12">No homework tasks assigned to you yet.</p>
             ) : (
               homework.slice(0, 6).map((hw) => {
-                const badge = getStatusBadge(hw.status);
+                const badge = getHomeworkStatusBadge(hw.status);
                 // Subject: try lecture.syllabus.subject, then lecture.title, then hw.batchName
                 const subjectName =
                   hw.lecture?.syllabus?.subject ||
@@ -256,7 +246,14 @@ export default function StudentDashboard() {
                         <span>Due: {new Date(hw.dueDate).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <span className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border ${badge.bg} whitespace-nowrap`}>
+                    <span
+                      className="px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border whitespace-nowrap"
+                      style={{
+                        backgroundColor: badge.bg,
+                        color: badge.color,
+                        borderColor: `${badge.color}20`,
+                      }}
+                    >
                       {badge.label}
                     </span>
                   </div>
