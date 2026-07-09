@@ -227,7 +227,7 @@ export default function StudentProfileView() {
     reports.forEach((r) => {
       r.parameters?.forEach((p) => {
         if (!paramStats[p.name]) {
-          paramStats[p.name] = { total: 0, count: 0 };
+          paramStats[p.name] = { total: 0, count: 0, totalScore: Number(p.totalScore) || 10 };
         }
         paramStats[p.name].total += Number(p.score) || 0;
         paramStats[p.name].count += 1;
@@ -237,6 +237,7 @@ export default function StudentProfileView() {
     return Object.keys(paramStats).map((name) => ({
       name,
       value: Number((paramStats[name].total / paramStats[name].count).toFixed(2)),
+      totalScore: paramStats[name].totalScore
     }));
   };
 
@@ -737,7 +738,7 @@ export default function StudentProfileView() {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value) => `${value} / 10`} />
+                        <Tooltip formatter={(value, name, props) => `${value} / ${props.payload.totalScore || 10}`} />
                         <Legend verticalAlign="bottom" height={36} iconType="circle" />
                       </PieChart>
                     </ResponsiveContainer>
@@ -981,7 +982,7 @@ export default function StudentProfileView() {
                   {selectedReport.parameters?.map((p, idx) => (
                     <div key={idx} className="flex justify-between items-center p-2.5 border-b border-slate-100">
                       <span className="font-bold text-slate-700">{p.name}</span>
-                      <span className="font-black text-[#0F3C8A] bg-blue-50 px-2 py-0.5 rounded">{p.score} / 10</span>
+                      <span className="font-black text-[#0F3C8A] bg-blue-50 px-2 py-0.5 rounded">{p.score} / {p.totalScore || 10}</span>
                     </div>
                   ))}
                 </div>

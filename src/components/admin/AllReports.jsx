@@ -261,7 +261,7 @@ export default function ReportsList() {
                     >
                       <div className="text-xs text-gray-500">{p.name}</div>
                       <div className="font-semibold text-sm sm:text-base">
-                        {p.score} / 10
+                        {p.score} / {p.totalScore || 10}
                       </div>
                     </div>
                   ))}

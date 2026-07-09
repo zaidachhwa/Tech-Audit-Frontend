@@ -53,8 +53,8 @@ export default function Reports() {
 
   const calculateAverage = (parameters) => {
     if (!parameters || parameters.length === 0) return 0;
-    const total = parameters.reduce((sum, p) => sum + (Number(p.score) || 0), 0);
-    return (total / parameters.length).toFixed(1);
+    const totalNormalized = parameters.reduce((sum, p) => sum + (((Number(p.score) || 0) / (Number(p.totalScore) || 10)) * 10), 0);
+    return (totalNormalized / parameters.length).toFixed(1);
   };
 
   const getGrade = (avg) => {
@@ -279,7 +279,7 @@ function ReportCard({ report, index, expanded, onToggleExpand, calculateAverage,
                   padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600,
                   background: "#EFF6FF", color: "#1E40AF", border: "1px solid #BFDBFE",
                 }}>
-                  {param.name}: <span style={{ fontWeight: 800 }}>{param.score}/10</span>
+                  {param.name}: <span style={{ fontWeight: 800 }}>{param.score}/{param.totalScore || 10}</span>
                 </div>
               ))}
               {report.parameters?.length > 4 && (
@@ -326,7 +326,7 @@ function ReportCard({ report, index, expanded, onToggleExpand, calculateAverage,
                           <div style={{ height: 6, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
                             <motion.div
                               initial={{ width: 0 }}
-                              animate={{ width: `${score * 10}%` }}
+                              animate={{ width: `${(score / (Number(param.totalScore) || 10)) * 100}%` }}
                               transition={{ duration: 0.8, delay: 0.1 }}
                               style={{ height: "100%", background: "#2563EB", borderRadius: 99 }}
                             />
@@ -337,7 +337,7 @@ function ReportCard({ report, index, expanded, onToggleExpand, calculateAverage,
                           padding: "6px 10px", textAlign: "center", minWidth: 48,
                         }}>
                           <div style={{ fontSize: 18, fontWeight: 800 }}>{score}</div>
-                          <div style={{ fontSize: 10, opacity: 0.8 }}>/10</div>
+                          <div style={{ fontSize: 10, opacity: 0.8 }}>/{param.totalScore || 10}</div>
                         </div>
                       </div>
                     );

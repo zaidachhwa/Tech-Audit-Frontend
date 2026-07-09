@@ -36,13 +36,14 @@ export default function AddReport2() {
     batch_name: "",
     batch_no: "",
     studentId: "",
-    parameters: [{ name: "", score: "" }],
+    parameters: [{ name: "", score: "", totalScore: "" }],
     feedbackSchema: { point1: "", point2: "", point3: "" },
     overallRemarks: "",
     auditDate: "",
     isAutoFilled: false,
     existingStatus: ""
   });
+  const [generatingAI, setGeneratingAI] = useState(false);
 
   useEffect(() => {
     API.get("/students/list")
@@ -109,7 +110,7 @@ export default function AddReport2() {
   };
 
   const addParameter = () =>
-    setForm({ ...form, parameters: [...form.parameters, { name: "", score: "" }] });
+    setForm({ ...form, parameters: [...form.parameters, { name: "", score: "", totalScore: "" }] });
 
   const removeParameter = (i) =>
     setForm({ ...form, parameters: form.parameters.filter((_, idx) => idx !== i) });
@@ -134,12 +135,45 @@ export default function AddReport2() {
     }
   };
 
+  const handleGenerateFeedback = async () => {
+    const validParams = form.parameters.filter((p) => p.name.trim());
+    if (!validParams.length) { toast.error("Add at least one parameter to generate feedback"); return; }
+    
+    try {
+      setGeneratingAI(true);
+      toast.loading("Generating AI Feedback...", { id: "ai-feedback" });
+      const res = await API.post("/reports/generate-feedback", { parameters: validParams });
+      const points = res.data.feedback;
+      setForm((prev) => ({
+        ...prev,
+        feedbackSchema: {
+          point1: points[0] || prev.feedbackSchema.point1,
+          point2: points[1] || prev.feedbackSchema.point2,
+          point3: points[2] || prev.feedbackSchema.point3,
+        }
+      }));
+      toast.dismiss("ai-feedback");
+      toast.success("AI Feedback Generated!");
+    } catch (err) {
+      toast.dismiss("ai-feedback");
+      toast.error(err.response?.data?.message || "Failed to generate AI feedback");
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
   // Validation helper
   const validate = () => {
     if (!form.studentId) { toast.error("Please select a student"); return false; }
     if (!form.auditDate) { toast.error("Please select audit date"); return false; }
     const validParams = form.parameters.filter((p) => p.name.trim());
     if (!validParams.length) { toast.error("Add at least one parameter"); return false; }
+    for (const p of validParams) {
+      if (Number(p.score) > (Number(p.totalScore) || 10)) {
+        toast.error(`Score cannot exceed total score for: ${p.name}`);
+        return false;
+      }
+    }
     return true;
   };
 
@@ -247,6 +281,36 @@ export default function AddReport2() {
     }
   };
 
+  const calculateTotals = () => {
+    let obtained = 0;
+    let total = 0;
+    form.parameters.forEach(p => {
+      const s = Number(p.score) || 0;
+      const t = Number(p.totalScore) || 10;
+      if (p.name.trim()) {
+        obtained += s;
+        total += t;
+      }
+    });
+    return { obtained, total };
+  };
+
+  const { obtained: grandObtained, total: grandTotal } = calculateTotals();
+  const grandPercentage = grandTotal > 0 ? (grandObtained / grandTotal) * 100 : 0;
+  
+  const getGrade = (percentage) => {
+    if (percentage >= 90) return "A+";
+    if (percentage >= 80) return "A";
+    if (percentage >= 70) return "B+";
+    if (percentage >= 60) return "B";
+    if (percentage >= 50) return "C";
+    if (percentage >= 40) return "D";
+    if (grandTotal === 0) return "-";
+    return "F";
+  };
+  
+  const grade = getGrade(grandPercentage);
+
   return (
     <div className="space-y-6">
       <Toaster />
@@ -274,7 +338,7 @@ export default function AddReport2() {
             Showing data from an existing <strong>{form.existingStatus}</strong> for this student on this date. You can add more parameters or update existing ones.
           </span>
           <button 
-            onClick={() => setForm({...form, isAutoFilled: false, parameters: [{name: "", score: ""}], feedbackSchema: {point1: "", point2: "", point3: ""}, overallRemarks: ""})}
+            onClick={() => setForm({...form, isAutoFilled: false, parameters: [{name: "", score: "", totalScore: ""}], feedbackSchema: {point1: "", point2: "", point3: ""}, overallRemarks: ""})}
             style={{ marginLeft: "auto", background: "none", border: "none", color: "#2563EB", cursor: "pointer", fontWeight: 600, fontSize: 12 }}
           >
             Clear Form
@@ -338,16 +402,38 @@ export default function AddReport2() {
           <div key={i} style={S.paramRow}>
             <input style={S.input} placeholder="Name" value={p.name} onChange={(e) => handleParamChange(i, "name", e.target.value)} />
             <input style={S.scoreInput} placeholder="Score" value={p.score} onChange={(e) => handleParamChange(i, "score", e.target.value)} />
+            <span style={{color: "#64748B", fontWeight: 600}}>/</span>
+            <input style={S.scoreInput} placeholder="Total" value={p.totalScore !== undefined ? p.totalScore : 10} onChange={(e) => handleParamChange(i, "totalScore", e.target.value)} />
             <button style={S.removeBtn} onClick={() => removeParameter(i)}>✕</button>
           </div>
         ))}
+
+        <div style={{ marginTop: 16, padding: "12px 16px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Grand Total:</span>
+            <span style={{ fontSize: 16, fontWeight: 800, color: "#1B2B4B", marginLeft: 8 }}>{grandObtained} / {grandTotal}</span>
+          </div>
+          <div>
+            <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Grade:</span>
+            <span style={{ fontSize: 16, fontWeight: 800, color: "#2563EB", marginLeft: 8 }}>{grade}</span>
+          </div>
+        </div>
       </div>
 
       {/* Feedback */}
       <div style={S.card}>
-        <div style={S.sectionHeader}>
-          <div style={S.dot} />
-          <span style={S.sectionTitle}>Feedback Points</span>
+        <div style={S.sectionHeaderRow}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={S.dot} />
+            <span style={S.sectionTitle}>Feedback Points</span>
+          </div>
+          <button 
+            style={{ ...S.previewBtn, background: "#F3E8FF", color: "#7E22CE", border: "1.5px solid #D8B4FE", display: "flex", alignItems: "center", gap: 6 }} 
+            onClick={handleGenerateFeedback}
+            disabled={generatingAI}
+          >
+            {generatingAI ? "Generating..." : "✨ Generate with AI"}
+          </button>
         </div>
         <textarea
           style={{ ...S.textarea, marginBottom: 10 }}
