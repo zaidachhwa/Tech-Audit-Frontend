@@ -143,14 +143,15 @@ export default function AddReport2() {
       setGeneratingAI(true);
       toast.loading("Generating AI Feedback...", { id: "ai-feedback" });
       const res = await API.post("/reports/generate-feedback", { parameters: validParams });
-      const points = res.data.feedback;
+      const { feedback: points, overallRemarks } = res.data;
       setForm((prev) => ({
         ...prev,
         feedbackSchema: {
           point1: points[0] || prev.feedbackSchema.point1,
           point2: points[1] || prev.feedbackSchema.point2,
           point3: points[2] || prev.feedbackSchema.point3,
-        }
+        },
+        overallRemarks: overallRemarks || prev.overallRemarks
       }));
       toast.dismiss("ai-feedback");
       toast.success("AI Feedback Generated!");
