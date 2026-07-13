@@ -369,14 +369,15 @@ export default function StudentProfileView() {
       </div>
 
       {/* CATEGORY TABS SWITCHER */}
-      <div className="flex border-b border-slate-200 overflow-x-auto gap-4 scrollbar-none">
+      <div className="flex border-b border-slate-200 flex-wrap gap-4 scrollbar-none">
         {[
           { id: "overview", label: "Overview", icon: Layers },
           { id: "academic", label: "Academic Info", icon: BookOpen },
           { id: "attendance", label: "Attendance & Homework", icon: CheckSquare },
           { id: "timeline", label: "Activity Timeline", icon: Calendar },
           { id: "documents", label: "Documents", icon: FileText },
-          { id: "crm", label: "Projects & Reports", icon: Briefcase }
+          { id: "crm", label: "Projects & Reports", icon: Briefcase },
+          { id: "reports-history", label: "Reports History", icon: BarChart2 }
         ].map(tab => {
           const Icon = tab.icon;
           return (
@@ -813,6 +814,72 @@ export default function StudentProfileView() {
               )}
             </div>
 
+          </div>
+        )}
+
+        {/* TAB: REPORTS HISTORY */}
+        {activeTab === "reports-history" && (
+          <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm min-h-[400px]">
+            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-4 mb-6 flex items-center gap-2">
+              <BarChart2 size={18} className="text-[#0F3C8A]" />
+              Reports History
+            </h3>
+            
+            {reportsLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                <RefreshCw size={24} className="animate-spin mb-3 text-[#0F3C8A]" />
+                <p className="text-xs font-bold uppercase tracking-widest">Loading Reports...</p>
+              </div>
+            ) : reports && reports.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {reports.map((rep, idx) => {
+                  const score = rep.parameters?.reduce((acc, p) => acc + (p.score || 0), 0) || 0;
+                  const maxScore = rep.parameters?.reduce((acc, p) => acc + (p.totalScore || 10), 0) || 0;
+                  const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+                  
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedReport(rep)}
+                      className="p-5 border border-slate-200 bg-white hover:border-[#0F3C8A]/30 hover:shadow-md rounded-xl flex flex-col gap-3 cursor-pointer transition-all duration-200 group"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-slate-800 group-hover:text-[#0F3C8A] transition-colors line-clamp-1">
+                            {rep.title || `Performance Report ${idx + 1}`}
+                          </h4>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                            <Calendar size={12} /> {new Date(rep.createdAt || rep.auditDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 text-[#0F3C8A] group-hover:bg-[#0F3C8A] group-hover:text-white transition-colors">
+                          <Eye size={14} />
+                        </div>
+                      </div>
+                      
+                      <div className="pt-3 border-t border-slate-100 mt-1">
+                        <div className="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+                          <span>Score: <span className="text-slate-800">{score}</span> <span className="text-slate-400">/ {maxScore}</span></span>
+                          <span className={percentage >= 75 ? "text-emerald-600" : percentage >= 40 ? "text-amber-600" : "text-red-600"}>{percentage}%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%`, backgroundColor: percentage >= 75 ? "#10B981" : percentage >= 40 ? "#F59E0B" : "#EF4444" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                <FileText size={32} className="text-slate-300 mb-3" />
+                <p className="text-sm font-bold text-slate-500">No evaluation reports generated yet.</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm text-center">When a report is generated for this student, its score and timeline will appear here.</p>
+              </div>
+            )}
           </div>
         )}
       </div>

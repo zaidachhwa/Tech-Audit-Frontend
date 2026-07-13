@@ -309,7 +309,7 @@ export default function TeacherAttendance() {
 
   // Student metrics calculations
   const getStudentMetrics = (studentId) => {
-    let p = 2, a = 2, l = 2;
+    let p = 0, a = 0, l = 0;
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
