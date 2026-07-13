@@ -309,7 +309,7 @@ export default function TeacherAttendance() {
 
   // Student metrics calculations
   const getStudentMetrics = (studentId) => {
-    let p = 2, a = 2, l = 2;
+    let p = 0, a = 0, l = 0;
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -340,11 +340,16 @@ export default function TeacherAttendance() {
     return { p, a, l, attendancePct };
   };
 
-  // Header metrics calculations
+  // Header metrics calculations — only meaningful when viewing the current month
   const todayStr = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
+  const isViewingCurrentMonth = year === today.getFullYear() && month === today.getMonth();
 
-  const absentToday = students.filter(s => (grid[todayStr]?.[s._id] || "P") === "A").length;
-  const lateToday = students.filter(s => (grid[todayStr]?.[s._id] || "P") === "L").length;
+  const absentToday = isViewingCurrentMonth
+    ? students.filter(s => (grid[todayStr]?.[s._id] || "P") === "A").length
+    : 0;
+  const lateToday = isViewingCurrentMonth
+    ? students.filter(s => (grid[todayStr]?.[s._id] || "P") === "L").length
+    : 0;
 
   // Overall Batch Attendance rate (Excluding holidays, Sundays, and future dates)
   let totalActiveCells = 0;
