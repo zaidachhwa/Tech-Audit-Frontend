@@ -10,7 +10,8 @@ import {
   Notebook,
   FileText,
   FolderGit2,
-  GraduationCap
+  GraduationCap,
+  LibraryBig,
 } from "lucide-react";
 
 export const teacherSidebarItems = [
@@ -53,6 +54,11 @@ export const teacherSidebarItems = [
     name: "Assign Homework",
     icon: ClipboardList,
     path: "/teacher/assign-task",
+  },
+  {
+    name: "LMS",
+    icon: LibraryBig,
+    path: "/teacher/lms",
   },
   {
     name: "Assign Project",

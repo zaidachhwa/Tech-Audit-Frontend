@@ -53,16 +53,20 @@ import AssignSyllabus from './components/teacher/AssignSyllabus';
 import AssignSyllabusDetail from './components/teacher/AssignSyllabusDetail';
 import TeacherStudents from './pages/TeacherStudents';
 
+/* LMS */
+import LMSManagement from './pages/LMSManagement';
+import StudentLMS from './pages/StudentLMS';
+
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
         {/* ─── PUBLIC ─────────────────────────────────────────────────────── */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/unauthorized"    element={<Unauthorized />} />
 
         {/* ─── STUDENT AUTH ────────────────────────────────────────────────── */}
-        <Route path="/student/login" element={<PublicOnlyRoute><StudentLogin /></PublicOnlyRoute>} />
+        <Route path="/student/login"  element={<PublicOnlyRoute><StudentLogin /></PublicOnlyRoute>} />
         <Route path="/student/signup" element={<PublicOnlyRoute><StudentSignup /></PublicOnlyRoute>} />
 
         {/* ─── STUDENT PROTECTED ───────────────────────────────────────────── */}
@@ -75,13 +79,14 @@ export default function App() {
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard"    element={<StudentDashboard />} />
-          <Route path="assignments"  element={<StudentAssignments />} />
-          <Route path="announcements" element={<StudentAnnouncements />} />
-          <Route path="projects"     element={<Projects />} />
-          <Route path="reports"      element={<Reports />} />
-          <Route path="profile"      element={<StudentProfile />} />
-          <Route path="lecture-scheduler" element={<LectureSchedule />} />
+          <Route path="dashboard"          element={<StudentDashboard />} />
+          <Route path="assignments"        element={<StudentAssignments />} />
+          <Route path="announcements"      element={<StudentAnnouncements />} />
+          <Route path="lms"                element={<StudentLMS />} />
+          <Route path="projects"           element={<Projects />} />
+          <Route path="reports"            element={<Reports />} />
+          <Route path="profile"            element={<StudentProfile />} />
+          <Route path="lecture-scheduler"  element={<LectureSchedule />} />
         </Route>
 
         {/* ─── ADMIN AUTH ──────────────────────────────────────────────────── */}
@@ -104,13 +109,14 @@ export default function App() {
           <Route path="project-tracking"   element={<ProjectTracking />} />
           <Route path="project-tracking/batch/:batchId"     element={<AdminBatchDetail />} />
           <Route path="project-tracking/student/:studentId" element={<StudentProjectsView />} />
-          <Route path="add-reports"  element={<AddReport2 />} />
-          <Route path="assign-task"  element={<AssignTask />} />
-          <Route path="syllabus"     element={<AdminSyllabusManagement />} />
-          <Route path="all-reports"  element={<AllReports />} />
-          <Route path="drafts"       element={<Drafts />} />
-          <Route path="analytics"    element={<AdminAnalytics />} />
-          <Route path="lecture-scheduler" element={<LectureSchedule />} />
+          <Route path="add-reports"        element={<AddReport2 />} />
+          <Route path="assign-task"        element={<AssignTask />} />
+          <Route path="lms"                element={<LMSManagement />} />
+          <Route path="syllabus"           element={<AdminSyllabusManagement />} />
+          <Route path="all-reports"        element={<AllReports />} />
+          <Route path="drafts"             element={<Drafts />} />
+          <Route path="analytics"          element={<AdminAnalytics />} />
+          <Route path="lecture-scheduler"  element={<LectureSchedule />} />
           <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
         </Route>
@@ -129,24 +135,25 @@ export default function App() {
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard"         element={<TeacherSyllabusDashboard />} />
-          <Route path="performance"       element={<TeacherStudentProgress />} />
-          <Route path="profile"           element={<TeacherProfile />} />
-          <Route path="assign-task"       element={<AssignTask />} />
-          <Route path="assign-project"    element={<AssignProject />} />
-          <Route path="assign-syllabus"   element={<AssignSyllabus />} />
+          <Route path="dashboard"          element={<TeacherSyllabusDashboard />} />
+          <Route path="performance"        element={<TeacherStudentProgress />} />
+          <Route path="profile"            element={<TeacherProfile />} />
+          <Route path="assign-task"        element={<AssignTask />} />
+          <Route path="lms"                element={<LMSManagement />} />
+          <Route path="assign-project"     element={<AssignProject />} />
+          <Route path="assign-syllabus"    element={<AssignSyllabus />} />
           <Route path="assign-syllabus/:batchId" element={<AssignSyllabusDetail />} />
-          <Route path="add-reports"       element={<AddReport2 />} />
-          <Route path="drafts"            element={<Drafts />} />
+          <Route path="add-reports"        element={<AddReport2 />} />
+          <Route path="drafts"             element={<Drafts />} />
           <Route path="student-management" element={<TeacherStudents />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
           <Route path="project-tracking"   element={<ProjectTracking />} />
           <Route path="project-tracking/batch/:batchId"     element={<AdminBatchDetail />} />
           <Route path="project-tracking/student/:studentId" element={<StudentProjectsView />} />
-          <Route path="attendance"    element={<TeacherAttendance />} />
-          <Route path="grades"        element={<TeacherGrades />} />
-          <Route path="announcements" element={<TeacherAnnouncements />} />
-          <Route path="lecture-scheduler" element={<LectureSchedule />} />
+          <Route path="attendance"         element={<TeacherAttendance />} />
+          <Route path="grades"             element={<TeacherGrades />} />
+          <Route path="announcements"      element={<TeacherAnnouncements />} />
+          <Route path="lecture-scheduler"  element={<LectureSchedule />} />
         </Route>
 
         {/* ─── FALLBACK ────────────────────────────────────────────────────── */}

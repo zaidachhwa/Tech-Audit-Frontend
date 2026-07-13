@@ -5,20 +5,21 @@ import DashboardLayout from "../shared/DashboardLayout";
 import { teacherSidebarItems } from "./TeacherSidebarItems";
 
 const PAGE_LABELS = {
-  "/teacher/dashboard": "Dashboard",
-  "/teacher/student-management": "My Students",
-  "/teacher/performance": "Lecture Progress",
-  "/teacher/attendance": "Attendance",
+  "/teacher/dashboard":         "Dashboard",
+  "/teacher/student-management":"My Students",
+  "/teacher/performance":       "Lecture Progress",
+  "/teacher/attendance":        "Attendance",
   "/teacher/lecture-scheduler": "Lecture Scheduler",
-  "/teacher/grades": "Grades",
-  "/teacher/announcements": "Announcements",
-  "/teacher/assign-task": "Assign Homework",
-  "/teacher/assign-project": "Assign Project",
-  "/teacher/project-tracking": "Project Tracking",
-  "/teacher/assign-syllabus": "Assign Syllabus",
-  "/teacher/add-reports": "Add Reports",
-  "/teacher/drafts": "Drafts",
-  "/teacher/profile": "Profile",
+  "/teacher/grades":            "Grades",
+  "/teacher/announcements":     "Announcements",
+  "/teacher/assign-task":       "Assign Homework",
+  "/teacher/lms":               "LMS",
+  "/teacher/assign-project":    "Assign Project",
+  "/teacher/project-tracking":  "Project Tracking",
+  "/teacher/assign-syllabus":   "Assign Syllabus",
+  "/teacher/add-reports":       "Add Reports",
+  "/teacher/drafts":            "Drafts",
+  "/teacher/profile":           "Profile",
 };
 
 export default function TeacherLayout() {
