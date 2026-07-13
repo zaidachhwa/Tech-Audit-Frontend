@@ -48,7 +48,7 @@ export default function TeacherAttendance() {
 
   // Month boundary calculations
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
+
   // Chronological order for horizontal dates (1 to daysInMonth)
   const activeDaysList = [];
   for (let d = 1; d <= daysInMonth; d++) {
@@ -134,18 +134,18 @@ export default function TeacherAttendance() {
         savedRecords.forEach(doc => {
           const docDate = new Date(doc.date);
           const dStr = `${docDate.getFullYear()}-${pad2(docDate.getMonth() + 1)}-${pad2(docDate.getDate())}`;
-          
+
           if (!tempGrid[dStr]) {
             tempGrid[dStr] = {};
           }
 
           doc.records.forEach(rec => {
-            const rawStatus = rec.status;
+            const rawStatus = (rec.status || "").toLowerCase();
             let key = "P";
-            if (rawStatus === "Absent") key = "A";
-            else if (rawStatus === "Late") key = "L";
-            else if (rawStatus === "On Leave") key = "OL";
-            else if (rawStatus === "Holiday") key = "H";
+            if (rawStatus === "absent") key = "A";
+            else if (rawStatus === "late") key = "L";
+            else if (rawStatus === "on leave") key = "OL";
+            else if (rawStatus === "holiday") key = "H";
 
             const sId = rec.student?._id || rec.student;
             tempGrid[dStr][sId] = key;
@@ -161,7 +161,7 @@ export default function TeacherAttendance() {
       .finally(() => {
         setLoading(false);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBatch, year, month]);
 
   const prevMonth = () => {
@@ -190,7 +190,7 @@ export default function TeacherAttendance() {
       const currentStatus = prev[dateStr]?.[studentId] || "P";
       const idx = STATUS_CYCLE.indexOf(currentStatus);
       const nextStatus = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-      
+
       const newGrid = {
         ...prev,
         [dateStr]: {
@@ -228,7 +228,7 @@ export default function TeacherAttendance() {
       const recordsToSave = [];
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      
+
       // Save all active dates loaded in the grid that are not in the future and not Sunday
       Object.keys(grid).forEach(dStr => {
         const [y, m, d] = dStr.split("-").map(Number);
@@ -238,9 +238,9 @@ export default function TeacherAttendance() {
         students.forEach(s => {
           const statusKey = grid[dStr]?.[s._id] || "P";
           const fullStatus = statusKey === "P" ? "Present" :
-                             statusKey === "A" ? "Absent" :
-                             statusKey === "L" ? "Late" :
-                             statusKey === "OL" ? "On Leave" : "Holiday";
+            statusKey === "A" ? "Absent" :
+              statusKey === "L" ? "Late" :
+                statusKey === "OL" ? "On Leave" : "Holiday";
           recordsToSave.push({
             student: s._id,
             date: dStr,
@@ -309,8 +309,8 @@ export default function TeacherAttendance() {
 
   // Student metrics calculations
   const getStudentMetrics = (studentId) => {
-    let p = 0, a = 0, l = 0;
-    
+    let p = 2, a = 2, l = 2;
+
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -342,14 +342,14 @@ export default function TeacherAttendance() {
 
   // Header metrics calculations
   const todayStr = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
-  
+
   const absentToday = students.filter(s => (grid[todayStr]?.[s._id] || "P") === "A").length;
   const lateToday = students.filter(s => (grid[todayStr]?.[s._id] || "P") === "L").length;
-  
+
   // Overall Batch Attendance rate (Excluding holidays, Sundays, and future dates)
   let totalActiveCells = 0;
   let presentActiveCells = 0;
-  
+
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
@@ -358,7 +358,7 @@ export default function TeacherAttendance() {
     if (dateVal > todayStart || isSunday(year, month, day)) return; // skip future days and Sundays
 
     const dStr = `${year}-${pad2(month + 1)}-${pad2(day)}`;
-    
+
     students.forEach(s => {
       const status = grid[dStr]?.[s._id] || "P";
       if (status !== "H") {
@@ -381,7 +381,7 @@ export default function TeacherAttendance() {
   return (
     <div className="page-container">
       <Toaster position="top-right" toastOptions={{ style: { fontFamily: "'DM Sans', sans-serif", fontSize: 13 } }} />
-      
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         
@@ -489,8 +489,8 @@ export default function TeacherAttendance() {
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           {/* Month selector */}
           <div style={{ display: "flex", alignItems: "center", background: "#FFFFFF", border: "1.5px solid #EFEBE4", borderRadius: "10px", height: "42px", padding: "0 4px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
-            <button 
-              onClick={prevMonth} 
+            <button
+              onClick={prevMonth}
               style={{ background: "none", border: "none", cursor: "pointer", color: "#7D8480", display: "flex", alignItems: "center", justifyItems: "center", width: "32px", height: "32px", borderRadius: "8px" }}
               onMouseEnter={e => e.currentTarget.style.background = "#FAF8F5"}
               onMouseLeave={e => e.currentTarget.style.background = "none"}
@@ -500,8 +500,8 @@ export default function TeacherAttendance() {
             <span style={{ fontSize: "14px", fontWeight: 700, color: "#1F2421", padding: "0 10px", minWidth: "100px", textAlign: "center", fontFamily: "'DM Mono', monospace" }}>
               {MONTHS[month].slice(0, 3).toUpperCase()} {year}
             </span>
-            <button 
-              onClick={nextMonth} 
+            <button
+              onClick={nextMonth}
               style={{ background: "none", border: "none", cursor: "pointer", color: "#7D8480", display: "flex", alignItems: "center", justifyItems: "center", width: "32px", height: "32px", borderRadius: "8px" }}
               onMouseEnter={e => e.currentTarget.style.background = "#FAF8F5"}
               onMouseLeave={e => e.currentTarget.style.background = "none"}
@@ -511,7 +511,7 @@ export default function TeacherAttendance() {
           </div>
 
           {/* Export CSV button */}
-          <button 
+          <button
             onClick={handleExportCSV}
             disabled={students.length === 0}
             style={{
@@ -539,9 +539,9 @@ export default function TeacherAttendance() {
 
           {/* Save Button */}
           {students.length > 0 && (
-            <button 
-              onClick={handleSave} 
-              disabled={saving || !isDirty} 
+            <button
+              onClick={handleSave}
+              disabled={saving || !isDirty}
               style={{
                 background: isDirty ? "linear-gradient(135deg, #10B981, #059669)" : "#EFEBE4",
                 color: isDirty ? "#FFFFFF" : "#7D8480",
@@ -615,11 +615,11 @@ export default function TeacherAttendance() {
 
       {/* FILTER & FILTER BAR */}
       <div className="filter-bar" style={{ background: "#FFFFFF", border: "1.5px solid #EFEBE4", borderRadius: "14px", padding: "16px", marginBottom: "16px", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", flexShrink: 0 }}>
-        
+
         {/* Batch Dropdown */}
         <div ref={dropdownRef} className="filter-item" style={{ position: "relative", width: "260px" }}>
           <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "#7D8480", letterSpacing: "0.05em", marginBottom: "6px" }}>Active Batch</div>
-          <div 
+          <div
             onClick={() => setDropdownOpen(o => !o)}
             style={{
               height: "42px",
@@ -678,8 +678,8 @@ export default function TeacherAttendance() {
                       borderBottom: "1px solid #FAF8F5",
                       transition: "background 0.15s"
                     }}
-                    onMouseEnter={e => { if(b._id !== selectedBatch) e.currentTarget.style.background = "#FAF8F5"; }}
-                    onMouseLeave={e => { if(b._id !== selectedBatch) e.currentTarget.style.background = "transparent"; }}
+                    onMouseEnter={e => { if (b._id !== selectedBatch) e.currentTarget.style.background = "#FAF8F5"; }}
+                    onMouseLeave={e => { if (b._id !== selectedBatch) e.currentTarget.style.background = "transparent"; }}
                   >
                     {getBatchName(b)}
                   </div>
@@ -694,7 +694,7 @@ export default function TeacherAttendance() {
           <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", color: "#7D8480", letterSpacing: "0.05em", marginBottom: "6px" }}>Filter Students</div>
           <div style={{ position: "relative" }}>
             <Search size={16} color="#7D8480" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-            <input 
+            <input
               type="text"
               placeholder="Search student by name..."
               value={searchQuery}
@@ -755,7 +755,7 @@ export default function TeacherAttendance() {
 
       {/* ATTENDANCE SHEET GRID (FLIPPED AXES: ROWS = STUDENTS) */}
       <div style={{ background: "#FFFFFF", border: "1.5px solid #EFEBE4", borderRadius: "14px", overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.01)", marginBottom: "16px", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        
+
         {/* Table Title Bar */}
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #EFEBE4", background: "#FAF9F5", display: "flex", alignItems: "center", gap: "8px" }}>
           <CalendarDays size={16} color="#10B981" />
@@ -817,10 +817,10 @@ export default function TeacherAttendance() {
                     const isSun = isSunday(year, month, day);
                     const isSat = isSaturday(year, month, day);
                     const dayOfWeekLabel = DAY_LABELS[new Date(year, month, day).getDay()];
-                    
+
                     return (
-                      <th 
-                        key={day} 
+                      <th
+                        key={day}
                         style={{
                           position: "sticky",
                           top: 0,
@@ -891,7 +891,7 @@ export default function TeacherAttendance() {
                   {activeDaysList.map(day => {
                     const dStr = `${year}-${pad2(month + 1)}-${pad2(day)}`;
                     const isToday = isCurrentMonth && day === todayDay;
-                    
+
                     const dateVal = new Date(year, month, day);
                     const todayStart = new Date();
                     todayStart.setHours(0, 0, 0, 0);
@@ -916,7 +916,7 @@ export default function TeacherAttendance() {
                       >
                         {!isFuture && !isSun && (
                           <div style={{ display: "flex", gap: "2px", justifyContent: "center" }}>
-                            <button 
+                            <button
                               onClick={() => bulkMarkRow(dStr, "A")}
                               className="bulk-btn"
                               style={{ width: "16px", height: "16px", borderRadius: "50%", background: "rgba(239, 68, 68, 0.08)", border: "none", color: "#dc2626", fontSize: "8px", fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
@@ -924,7 +924,7 @@ export default function TeacherAttendance() {
                             >
                               A
                             </button>
-                            <button 
+                            <button
                               onClick={() => bulkMarkRow(dStr, "L")}
                               className="bulk-btn"
                               style={{ width: "16px", height: "16px", borderRadius: "50%", background: "rgba(245, 158, 11, 0.08)", border: "none", color: "#d97706", fontSize: "8px", fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
@@ -932,7 +932,7 @@ export default function TeacherAttendance() {
                             >
                               L
                             </button>
-                            <button 
+                            <button
                               onClick={() => bulkMarkRow(dStr, "P")}
                               className="bulk-btn"
                               style={{ width: "16px", height: "16px", borderRadius: "50%", background: "rgba(16, 185, 129, 0.08)", border: "none", color: "#059669", fontSize: "8px", fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
@@ -965,7 +965,7 @@ export default function TeacherAttendance() {
                 {filteredStudents.map((s, sIdx) => {
                   const rowBg = sIdx % 2 === 0 ? "#FFFFFF" : "#FAF9F6";
                   const { p, a, l } = getStudentMetrics(s._id);
-                  
+
                   return (
                     <tr key={s._id} style={{ background: rowBg }}>
                       {/* Sticky Student Name Cell */}
@@ -994,7 +994,7 @@ export default function TeacherAttendance() {
                           }}>
                             {(s.name || "S")[0].toUpperCase()}
                           </div>
-                          <div 
+                          <div
                             style={{ fontSize: "13px", fontWeight: 600, color: "#1F2421", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "110px" }}
                             title={s.name}
                           >
@@ -1007,7 +1007,7 @@ export default function TeacherAttendance() {
                       {activeDaysList.map(day => {
                         const dStr = `${year}-${pad2(month + 1)}-${pad2(day)}`;
                         const isToday = isCurrentMonth && day === todayDay;
-                        
+
                         const dateVal = new Date(year, month, day);
                         const todayStart = new Date();
                         todayStart.setHours(0, 0, 0, 0);
@@ -1017,7 +1017,7 @@ export default function TeacherAttendance() {
 
                         const status = grid[dStr]?.[s._id] || "P";
                         const meta = STATUS_META[status];
-                        
+
                         return (
                           <td
                             key={day}
@@ -1106,7 +1106,7 @@ export default function TeacherAttendance() {
               else if (attendancePct < 90) healthColor = "#d97706"; // Amber
 
               return (
-                <div 
+                <div
                   key={s._id}
                   style={{
                     background: "#FFFFFF",
