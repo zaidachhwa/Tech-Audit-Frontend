@@ -9,7 +9,8 @@ import {
   FileText,
   BarChart3,
   ClipboardList,
-  CalendarDays
+  CalendarDays,
+  LibraryBig,
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -49,6 +50,11 @@ export const adminSidebarItems = [
     icon: ClipboardList,
   },
   {
+    name: "LMS",
+    path: "/admin/lms",
+    icon: LibraryBig,
+  },
+  {
     name: "Project Tracking",
     path: "/admin/project-tracking",
     icon: FolderGit2,
@@ -59,13 +65,13 @@ export const adminSidebarItems = [
     icon: Notebook,
   },
   {
-    name:"Drafts",
+    name: "Drafts",
     path: "/admin/drafts",
     icon: FileText,
   },
   {
-    name:"Analytics",
-    path:"/admin/analytics",
+    name: "Analytics",
+    path: "/admin/analytics",
     icon: BarChart3,
   },
   {
