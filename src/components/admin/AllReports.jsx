@@ -18,7 +18,7 @@ export default function ReportsList() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null); // { report, reportIndex }
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteBatchTarget, setDeleteBatchTarget] = useState(null);
 
@@ -169,25 +169,28 @@ export default function ReportsList() {
                         return;
                       }
 
+                      const { report: reportData, reportIndex } = selectedReport;
+
                       const res = await fetch(
-                        `${import.meta.env.VITE_API_URL}/reports/${selectedReport._id}/pdf`,
+                        `${import.meta.env.VITE_API_URL}/reports/${reportData._id}/pdf`,
                       );
 
                       const blob = await res.blob();
                       const url = window.URL.createObjectURL(blob);
 
                       const studentName =
-                        selectedReport.student?.name?.replace(/\s+/g, '_') ||
+                        reportData.student?.name?.replace(/\s+/g, '_') ||
                         'Student';
 
                       const batchName =
-                        selectedReport.student?.batch_name || 'Batch';
-                      const batchNo = selectedReport.student?.batch_no || '';
-                      const date = new Date(selectedReport.auditDate)
+                        reportData.student?.batch_name || 'Batch';
+                      const batchNo = reportData.student?.batch_no || '';
+                      const date = new Date(reportData.auditDate)
                         .toISOString()
                         .split('T')[0];
 
-                      const fileName = `${studentName}-${batchName}-${batchNo}-${date}.pdf`;
+                      // Include report index to make filename unique when same student has multiple reports
+                      const fileName = `${studentName}-${batchName}-${batchNo}-${date}_Report${reportIndex}.pdf`;
 
                       const a = document.createElement('a');
                       a.href = url;
@@ -223,20 +226,20 @@ export default function ReportsList() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <Info
                     label="Student Name"
-                    value={selectedReport.student?.name || "Missing Name"}
+                    value={selectedReport.report.student?.name || "Missing Name"}
                   />
-                  <Info label="Email" value={selectedReport.student?.email || "Missing Email"} />
+                  <Info label="Email" value={selectedReport.report.student?.email || "Missing Email"} />
                   <Info
                     label="Batch"
                     value={
-                      selectedReport.student?.batch_name 
-                        ? `${selectedReport.student.batch_name} - ${selectedReport.student.batch_no || '?'}`
+                      selectedReport.report.student?.batch_name 
+                        ? `${selectedReport.report.student.batch_name} - ${selectedReport.report.student.batch_no || '?'}`
                         : "Unassigned"
                     }
                   />
                 <Info
                   label="Audit Date"
-                  value={new Date(selectedReport.auditDate).toLocaleDateString(
+                  value={new Date(selectedReport.report.auditDate).toLocaleDateString(
                     'en-GB',
                     {
                       day: '2-digit',
@@ -254,7 +257,7 @@ export default function ReportsList() {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {selectedReport.parameters?.map((p) => (
+                  {selectedReport.report.parameters?.map((p) => (
                     <div
                       key={p._id}
                       className="rounded-lg px-3 py-2 bg-green-50 border"
@@ -274,7 +277,7 @@ export default function ReportsList() {
                   Feedback
                 </h3>
 
-                {selectedReport.feedbackSchema?.map((f, idx) => (
+                {selectedReport.report.feedbackSchema?.map((f, idx) => (
                   <ul
                     key={idx}
                     className="list-disc list-inside text-sm space-y-1"
@@ -293,7 +296,7 @@ export default function ReportsList() {
                 </h3>
 
                 <p className="text-sm rounded-lg p-3 border bg-gray-50">
-                  {selectedReport.overallRemarks || '—'}
+                  {selectedReport.report.overallRemarks || '—'}
                 </p>
               </div>
             </div>
@@ -505,7 +508,7 @@ function BatchAccordion({
                   key={studentId}
                   student={studentReports[0].student}
                   reports={studentReports}
-                  onSelectedReport={onSelectedReport}
+                  onSelectedReport={(r, idx) => onSelectedReport({ report: r, reportIndex: idx })}
                   onDeleteTarget={onDeleteTarget}
                   navigate={navigate}
                 />
@@ -600,12 +603,18 @@ function StudentAccordion({
                             month: "short",
                             year: "numeric",
                           })}
+                          {/* Show report number badge when student has multiple reports */}
+                          {reports.length > 1 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#EFF6FF] text-[#2563EB]">
+                              #{idx + 1}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex justify-center gap-2">
                           <button
-                            onClick={() => onSelectedReport(r)}
+                            onClick={() => onSelectedReport(r, idx + 1)}
                             className="flex items-center gap-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold bg-[#2563EB] hover:bg-[#1E40AF] transition"
                           >
                             <Eye size={13} /> View

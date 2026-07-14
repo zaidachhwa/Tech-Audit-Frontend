@@ -44,6 +44,9 @@ export default function AddReport2() {
     existingStatus: ""
   });
   const [generatingAI, setGeneratingAI] = useState(false);
+  // Tracks whether a published report already exists for current student+date
+  const [existingReportId, setExistingReportId] = useState(null);
+  const [existingReportName, setExistingReportName] = useState("");
 
   useEffect(() => {
     API.get("/students/list")
@@ -66,13 +69,21 @@ export default function AddReport2() {
 
   // 🔥 AUTO-FILL LOGIC: Fetch existing report/draft when student + date are selected
   useEffect(() => {
-    if (!form.studentId || !form.auditDate) return;
+    if (!form.studentId || !form.auditDate) {
+      setExistingReportId(null);
+      setExistingReportName("");
+      return;
+    }
 
     const autoFill = async () => {
       try {
         const res = await API.get(`/reports/lookup?studentId=${form.studentId}&auditDate=${form.auditDate}`);
         if (res.data) {
           const existing = res.data;
+
+          // Auto-fill form with existing data (draft or published)
+          // NOTE: we do NOT lock the save button here — user may want a new
+          // report on the same date with different parameters.
           setForm(prev => ({
             ...prev,
             parameters: existing.parameters?.length ? existing.parameters : prev.parameters,
@@ -81,14 +92,22 @@ export default function AddReport2() {
             isAutoFilled: true,
             existingStatus: existing.status
           }));
-          toast.success(`Found existing ${existing.status}. Data auto-filled.`, {
-            duration: 4000,
-            icon: '📋'
-          });
+
+          if (existing.status === "draft") {
+            toast.success(`Found existing draft. Data auto-filled.`, { duration: 3000, icon: '📋' });
+          } else {
+            toast(`Existing report found for this date — data auto-filled. Modify parameters to save a new report.`, {
+              icon: '📋',
+              duration: 4000,
+              style: { background: '#EFF6FF', color: '#1E40AF', border: '1px solid #BFDBFE' }
+            });
+          }
         } else {
-          // Reset autoFilled flag if no report exists for this combo
+          // No existing report for this combo
+          setExistingReportId(null);
+          setExistingReportName("");
           if (form.isAutoFilled) {
-             setForm(prev => ({ ...prev, isAutoFilled: false, existingStatus: "" }));
+            setForm(prev => ({ ...prev, isAutoFilled: false, existingStatus: "" }));
           }
         }
       } catch (err) {
@@ -107,13 +126,22 @@ export default function AddReport2() {
     const updated = [...form.parameters];
     updated[i][field] = value;
     setForm({ ...form, parameters: updated });
+    // Reset session lock so Save & Download PDF button is shown again
+    setExistingReportId(null);
+    setExistingReportName("");
   };
 
-  const addParameter = () =>
+  const addParameter = () => {
     setForm({ ...form, parameters: [...form.parameters, { name: "", score: "", totalScore: "" }] });
+    setExistingReportId(null);
+    setExistingReportName("");
+  };
 
-  const removeParameter = (i) =>
+  const removeParameter = (i) => {
     setForm({ ...form, parameters: form.parameters.filter((_, idx) => idx !== i) });
+    setExistingReportId(null);
+    setExistingReportName("");
+  };
 
   const saveParametersToLocal = () => {
     localStorage.setItem("savedParameters", JSON.stringify(form.parameters));
@@ -183,23 +211,6 @@ export default function AddReport2() {
     return filteredStudents.find((s) => s._id === form.studentId) || null;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    try {
-      await API.post("/reports/create", {
-        studentId: form.studentId,
-        parameters: form.parameters.filter((p) => p.name.trim()),
-        feedbackSchema: form.feedbackSchema,
-        overallRemarks: form.overallRemarks,
-        auditDate: form.auditDate,
-      });
-      toast.success("Report saved successfully");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save report");
-    }
-  };
-
   const handleSaveDraft = async () => {
     if (!form.studentId) { toast.error("Please select a student"); return; }
     try {
@@ -216,32 +227,99 @@ export default function AddReport2() {
     }
   };
 
-  // Save first then download PDF
-  const handleDownload = async () => {
-    if (!validate()) return;
+  // ✅ Download PDF from an already-saved report (no new save)
+  const handleDownloadOnly = async (reportId) => {
     try {
-      const saveRes = await API.post("/reports/create", {
-        studentId: form.studentId,
-        parameters: form.parameters.filter((p) => p.name.trim()),
-        feedbackSchema: form.feedbackSchema,
-        overallRemarks: form.overallRemarks,
-        auditDate: form.auditDate,
-      });
+      toast.loading("Preparing PDF...", { id: "pdf-dl" });
+      const pdf = await API.get(`/reports/${reportId}/pdf`, { responseType: "blob" });
+      toast.dismiss("pdf-dl");
 
-      const id = saveRes.data?.report?._id;
-      if (!id) { toast.error("Failed to get report ID"); return; }
-
-      const pdf = await API.get(`/reports/${id}/pdf`, { responseType: "blob" });
+      const student = filteredStudents.find(s => s._id === form.studentId);
+      const studentName = student?.name?.replace(/\s+/g, "_") || "Student";
+      const batchName = student?.batch_name || "Batch";
+      const batchNo = student?.batch_no || "";
+      const date = form.auditDate || new Date().toISOString().split("T")[0];
+      const fileName = `${studentName}-${batchName}-${batchNo}-${date}.pdf`;
 
       const url = window.URL.createObjectURL(new Blob([pdf.data], { type: "application/pdf" }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = `report-${form.studentId}.pdf`;
+      link.download = fileName;
       link.click();
       window.URL.revokeObjectURL(url);
       toast.success("PDF downloaded");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to download PDF");
+      toast.error("Failed to download PDF");
+    }
+  };
+
+  // ✅ Single action: Save ONCE then immediately download PDF
+  const handleSaveAndDownload = async () => {
+    if (!validate()) return;
+    try {
+      toast.loading("Saving report...", { id: "save-dl" });
+
+      let reportId;
+
+      try {
+        const saveRes = await API.post("/reports/create", {
+          studentId: form.studentId,
+          parameters: form.parameters.filter((p) => p.name.trim()),
+          feedbackSchema: form.feedbackSchema,
+          overallRemarks: form.overallRemarks,
+          auditDate: form.auditDate,
+        });
+        reportId = saveRes.data?.report?._id;
+        // Mark as saved so the UI switches to Download-only mode
+        const student = filteredStudents.find(s => s._id === form.studentId);
+        setExistingReportId(reportId);
+        setExistingReportName(student?.name || "this student");
+      } catch (saveErr) {
+        if (saveErr.response?.status === 409) {
+          const { reason, message: errMsg } = saveErr.response.data || {};
+
+          // Only data_duplicate is possible now (date_duplicate guard removed)
+          // Show error and block — do not download
+          toast.dismiss("save-dl");
+          toast.error(errMsg || "Report with the same data already exists for this student.", {
+            duration: 5000,
+            style: { background: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA' }
+          });
+          return;
+        } else {
+          toast.dismiss("save-dl");
+          toast.error(saveErr.response?.data?.message || "Failed to save report");
+          return;
+        }
+      }
+
+      if (!reportId) {
+        toast.dismiss("save-dl");
+        toast.error("Failed to get report ID");
+        return;
+      }
+
+      toast.loading("Generating PDF...", { id: "save-dl" });
+      const pdf = await API.get(`/reports/${reportId}/pdf`, { responseType: "blob" });
+      toast.dismiss("save-dl");
+
+      const student = filteredStudents.find(s => s._id === form.studentId);
+      const studentName = student?.name?.replace(/\s+/g, "_") || "Student";
+      const batchName = student?.batch_name || "Batch";
+      const batchNo = student?.batch_no || "";
+      const date = form.auditDate || new Date().toISOString().split("T")[0];
+      const fileName = `${studentName}-${batchName}-${batchNo}-${date}.pdf`;
+
+      const url = window.URL.createObjectURL(new Blob([pdf.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("Report saved & PDF downloaded!");
+    } catch (err) {
+      toast.dismiss("save-dl");
+      toast.error("Failed to complete save & download");
     }
   };
 
@@ -319,7 +397,7 @@ export default function AddReport2() {
       <p style={S.pageTitle}>Add Report</p>
       <p style={S.pageSubtitle}>Create student audit reports</p>
 
-      {/* Auto-fill Alert */}
+      {/* 📋 Auto-fill alert — shown when form is populated from an existing draft or report */}
       {form.isAutoFilled && (
         <div style={{
           background: "#EFF6FF",
@@ -336,14 +414,38 @@ export default function AddReport2() {
         }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563EB" }} />
           <span>
-            Showing data from an existing <strong>{form.existingStatus}</strong> for this student on this date. You can add more parameters or update existing ones.
+            {form.existingStatus === "draft"
+              ? <>Showing data from an existing <strong>draft</strong> for this student on this date.</>  
+              : <>Existing report found — data auto-filled. <strong>Modify parameters</strong> to save a new report.</>}
           </span>
           <button 
-            onClick={() => setForm({...form, isAutoFilled: false, parameters: [{name: "", score: "", totalScore: ""}], feedbackSchema: {point1: "", point2: "", point3: ""}, overallRemarks: ""})}
+            onClick={() => setForm({...form, isAutoFilled: false, existingStatus: "", parameters: [{name: "", score: "", totalScore: ""}], feedbackSchema: {point1: "", point2: "", point3: ""}, overallRemarks: ""})}
             style={{ marginLeft: "auto", background: "none", border: "none", color: "#2563EB", cursor: "pointer", fontWeight: 600, fontSize: 12 }}
           >
             Clear Form
           </button>
+        </div>
+      )}
+
+      {/* ✅ After-save banner — shown only when report was just saved this session */}
+      {existingReportId && (
+        <div style={{
+          background: "#ECFDF5",
+          border: "1.5px solid #6EE7B7",
+          borderRadius: 12,
+          padding: "12px 16px",
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          color: "#065F46",
+          fontSize: 13,
+          fontWeight: 500
+        }}>
+          <span style={{ fontSize: 16 }}>✅</span>
+          <span>
+            Report for <strong>{existingReportName}</strong> was saved successfully. Use <strong>Download PDF</strong> to re-download.
+          </span>
         </div>
       )}
 
@@ -472,9 +574,37 @@ export default function AddReport2() {
 
       {/* Buttons */}
       <div className="flex flex-wrap gap-3 mt-4">
+        {/* Draft button always available */}
         <button style={S.btnDraft} onClick={handleSaveDraft}>Draft</button>
-        <button style={S.btnSave} onClick={handleSubmit}>Save</button>
-        <button style={S.btnPdf} onClick={handleDownload}>PDF</button>
+
+        {existingReportId ? (
+          // ✅ Report already saved — only allow re-downloading, no re-save
+          <button
+            style={{
+              ...S.btnPdf,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              opacity: 1,
+            }}
+            onClick={() => handleDownloadOnly(existingReportId)}
+          >
+            <span>⬇</span> Download PDF
+          </button>
+        ) : (
+          // ✅ No existing report — save once and download
+          <button
+            style={{
+              ...S.btnPdf,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+            onClick={handleSaveAndDownload}
+          >
+            <span>💾</span> Save & Download PDF
+          </button>
+        )}
       </div>
     </div>
   );
