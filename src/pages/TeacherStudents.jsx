@@ -631,27 +631,29 @@ export default function TeacherStudents() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch Name</label>
-                  <input
-                    required
-                    type="text"
-                    value={form.batch_name}
-                    onChange={(e) => setForm({ ...form, batch_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch No</label>
-                  <input
-                    required
-                    type="text"
-                    value={form.batch_no}
-                    onChange={(e) => setForm({ ...form, batch_no: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch</label>
+                <select
+                  required
+                  value={form.batch_name && form.batch_no ? `${form.batch_name}#${form.batch_no}` : ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) {
+                      setForm({ ...form, batch_name: "", batch_no: "" });
+                      return;
+                    }
+                    const [batch_name, batch_no] = val.split("#");
+                    setForm({ ...form, batch_name, batch_no });
+                  }}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm bg-white cursor-pointer"
+                >
+                  <option value="">-- Select Batch --</option>
+                  {batches.map((b) => (
+                    <option key={b._id} value={`${b.batch_name}#${b.batch_no}`}>
+                      {b.batch_name} (Batch {b.batch_no})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex gap-3 mt-6">
@@ -717,27 +719,29 @@ export default function TeacherStudents() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch Name</label>
-                  <input
-                    required
-                    type="text"
-                    value={form.batch_name}
-                    onChange={(e) => setForm({ ...form, batch_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch No</label>
-                  <input
-                    required
-                    type="text"
-                    value={form.batch_no}
-                    onChange={(e) => setForm({ ...form, batch_no: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Batch</label>
+                <select
+                  required
+                  value={form.batch_name && form.batch_no ? `${form.batch_name}#${form.batch_no}` : ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) {
+                      setForm({ ...form, batch_name: "", batch_no: "" });
+                      return;
+                    }
+                    const [batch_name, batch_no] = val.split("#");
+                    setForm({ ...form, batch_name, batch_no });
+                  }}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm bg-white cursor-pointer"
+                >
+                  <option value="">-- Select Batch --</option>
+                  {batches.map((b) => (
+                    <option key={b._id} value={`${b.batch_name}#${b.batch_no}`}>
+                      {b.batch_name} (Batch {b.batch_no})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex gap-3 mt-6">

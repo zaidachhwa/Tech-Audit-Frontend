@@ -19,7 +19,11 @@ import {
   AlertCircle,
   TrendingUp,
   Calendar,
-  Trash2
+  Trash2,
+  Upload,
+  X,
+  Download,
+  Phone
 } from "lucide-react";
 import BulkAssignProjectModal from "./BulkAssignProjectModal";
 import { getProjectsByBatch, deleteProject } from "../../api/project.api";
@@ -33,6 +37,21 @@ export default function AdminBatchDetail() {
   const [loading, setLoading] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
 
+  // Manual Add Student States
+  const [showManualAddModal, setShowManualAddModal] = useState(false);
+  const [manualAdding, setManualAdding] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    name: "",
+    email: "",
+    phoneNo: ""
+  });
+
+  // Bulk Upload Student States
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
+
   // Syllabus details
   const [assignedSyllabi, setAssignedSyllabi] = useState([]);
   const [selectedSyllabus, setSelectedSyllabus] = useState("");
@@ -43,6 +62,92 @@ export default function AdminBatchDetail() {
   const [groupedProjects, setGroupedProjects] = useState([]);
   const [enrolledSubjects, setEnrolledSubjects] = useState([]);
   const [teachers, setTeachers] = useState([]);
+
+  const handleManualAddSubmit = async (e) => {
+    e.preventDefault();
+    if (!manualForm.name || !manualForm.email) {
+      toast.error("Name and Email are required");
+      return;
+    }
+    try {
+      setManualAdding(true);
+      await API.post("/students/register", {
+        name: manualForm.name,
+        email: manualForm.email,
+        phoneNo: manualForm.phoneNo,
+        batch_name: batch.batch_name,
+        batch_no: batch.batch_no,
+      });
+      toast.success("Student added successfully! Credentials emailed.");
+      setManualForm({ name: "", email: "", phoneNo: "" });
+      setShowManualAddModal(false);
+      fetchBatchDetails();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to add student");
+    } finally {
+      setManualAdding(false);
+    }
+  };
+
+  const handleBulkUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!uploadFile) {
+      toast.error("Please select a CSV file");
+      return;
+    }
+
+    setUploading(true);
+    setUploadResult(null);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const csvData = event.target.result;
+        const res = await API.post("/students/bulk-import", {
+          batch_name: batch.batch_name,
+          batch_no: batch.batch_no,
+          csvData
+        });
+
+        setUploadResult(res.data);
+        if (res.data.successCount > 0) {
+          toast.success(`Successfully imported ${res.data.successCount} students! Credentials emailed.`);
+          fetchBatchDetails();
+        } else {
+          toast.error("Failed to import students. Check row-wise errors.");
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error(err.response?.data?.message || "Bulk upload failed");
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.onerror = () => {
+      toast.error("Error reading CSV file");
+      setUploading(false);
+    };
+    reader.readAsText(uploadFile);
+  };
+
+  const downloadCsvTemplate = () => {
+    const headers = ["name", "email", "phone"];
+    const rows = [
+      ["John Doe", "john.doe@example.com", "9876543210"],
+      ["Jane Smith", "jane.smith@example.com", ""]
+    ];
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `student_import_template_${batch?.batch_name || 'batch'}_${batch?.batch_no || 'no'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const fetchBatchDetails = async () => {
     try {
@@ -396,18 +501,34 @@ export default function AdminBatchDetail() {
           </div>
 
           {/* Students Section */}
-          <div className="flex items-center justify-between pt-4 mt-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 mt-1 gap-3">
             <h2 className="text-lg font-bold text-[#1B2B4B] flex items-center gap-2">
               <Users size={20} className="text-[#2563EB]" />
               Enrolled Students ({students.length})
             </h2>
-            <button
-              onClick={() => setShowAssignModal(true)}
-              className="inline-flex items-center gap-2 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer bg-[#2563EB]"
-            >
-              <PlusCircle size={14} />
-              Bulk Assign Project
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setShowManualAddModal(true)}
+                className="inline-flex items-center gap-2 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer bg-[#2563EB] hover:bg-[#1D4ED8]"
+              >
+                <PlusCircle size={14} />
+                Add Student
+              </button>
+              <button
+                onClick={() => setShowBulkUploadModal(true)}
+                className="inline-flex items-center gap-2 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer bg-[#10B981] hover:bg-[#059669]"
+              >
+                <Upload size={14} />
+                Bulk Upload
+              </button>
+              <button
+                onClick={() => setShowAssignModal(true)}
+                className="inline-flex items-center gap-2 text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer hover:bg-slate-200"
+              >
+                <FolderGit2 size={14} />
+                Bulk Assign Project
+              </button>
+            </div>
           </div>
           
           {students.length > 0 ? (
@@ -480,6 +601,243 @@ export default function AdminBatchDetail() {
           onClose={() => setShowAssignModal(false)}
           onAssigned={fetchBatchDetails}
         />
+      )}
+
+      {/* Manual Add Student Modal */}
+      {showManualAddModal && batch && (
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border border-slate-100">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-blue-50 text-[#2563EB] rounded-lg">
+                  <Users size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-[#1B2B4B]">Add Student Manually</h2>
+                  <p className="text-xs text-[#64748B]">Batch: {batch.batch_name} #{batch.batch_no}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowManualAddModal(false)}
+                className="text-[#94A3B8] hover:text-[#64748B] transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleManualAddSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Aayush Sharma"
+                  value={manualForm.name}
+                  onChange={(e) => setManualForm({ ...manualForm, name: e.target.value })}
+                  className="w-full px-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. aayush@example.com"
+                  value={manualForm.email}
+                  onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
+                  className="w-full px-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">
+                  Phone Number (Optional)
+                </label>
+                <div className="relative">
+                  <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+                  <input
+                    type="tel"
+                    placeholder="e.g. 9876543210"
+                    value={manualForm.phoneNo}
+                    onChange={(e) => setManualForm({ ...manualForm, phoneNo: e.target.value })}
+                    className="w-full pl-9 pr-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowManualAddModal(false)}
+                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={manualAdding}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-lg transition flex items-center gap-2 disabled:opacity-50"
+                >
+                  {manualAdding ? <RefreshCw className="animate-spin" size={14} /> : null}
+                  Add Student
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Upload Student Modal */}
+      {showBulkUploadModal && batch && (
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto border border-slate-100">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                  <Upload size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-[#1B2B4B]">Bulk Student Upload</h2>
+                  <p className="text-xs text-[#64748B]">Batch: {batch.batch_name} #{batch.batch_no}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowBulkUploadModal(false);
+                  setUploadFile(null);
+                  setUploadResult(null);
+                }}
+                className="text-[#94A3B8] hover:text-[#64748B] transition"
+                disabled={uploading}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {!uploadResult ? (
+              <form onSubmit={handleBulkUploadSubmit} className="space-y-6">
+                {/* CSV Template Download */}
+                <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg p-4 flex justify-between items-center">
+                  <div className="flex gap-3 items-center">
+                    <div className="p-2 bg-blue-100 text-[#2563EB] rounded-full">
+                      <Download size={16} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#1E40AF]">CSV File Template</h4>
+                      <p className="text-[11px] text-[#64748B] mt-0.5">Headers required: name, email (phone optional)</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={downloadCsvTemplate}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2563EB] bg-white border border-[#BFDBFE] px-3 py-1.5 rounded-lg hover:bg-[#EFF6FF] transition cursor-pointer"
+                  >
+                    Download Template
+                  </button>
+                </div>
+
+                {/* File Drop Area */}
+                <div>
+                  <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-2">
+                    Upload CSV File
+                  </label>
+                  <div className="border-2 border-dashed border-[#E2E8F0] rounded-xl p-8 text-center bg-[#F8FAFC] hover:bg-[#F1F5F9] transition relative">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      required
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file && file.name.endsWith(".csv")) {
+                          setUploadFile(file);
+                        } else if (file) {
+                          toast.error("Please upload a valid CSV file (.csv)");
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <Upload size={32} className="mx-auto text-[#94A3B8] mb-3" />
+                    {uploadFile ? (
+                      <p className="text-sm font-semibold text-[#2563EB]">{uploadFile.name}</p>
+                    ) : (
+                      <>
+                        <p className="text-sm text-[#475569] font-medium">Click or Drag CSV file here</p>
+                        <p className="text-xs text-[#94A3B8] mt-1">Maximum file size 2 MB</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkUploadModal(false)}
+                    className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={uploading || !uploadFile}
+                    className="px-4 py-2 text-sm font-semibold text-white bg-[#10B981] hover:bg-[#059669] rounded-lg transition flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {uploading ? <RefreshCw className="animate-spin" size={14} /> : null}
+                    Start Upload
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-5">
+                {/* Upload Results Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+                    <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Successfully Added</p>
+                    <p className="text-3xl font-extrabold text-[#065F46] mt-1">{uploadResult.successCount}</p>
+                  </div>
+                  <div className="bg-rose-50 border border-rose-100 rounded-xl p-4 text-center">
+                    <p className="text-xs font-bold text-rose-800 uppercase tracking-wider">Failed / Skipped</p>
+                    <p className="text-3xl font-extrabold text-[#991B1B] mt-1">{uploadResult.failedCount}</p>
+                  </div>
+                </div>
+
+                {/* Import Errors / Warning List */}
+                {uploadResult.errors?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-bold text-[#1B2B4B] mb-2 flex items-center gap-1.5">
+                      <AlertCircle size={16} className="text-rose-600" /> Error Details
+                    </h4>
+                    <div className="max-h-60 overflow-y-auto border border-[#E2E8F0] rounded-lg divide-y divide-[#E2E8F0]">
+                      {uploadResult.errors.map((err, idx) => (
+                        <div key={idx} className="p-3 text-xs bg-slate-50 flex items-start gap-2">
+                          <span className="font-semibold text-slate-500 bg-white px-2 py-0.5 border border-slate-200 rounded">Row {err.row}</span>
+                          <span className="text-rose-600">{err.reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-4 flex justify-end border-t border-slate-100">
+                  <button
+                    onClick={() => {
+                      setShowBulkUploadModal(false);
+                      setUploadFile(null);
+                      setUploadResult(null);
+                    }}
+                    className="px-5 py-2 text-sm font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-lg transition"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

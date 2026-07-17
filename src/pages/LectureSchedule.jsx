@@ -167,7 +167,7 @@ export default function LectureSchedule() {
         const [batchesRes, teachersRes, subjectsRes] = await Promise.all([
           API.get("/batches"),
           API.get("/teachers/list"),
-          API.get("/subjects?type=scheduling")
+          API.get("/subjects")
         ]);
         setBatches(batchesRes.data?.batches || []);
         setTeachers(teachersRes.data?.teachers || []);
@@ -176,7 +176,7 @@ export default function LectureSchedule() {
       } else if (role === "teacher") {
         const [batchesRes, subjectsRes] = await Promise.all([
           API.get("/batches"),
-          API.get("/subjects?type=scheduling")
+          API.get("/subjects")
         ]);
         setBatches(batchesRes.data?.batches || []);
         const data = subjectsRes.data;
@@ -1545,7 +1545,7 @@ export default function LectureSchedule() {
                           )}
                         </div>
                         <h3 className="text-base font-bold text-[#1B2B4B] leading-tight">
-                          {tmpl.name}
+                          {tmpl.subject || tmpl.name}
                         </h3>
 
                         <div className="space-y-2 mt-4 text-xs text-[#64748B] border-t border-[#F1F5F9] pt-4">
@@ -1566,7 +1566,7 @@ export default function LectureSchedule() {
                             onClick={() => {
                               handleOpenCreate();
                               setSelectedTemplateId(tmpl._id);
-                              setSubject(tmpl.name);
+                              setSubject(tmpl.subject || tmpl.name);
                             }}
                             className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
                           >
@@ -1642,7 +1642,7 @@ export default function LectureSchedule() {
                           setSelectedTemplateId(e.target.value);
                           if (e.target.value) {
                             const tmpl = approvedTemplates.find(t => t._id === e.target.value);
-                            if (tmpl) setSubject(tmpl.name);
+                            if (tmpl) setSubject(tmpl.subject || tmpl.name);
                           } else {
                             setSubject("");
                           }
@@ -1650,7 +1650,7 @@ export default function LectureSchedule() {
                         className="flex-1 px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
                       >
                         <option value="">-- Create New Subject --</option>
-                        {approvedTemplates.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                        {approvedTemplates.map(t => <option key={t._id} value={t._id}>{t.subject || t.name}</option>)}
                       </select>
                       {role === "admin" && selectedTemplateId && (
                         <button

@@ -31,12 +31,26 @@ export default function AdminTeachers() {
     name: "",
     email: "",
     password: "",
-    subjects: "",
+    subjects: [], // Array of subjects selected
     phone: "",
   });
 
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+
+  const fetchAvailableSubjects = async () => {
+    try {
+      const res = await API.get("/subjects");
+      const syllabi = res.data?.syllabi || [];
+      const subjects = syllabi.map(s => s.subject).filter(Boolean);
+      setAvailableSubjects([...new Set(subjects)]);
+    } catch (err) {
+      console.error("Failed to load subjects:", err);
+    }
+  };
+
   useEffect(() => {
     fetchTeachers();
+    fetchAvailableSubjects();
   }, []);
 
   const fetchTeachers = async () => {
@@ -82,7 +96,7 @@ export default function AdminTeachers() {
       name: teacher.name,
       email: teacher.email,
       password: "",
-      subjects: teacher.subjects?.join(", ") || "",
+      subjects: teacher.subjects || [],
       phone: teacher.phone || "",
     });
     setShowEdit(true);
@@ -91,13 +105,10 @@ export default function AdminTeachers() {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await API.post("/teachers/register", {
-        ...form,
-        subjects: form.subjects.split(",").map((s) => s.trim()),
-      });
+      await API.post("/teachers/register", form);
       toast.success("Teacher created");
       setShowCreate(false);
-      setForm({ name: "", email: "", password: "", subjects: "", phone: "" });
+      setForm({ name: "", email: "", password: "", subjects: [], phone: "" });
       await fetchTeachers();
     } catch (error) {
       console.log(error);
@@ -112,7 +123,7 @@ export default function AdminTeachers() {
       await API.patch(`/teachers/update/${editTeacher._id}`, {
         name: form.name,
         phone: form.phone,
-        subjects: form.subjects.split(",").map((s) => s.trim()),
+        subjects: form.subjects,
         ...(form.password ? { password: form.password } : {}),
       });
       toast.success("Teacher updated");
@@ -406,13 +417,54 @@ export default function AdminTeachers() {
                 </div>
               ))}
               <div>
-                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Subjects (comma separated)</label>
-                <input
-                  placeholder="e.g. React, Node.js"
-                  value={form.subjects}
-                  onChange={(e) => setForm({ ...form, subjects: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm"
-                />
+                <label className="block text-sm font-semibold text-[#1B2B4B] mb-1.5">
+                  Assign Subjects
+                </label>
+                {availableSubjects.length === 0 ? (
+                  <p className="text-xs text-[#64748B]">No subjects/syllabuses found in system.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-[#E2E8F0] p-3 rounded-lg bg-slate-50">
+                    {availableSubjects.map((subject) => {
+                      const isChecked = form.subjects.includes(subject);
+                      return (
+                        <label key={subject} className="flex items-center gap-2 text-xs text-[#1B2B4B] cursor-pointer hover:bg-white p-1 rounded transition select-none">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setForm({ ...form, subjects: [...form.subjects, subject] });
+                              } else {
+                                setForm({
+                                  ...form,
+                                  subjects: form.subjects.filter((s) => s !== subject),
+                                });
+                              }
+                            }}
+                            className="w-4 h-4 text-[#2563EB] border-slate-300 rounded focus:ring-[#2563EB]"
+                          />
+                          <span className="truncate">{subject}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {form.subjects.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {form.subjects.map((sub) => (
+                      <span key={sub} className="bg-blue-50 text-[#2563EB] border border-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1">
+                        {sub}
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, subjects: form.subjects.filter(s => s !== sub) })}
+                          className="hover:text-blue-800 text-[#94A3B8] font-bold"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex gap-3 mt-6">
                 <button type="button" onClick={() => setShowCreate(false)}
@@ -457,12 +509,54 @@ export default function AdminTeachers() {
                 </div>
               ))}
               <div>
-                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Subjects (comma separated)</label>
-                <input
-                  value={form.subjects}
-                  onChange={(e) => setForm({ ...form, subjects: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm"
-                />
+                <label className="block text-sm font-semibold text-[#1B2B4B] mb-1.5">
+                  Assign Subjects
+                </label>
+                {availableSubjects.length === 0 ? (
+                  <p className="text-xs text-[#64748B]">No subjects/syllabuses found in system.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-[#E2E8F0] p-3 rounded-lg bg-slate-50">
+                    {availableSubjects.map((subject) => {
+                      const isChecked = form.subjects.includes(subject);
+                      return (
+                        <label key={subject} className="flex items-center gap-2 text-xs text-[#1B2B4B] cursor-pointer hover:bg-white p-1 rounded transition select-none">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setForm({ ...form, subjects: [...form.subjects, subject] });
+                              } else {
+                                setForm({
+                                  ...form,
+                                  subjects: form.subjects.filter((s) => s !== subject),
+                                });
+                              }
+                            }}
+                            className="w-4 h-4 text-[#2563EB] border-slate-300 rounded focus:ring-[#2563EB]"
+                          />
+                          <span className="truncate">{subject}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {form.subjects.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {form.subjects.map((sub) => (
+                      <span key={sub} className="bg-blue-50 text-[#2563EB] border border-blue-200 px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1">
+                        {sub}
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, subjects: form.subjects.filter(s => s !== sub) })}
+                          className="hover:text-blue-800 text-[#94A3B8] font-bold"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex gap-3 mt-6">
                 <button type="button" onClick={() => setShowEdit(false)}
