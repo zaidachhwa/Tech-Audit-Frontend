@@ -228,13 +228,13 @@ export default function TeacherSyllabusDashboard() {
     }
   }
 
-  const markComplete = async (topicId) => {
+  const updateStatus = async (topicId, newStatus) => {
     try {
-      await API.patch(`/syllabus/topic/${topicId}/complete`);
-      toast.success("Topic marked as completed!");
+      await API.patch(`/syllabus/topic/${topicId}/status`, { status: newStatus });
+      toast.success(`Status updated to ${newStatus}!`);
       const { batchId, syllabusId } = latestSelectedRefs.current;
       if (batchId && syllabusId) await fetchTopicsForBatchSyllabus(batchId, syllabusId);
-    } catch { toast.error("Failed to mark complete"); }
+    } catch { toast.error("Failed to update status"); }
   };
 
   const addRemark = async () => {
@@ -581,7 +581,7 @@ export default function TeacherSyllabusDashboard() {
                   topic={topic}
                   expanded={expandedTopic === topic._id}
                   onToggleExpand={() => setExpandedTopic(expandedTopic === topic._id ? null : topic._id)}
-                  onMarkComplete={markComplete}
+                  onStatusUpdate={updateStatus}
                   onOpenRemark={() => { setSelectedTopic(topic); setRemarkText(topic.remarks || ""); setShowRemark(true); }}
                   batches={batches}
                   selectedBatchId={selectedBatchId}
@@ -655,7 +655,7 @@ export default function TeacherSyllabusDashboard() {
   );
 }
 
-function TopicCard({ topic, expanded, onToggleExpand, onMarkComplete, onOpenRemark }) {
+function TopicCard({ topic, expanded, onToggleExpand, onStatusUpdate, onOpenRemark }) {
   const statusMap = {
     Completed: { bg: "#ECFDF5", border: "#A7F3D0", badge: { bg: "#ECFDF5", color: "#065F46" }, icon: <CheckCircle2 size={16} color="#10B981" /> },
     "In Progress": { bg: "#EFF6FF", border: "#BFDBFE", badge: { bg: "#EFF6FF", color: "#1E40AF" }, icon: <Clock size={16} color="#2563EB" /> },
@@ -685,11 +685,28 @@ function TopicCard({ topic, expanded, onToggleExpand, onMarkComplete, onOpenRema
             {isOverdue && <span style={{ background: "#FEF2F2", color: "#991B1B", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 600 }}>Overdue</span>}
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {topic.completionStatus !== "Completed" && (
-              <button onClick={() => onMarkComplete(topic._id)} style={{ background: "#10B981", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "'DM Sans', sans-serif" }}>
-                <CheckCheck size={13} /> Mark Complete
-              </button>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "2px 10px", height: "32px", boxSizing: "border-box" }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase" }}>Status:</span>
+              <select
+                value={topic.completionStatus}
+                onChange={(e) => onStatusUpdate(topic._id, e.target.value)}
+                style={{
+                  background: "transparent",
+                  color: "#1B2B4B",
+                  border: "none",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  outline: "none",
+                  padding: 0
+                }}
+              >
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
             <button onClick={onOpenRemark} style={{ background: "#fff", color: "#2563EB", border: "1.5px solid #BFDBFE", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "'DM Sans', sans-serif" }}>
               <Edit size={13} /> {topic.remarks ? "Edit Remark" : "Add Remark"}
             </button>

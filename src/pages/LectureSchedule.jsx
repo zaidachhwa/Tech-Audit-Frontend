@@ -467,7 +467,7 @@ export default function LectureSchedule() {
   };
 
   // Update field inside grid
-  const handleCellChange = (index, field, value) => {
+  const handleCellChange = async (index, field, value) => {
     const updated = [...lectures];
 
     if (field === "isSaturdayLecture") {
@@ -533,6 +533,32 @@ export default function LectureSchedule() {
     }
 
     setLectures(updated);
+
+    // If it's a syllabus tracker lecture, save any changed lectures immediately!
+    if (selectedSchedule?.isFromSyllabusTracker) {
+      const savePromises = [];
+      for (let i = 0; i < updated.length; i++) {
+        const oldLec = lectures[i];
+        const newLec = updated[i];
+        if (!oldLec || oldLec.date !== newLec.date || oldLec.teacher !== newLec.teacher || oldLec.status !== newLec.status) {
+          savePromises.push(
+            API.put(`/schedules/batch-lecture/${newLec._id}`, {
+              date: newLec.date || null,
+              teacherId: typeof newLec.teacher === "object" ? (newLec.teacher?._id || null) : (newLec.teacher || null),
+              status: newLec.status
+            })
+          );
+        }
+      }
+      if (savePromises.length > 0) {
+        try {
+          await Promise.all(savePromises);
+          toast.success("Lectures updated successfully!");
+        } catch (err) {
+          toast.error("Failed to update some lectures.");
+        }
+      }
+    }
   };
 
   // Delete single row from grid (Admin only)
@@ -1454,7 +1480,9 @@ export default function LectureSchedule() {
                         onClick={() => handleOpenEdit(schedule)}
                         className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
                       >
-                        {role === "student" ? "View Lectures" : "View / Edit Schedule"} <ChevronRight size={13} />
+                        {schedule.isFromSyllabusTracker 
+                          ? (role === "student" ? "View Lectures" : "View Syllabus Tracker Lectures")
+                          : (role === "student" ? "View Lectures" : "View / Edit Schedule")} <ChevronRight size={13} />
                       </button>
                     </div>
                   </div>
@@ -1894,13 +1922,13 @@ export default function LectureSchedule() {
                     <th className="px-5 py-3 w-40">Notes</th>
                     <th className="px-5 py-3 w-40">Homework</th>
                     <th className="px-5 py-3 w-36">Status</th>
-                    {(role === "admin" || role === "teacher") && <th className="px-5 py-3 w-16 text-center">Action</th>}
+                    {(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker && <th className="px-5 py-3 w-16 text-center">Action</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F1F5F9]">
                   {lectures.length === 0 ? (
                     <tr>
-                      <td colSpan={role === "admin" ? 9 : 8} className="px-5 py-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
+                      <td colSpan={(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker ? 9 : 8} className="px-5 py-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
                         Grid is empty. Use the configuration generator above to create lecture rows.
                       </td>
                     </tr>
@@ -2116,7 +2144,7 @@ export default function LectureSchedule() {
                           </td>
 
                           {/* Action (Delete Single Row) */}
-                          {(role === "admin" || role === "teacher") && (
+                          {(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker && (
                             <td className="px-5 py-3.5 text-center">
                               <button
                                 onClick={() => removeLectureRow(index)}
@@ -2140,7 +2168,7 @@ export default function LectureSchedule() {
           <div className="flex justify-between items-center border-t border-[#E2E8F0] pt-6 flex-wrap gap-4">
 
             <div className="flex gap-2">
-              {(role === "admin" || role === "teacher") && (
+              {(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker && (
                 <>
                   <button
                     onClick={addLectureRow}
@@ -2173,7 +2201,7 @@ export default function LectureSchedule() {
             </div>
 
             <div className="flex gap-2">
-              {(role === "admin" || role === "teacher") && lectures.length > 0 && (
+              {(role === "admin" || role === "teacher") && lectures.length > 0 && !selectedSchedule?.isFromSyllabusTracker && (
                 <button
                   onClick={handleSaveTemplate}
                   className="bg-[#F59E0B] hover:bg-[#D97706] text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
@@ -2189,7 +2217,7 @@ export default function LectureSchedule() {
                 <FileSpreadsheet size={14} className="text-[#10B981]" /> Export CSV File
               </button>
 
-              {role !== "student" && (
+              {role !== "student" && !selectedSchedule?.isFromSyllabusTracker && (
                 <button
                   onClick={saveSchedule}
                   disabled={lectures.length === 0}
