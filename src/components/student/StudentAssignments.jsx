@@ -179,7 +179,9 @@ function HomeworkCard({ homework, onSubmitted }) {
             }`}>
               <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Teacher Feedback</h4>
               {homework.marks !== undefined && (
-                <p className="text-sm font-bold text-[#1B2B4B] mb-1">Score: {homework.marks} Marks</p>
+                <p className="text-sm font-bold text-[#1B2B4B] mb-1">
+                  Score: {homework.marks} {homework.outOf !== undefined ? `/ ${homework.outOf}` : ""} Marks
+                </p>
               )}
               <p className="text-sm text-gray-600 italic">"{homework.remarks}"</p>
             </div>
@@ -282,14 +284,32 @@ export default function StudentAssignments() {
     setLoading(true);
     API.get("/student-homework")
       .then((res) => {
-        // Handle both array response and wrapped { data: [] } shape
-        const data = Array.isArray(res.data)
+        let data = Array.isArray(res.data)
           ? res.data
           : Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data?.homework)
           ? res.data.homework
           : [];
+          
+        // Hoist the latest submission's data so the UI can display it
+        data = data.map(hw => {
+          if (hw.submissions && hw.submissions.length > 0) {
+            // Get most recent submission (last in array)
+            const latestSub = hw.submissions[hw.submissions.length - 1];
+            return {
+              ...hw,
+              status: latestSub.status,
+              marks: latestSub.marks,
+              outOf: latestSub.outOf,
+              remarks: latestSub.remarks,
+              submissionText: latestSub.submissionText,
+              submissionAttachments: latestSub.fileUrl ? [latestSub.fileUrl] : []
+            };
+          }
+          return hw;
+        });
+
         console.log("[My Homework] Fetched:", data.length, "records", data);
         setHomeworkList(data);
       })

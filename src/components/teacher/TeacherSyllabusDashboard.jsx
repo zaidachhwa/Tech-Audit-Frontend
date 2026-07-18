@@ -139,10 +139,10 @@ export default function TeacherSyllabusDashboard() {
     setAssignedSyllabiForBatch(assigned);
     // Fetch metrics for the selected batch
     fetchMetricsForBatch(selectedBatchId, batchObj);
-    if (assigned.length === 1) {
-      const only = assigned[0];
-      setSelectedBatchSyllabusId(String(only._id));
-      const syllabusTemplateId = typeof only.syllabus === "object" ? only.syllabus._id || only.syllabus : only.syllabus;
+    if (assigned.length > 0) {
+      const first = assigned[0];
+      setSelectedBatchSyllabusId(String(first._id));
+      const syllabusTemplateId = typeof first.syllabus === "object" ? first.syllabus._id || first.syllabus : first.syllabus;
       latestSelectedRefs.current = { batchId: selectedBatchId, syllabusId: syllabusTemplateId };
       fetchTopicsForBatchSyllabus(selectedBatchId, syllabusTemplateId);
     } else {
@@ -170,7 +170,9 @@ export default function TeacherSyllabusDashboard() {
       setBatchesWithSyllabi(fetched);
       const simple = fetched.map((b) => ({ _id: b._id, batch_name: b.batch_name, batch_no: b.batch_no, studentsCount: b.students?.length || 0 }));
       setBatches(simple);
-      if (simple.length === 1) setSelectedBatchId(simple[0]._id);
+      if (simple.length > 0) {
+        setSelectedBatchId((prev) => (prev && simple.some(b => String(b._id) === String(prev)) ? prev : simple[0]._id));
+      }
     } catch (err) {
       toast.error("Failed to load batches");
     } finally {

@@ -685,28 +685,38 @@ export default function LectureSchedule() {
       return;
     }
 
-    const csvHeaders = ["Lecture #", "Title", "Description", "Date", "Status", "Homework Title", "Homework Due Date"];
+    const escapeCSV = (val) => {
+      const str = String(val ?? "").replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const csvHeaders = ["Lecture #", "Title", "Description", "Date", "Status", "Teacher", "Homework Title", "Homework Due Date"];
     const csvRows = lectures.map((l, index) => [
       index + 1,
-      `"${(l.title || "").replace(/"/g, '""')}"`,
-      `"${(l.description || "").replace(/"/g, '""')}"`,
+      escapeCSV(l.title || ""),
+      escapeCSV(l.description || ""),
       l.date ? new Date(l.date).toLocaleDateString() : "",
-      l.status,
-      `"${(l.homework?.title || "").replace(/"/g, '""')}"`,
+      l.status || "",
+      escapeCSV(typeof l.teacher === "object" ? (l.teacher?.name || "") : (teachers.find(t => t._id === l.teacher)?.name || l.teacher || "")),
+      escapeCSV(l.homework?.title || ""),
       l.homework?.due_date ? new Date(l.homework.due_date).toLocaleDateString() : ""
     ]);
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [csvHeaders.join(","), ...csvRows.map(r => r.join(","))].join("\n");
+    const lines = [
+      csvHeaders.map(h => escapeCSV(h)).join(","),
+      ...csvRows.map(r => r.join(","))
+    ].join("\r\n");
 
-    const encodedUri = encodeURI(csvContent);
+    const blob = new Blob([lines], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute("download", `${subject || "lecture"}_schedule.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully!");
   };
 
   // Calculate live stats metrics
@@ -2484,47 +2494,61 @@ export default function LectureSchedule() {
                         No student submissions uploaded yet.
                       </div>
                     ) : (
-                      <div className="divide-y divide-[#F1F5F9] border border-[#E2E8F0] rounded-xl bg-white overflow-hidden max-h-[250px] overflow-y-auto">
+                      <div className="space-y-2">
                         {homeworkSubmissions.map((sub) => (
-                          <div key={sub._id} className="p-3.5 flex justify-between items-center text-xs hover:bg-[#F8FAFC]">
-                            <div>
-                              <strong className="block text-[#1B2B4B]">{sub.student?.name}</strong>
-                              <span className="text-[10px] text-[#64748B] block mt-0.5">{sub.student?.email}</span>
-                              <span className="block text-gray-700 font-medium mt-1">{sub.fileName}</span>
-                              <div className="flex gap-2 items-center mt-1">
+                          <div key={sub._id} className="border border-[#E2E8F0] rounded-xl bg-white overflow-hidden hover:shadow-sm transition-all">
+                            {/* Student Info Row */}
+                            <div className="flex items-center gap-3 px-4 py-3 bg-[#F8FAFC] border-b border-[#F1F5F9]">
+                              <div className="w-8 h-8 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center text-xs font-extrabold shrink-0">
+                                {(sub.student?.name || "?").charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <strong className="block text-[#1B2B4B] text-sm font-bold truncate">
+                                  {sub.student?.name || <span className="text-[#94A3B8] italic">Unknown Student</span>}
+                                </strong>
+                                <span className="text-[10px] text-[#64748B]">{sub.student?.email || ""}</span>
+                              </div>
+                              <span className={`inline-flex px-2.5 py-1 rounded-full text-[9px] font-bold border uppercase tracking-wider shrink-0 ${
+                                sub.status === "reviewed"
+                                  ? "bg-[#D1FAE5] border-[#A7F3D0] text-[#065F46]"
+                                  : "bg-[#FFF7ED] border-[#FED7AA] text-[#C2410C]"
+                              }`}>
+                                {sub.status}
+                              </span>
+                            </div>
+
+                            {/* File Info + Actions Row */}
+                            <div className="flex items-center justify-between px-4 py-3 gap-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <FileText size={15} className="text-[#94A3B8] shrink-0" />
+                                <span className="text-xs text-[#334155] font-medium truncate max-w-[180px]">
+                                  {sub.fileName || "Uploaded File"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
                                 <button
                                   onClick={() => handlePreviewFile(sub.fileName, sub.fileUrl)}
-                                  className="text-[#4F46E5] hover:underline flex items-center gap-1 text-[10px] font-bold text-left cursor-pointer"
+                                  className="bg-[#EEF2FF] border border-[#C7D2FE] hover:bg-[#E0E7FF] text-[#4F46E5] px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer"
                                 >
                                   <Eye size={11} /> Preview
                                 </button>
-                                <span className="text-gray-300 text-[10px]">|</span>
                                 <button
                                   onClick={() => handleDownloadFile(sub.fileName, sub.fileUrl)}
-                                  className="text-[#2563EB] hover:underline flex items-center gap-1 text-[10px] font-bold text-left cursor-pointer"
+                                  className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer"
                                 >
                                   <Download size={11} /> Download
                                 </button>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${sub.status === "reviewed"
-                                  ? "bg-[#D1FAE5] border-[#A7F3D0] text-[#065F46]"
-                                  : "bg-[#FFF7ED] border-[#FED7AA] text-[#C2410C]"
-                                }`}>
-                                {sub.status}
-                              </span>
-
-                              <button
-                                onClick={() => handleToggleReview(sub._id)}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm transition-all cursor-pointer ${sub.status === "reviewed"
-                                    ? "bg-white border border-[#CBD5E1] text-[#475569] hover:bg-[#F8FAFC]"
-                                    : "bg-[#10B981] hover:bg-[#059669] text-white"
+                                <button
+                                  onClick={() => handleToggleReview(sub._id)}
+                                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-all cursor-pointer ${
+                                    sub.status === "reviewed"
+                                      ? "bg-white border border-[#CBD5E1] text-[#475569] hover:bg-[#F8FAFC]"
+                                      : "bg-[#10B981] hover:bg-[#059669] text-white"
                                   }`}
-                              >
-                                {sub.status === "reviewed" ? "Re-open" : "Mark Reviewed"}
-                              </button>
+                                >
+                                  {sub.status === "reviewed" ? "Re-open" : "Mark Reviewed"}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -2740,7 +2764,7 @@ export default function LectureSchedule() {
 
       {/* FILE PREVIEW MODAL */}
       {isPreviewModalOpen && (
-        <div className="fixed inset-0 bg-[#0F172A]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-[#0F172A]/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white border border-[#E2E8F0] w-full max-w-4xl rounded-2xl shadow-xl flex flex-col h-[85vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F5F9] shrink-0">

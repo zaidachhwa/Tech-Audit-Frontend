@@ -45,18 +45,52 @@ export default function TeacherGrades() {
   useEffect(() => {
     if (!selectedBatch) { setStudents([]); setGrades({}); return; }
     setLoading(true);
-    API.get(`/students/list?batchId=${encodeURIComponent(selectedBatch)}`)
-      .then((r) => {
-        const all = r.data?.students || [];
-        setStudents(all);
-        const init = {};
-        all.forEach((s) => {
-          init[s._id] = {};
-          assignments.forEach((a) => { init[s._id][a] = ""; });
+
+    Promise.all([
+      API.get(`/students/list?batchId=${encodeURIComponent(selectedBatch)}`),
+      API.get(`/grades?batchId=${encodeURIComponent(selectedBatch)}`)
+    ])
+      .then(([studentsRes, gradesRes]) => {
+        const allStudents = studentsRes.data?.students || [];
+        setStudents(allStudents);
+
+        const savedGrades = gradesRes.data?.grades || [];
+        const savedMap = {};
+        const allAssignmentNames = new Set(["Assignment 1", "Assignment 2", "Final Project"]);
+        const maxScoreMap = { "Assignment 1": 100, "Assignment 2": 100, "Final Project": 100 };
+
+        savedGrades.forEach((g) => {
+          const sId = g.student?._id || g.student;
+          if (sId) {
+            savedMap[sId] = {};
+            (g.grades || []).forEach((entry) => {
+              if (entry.assignment) {
+                allAssignmentNames.add(entry.assignment);
+                savedMap[sId][entry.assignment] = entry.score !== null && entry.score !== undefined ? entry.score : "";
+                if (entry.maxScore) maxScoreMap[entry.assignment] = entry.maxScore;
+              }
+            });
+          }
         });
-        setGrades(init);
+
+        const assignmentList = Array.from(allAssignmentNames);
+        setAssignments(assignmentList);
+        setMaxScore(maxScoreMap);
+
+        const initGrades = {};
+        allStudents.forEach((s) => {
+          initGrades[s._id] = {};
+          assignmentList.forEach((a) => {
+            initGrades[s._id][a] = savedMap[s._id]?.[a] !== undefined ? savedMap[s._id][a] : "";
+          });
+        });
+
+        setGrades(initGrades);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error("Grades fetch error:", err);
+        toast.error("Failed to load grades data");
+      })
       .finally(() => setLoading(false));
   }, [selectedBatch]);
 
@@ -77,10 +111,29 @@ export default function TeacherGrades() {
   };
 
   const handleSave = async () => {
-    setSaving(true);
-    await new Promise((r) => setTimeout(r, 800));
-    toast.success("Grades saved successfully!");
-    setSaving(false);
+    if (!selectedBatch) return;
+    try {
+      setSaving(true);
+      const gradesData = students.map((s) => {
+        const studentGrades = grades[s._id] || {};
+        const gradeEntries = assignments
+          .filter((a) => studentGrades[a] !== undefined && studentGrades[a] !== "")
+          .map((a) => ({
+            assignment: a,
+            score: parseFloat(studentGrades[a]),
+            maxScore: maxScore[a] || 100,
+          }));
+        return { student: s._id, grades: gradeEntries };
+      });
+
+      await API.post("/grades/save", { batchId: selectedBatch, gradesData });
+      toast.success("Grades saved successfully!");
+    } catch (err) {
+      console.error("Grade save error:", err);
+      toast.error(err.response?.data?.message || "Failed to save grades");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const avgScore = (studentId) => {

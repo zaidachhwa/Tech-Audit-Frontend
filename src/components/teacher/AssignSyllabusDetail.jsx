@@ -51,9 +51,9 @@ export default function AssignSyllabusDetail() {
         // Safely filter out any orphaned BatchSyllabus that reference a deleted Syllabus
         const syllabi = (thisBatch?.assignedSyllabi || []).filter(bs => bs.syllabus != null);
         setAssignedSyllabi(syllabi);
-        if (syllabi.length === 1) {
-          setSelectedSyllabusId(String(syllabi[0]._id));
-        } else if (syllabi.length === 0) {
+        if (syllabi.length > 0) {
+          setSelectedSyllabusId((prev) => (prev && syllabi.some(s => String(s._id) === String(prev)) ? prev : String(syllabi[0]._id)));
+        } else {
           setSelectedSyllabusId("");
         }
       })

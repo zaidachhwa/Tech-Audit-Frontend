@@ -43,6 +43,7 @@ export default function AssignTask() {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [expandedSubmission, setExpandedSubmission] = useState(null);
   const [marks, setMarks] = useState("");
+  const [outOf, setOutOf] = useState("");
   const [remarks, setRemarks] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -54,14 +55,20 @@ export default function AssignTask() {
         // syllabus-tracker uses 'syllabi' wrapper
         setSubjects(res.data?.syllabi || res.data || []);
       })
-      .catch(() => { });
+      .catch((err) => { 
+        console.error("Subjects fetch error:", err);
+        toast.error(err.response?.data?.message || "Failed to load subjects");
+      });
 
     // Load batches
     API.get("/batches")
       .then((res) => {
         setBatches(res.data?.batches || res.data || []);
       })
-      .catch(() => { });
+      .catch((err) => { 
+        console.error("Batches fetch error:", err);
+        toast.error(err.response?.data?.message || "Failed to load batches");
+      });
   }, []);
 
   // Load lectures when subject & batches are selected
@@ -93,6 +100,7 @@ export default function AssignTask() {
             hw.submissions.forEach((sub) => {
               flat.push({
                 ...sub,
+                student: hw.student,
                 homeworkTitle: hw.title,
                 homeworkDescription: hw.description,
                 dueDate: hw.dueDate,
@@ -173,8 +181,8 @@ export default function AssignTask() {
   };
 
   const handleReviewAction = async (submissionId, action) => {
-    if (action === "approve" && !marks) {
-      toast.error("Please input marks/score for approval");
+    if (action === "approve" && (!marks || !outOf)) {
+      toast.error("Please input obtained marks and total marks for approval");
       return;
     }
     if (!remarks.trim()) {
@@ -187,12 +195,14 @@ export default function AssignTask() {
       const endpoint = `/homework/${submissionId}/${action}`;
       await API.patch(endpoint, {
         marks: Number(marks) || 0,
+        outOf: Number(outOf) || 0,
         remarks
       });
 
       toast.success(`Submission ${action}d successfully`);
       setExpandedSubmission(null);
       setMarks("");
+      setOutOf("");
       setRemarks("");
       fetchSubmissions();
     } catch (err) {
@@ -425,25 +435,19 @@ export default function AssignTask() {
                         <p className="text-sm text-gray-700 bg-white p-4 rounded-xl border border-gray-200 leading-relaxed whitespace-pre-wrap">
                           {sub.submissionText || <span className="text-gray-400 italic">No notes provided</span>}
                         </p>
-
-                        {sub.attachments?.length > 0 && (
-                          <div className="pt-2">
-                            <p className="text-xs font-semibold text-gray-500 mb-2">Student Attachments:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {sub.attachments.map((url, i) => (
-                                <a
-                                  key={i}
-                                  href={url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs font-medium text-blue-600 hover:bg-blue-50"
-                                >
-                                  <FileText size={12} /> View Submission File {i + 1}
-                                </a>
-                              ))}
-                            </div>
+                        <div className="pt-2">
+                          <p className="text-xs font-semibold text-gray-500 mb-2">Student Attachments:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {sub.fileUrl ? (
+                              <a href={sub.fileUrl} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors shadow-sm">
+                                <FileText size={12} /> {sub.fileName || "View Submission File"}
+                              </a>
+                            ) : (
+                              <span className="text-xs text-gray-400 italic bg-gray-100 px-3 py-1.5 rounded-lg border border-dashed border-gray-200">No file uploaded</span>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
 
                       {/* Action panel (for pending) */}
@@ -451,14 +455,24 @@ export default function AssignTask() {
                         <div className="bg-white p-5 rounded-xl border border-[#E2E8F0] space-y-4">
                           <h5 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Review & Grade</h5>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="space-y-1">
-                              <label className="text-xs font-bold text-gray-500">Marks / Score</label>
+                              <label className="text-xs font-bold text-gray-500">Obtained Marks</label>
                               <input
                                 type="number"
                                 placeholder="e.g. 10"
                                 value={marks}
                                 onChange={(e) => setMarks(e.target.value)}
+                                style={S.input}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-gray-500">Out Of</label>
+                              <input
+                                type="number"
+                                placeholder="e.g. 20"
+                                value={outOf}
+                                onChange={(e) => setOutOf(e.target.value)}
                                 style={S.input}
                               />
                             </div>
@@ -497,7 +511,9 @@ export default function AssignTask() {
                         <div className="bg-white p-4 rounded-xl border border-gray-200">
                           <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Graded Details</h5>
                           {sub.marks !== undefined && (
-                            <p className="text-sm font-bold text-gray-800">Score: {sub.marks} Marks</p>
+                            <p className="text-sm font-bold text-gray-800">
+                              Score: {sub.marks} {sub.outOf !== undefined ? `/ ${sub.outOf}` : ""} Marks
+                            </p>
                           )}
                           <p className="text-sm text-gray-600 italic mt-1">Remarks: "{sub.remarks}"</p>
                         </div>

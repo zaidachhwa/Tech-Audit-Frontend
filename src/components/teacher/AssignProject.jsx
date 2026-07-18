@@ -45,8 +45,25 @@ export default function AssignProject() {
   const [outcomes, setOutcomes] = useState([{ title: "", description: "" }]);
   const [skills, setSkills] = useState([{ name: "", level: "Intermediate" }]);
 
+  const [existingProjects, setExistingProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [projectSearch, setProjectSearch] = useState("");
+
+  const fetchProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const res = await API.get("/projects");
+      setExistingProjects(res.data?.projects || []);
+    } catch (err) {
+      console.error("Failed to load projects:", err);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
   useEffect(() => {
     API.get("/batches/public").then((r) => setBatches(r.data || []));
+    fetchProjects();
   }, []);
 
   const clean = (str) => str?.replace(/\s+/g, "").toUpperCase();
@@ -122,11 +139,23 @@ export default function AssignProject() {
       setModules([{ name: "", status: "Pending", notes: "" }]);
       setOutcomes([{ title: "", description: "" }]);
       setSkills([{ name: "", level: "Intermediate" }]);
+      fetchProjects();
     } catch (err) {
       console.error("Assignment error:", err.response?.data);
       toast.error(err.response?.data?.message || "Assignment failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteProject = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this assigned project?")) return;
+    try {
+      await API.delete(`/projects/${id}`);
+      toast.success("Project deleted successfully");
+      fetchProjects();
+    } catch (err) {
+      toast.error("Failed to delete project");
     }
   };
 
@@ -319,6 +348,115 @@ export default function AssignProject() {
         {loading ? <Loader2 size={18} style={spinStyle} /> : <Send size={18} />}
         {loading ? "Assigning Project..." : assignMode === "batch" ? "Assign Project to Batch" : "Assign Project to Student"}
       </button>
+
+      {/* Project List Section */}
+      <div style={{ ...S.card, marginTop: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 4, height: 18, background: "#2563EB", borderRadius: 4 }} />
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1B2B4B", margin: 0 }}>Assigned Projects List</h2>
+            <span style={{ background: "#EFF6FF", color: "#2563EB", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>
+              {existingProjects.length}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <input
+              type="text"
+              placeholder="Search projects..."
+              value={projectSearch}
+              onChange={(e) => setProjectSearch(e.target.value)}
+              style={{ ...S.input, width: 220, padding: "7px 12px" }}
+            />
+            <button onClick={fetchProjects} disabled={loadingProjects} style={S.secondaryBtn}>
+              <Loader2 size={13} className={loadingProjects ? "animate-spin" : ""} /> Refresh
+            </button>
+          </div>
+        </div>
+
+        {loadingProjects ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#64748B", fontSize: 13 }}>
+            Loading projects list...
+          </div>
+        ) : existingProjects.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#94A3B8", fontSize: 13 }}>
+            No assigned projects found.
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+            {existingProjects
+              .filter((p) => {
+                const q = projectSearch.toLowerCase();
+                return (
+                  (p.title || "").toLowerCase().includes(q) ||
+                  (p.assignedTo?.name || "").toLowerCase().includes(q) ||
+                  (p.batch?.batch_name || "").toLowerCase().includes(q)
+                );
+              })
+              .map((p) => (
+                <div
+                  key={p._id}
+                  style={{
+                    background: "#F8FAFC",
+                    border: "1.5px solid #E2E8F0",
+                    borderRadius: 10,
+                    padding: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+                      <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1B2B4B", margin: 0, lineHeight: 1.3 }}>{p.title}</h3>
+                      <span
+                        style={{
+                          background: p.overallStatus === "Completed" || p.overallStatus === "Approved" ? "#ECFDF5" : p.overallStatus === "In Progress" ? "#FEF3C7" : "#EFF6FF",
+                          color: p.overallStatus === "Completed" || p.overallStatus === "Approved" ? "#065F46" : p.overallStatus === "In Progress" ? "#92400E" : "#1E40AF",
+                          padding: "2px 8px",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {p.overallStatus || "Pending"}
+                      </span>
+                    </div>
+
+                    <p style={{ fontSize: 12, color: "#64748B", margin: "0 0 10px", lineClamp: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {p.description}
+                    </p>
+
+                    <div style={{ fontSize: 11, color: "#475569", display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 }}>
+                      <div><strong>Student:</strong> {p.assignedTo?.name || "Unassigned"}</div>
+                      <div><strong>Batch:</strong> {p.batch?.batch_name ? `${p.batch.batch_name} (#${p.batch.batch_no})` : "—"}</div>
+                      {p.dueDate && <div><strong>Due Date:</strong> {new Date(p.dueDate).toLocaleDateString()}</div>}
+                      {p.repo && (
+                        <div>
+                          <strong>Repo:</strong>{" "}
+                          <a href={p.repo} target="_blank" rel="noreferrer" style={{ color: "#2563EB", textDecoration: "underline" }}>
+                            Link
+                          </a>
+                        </div>
+                      )}
+                      {p.modules && p.modules.length > 0 && <div><strong>Modules:</strong> {p.modules.length} module(s)</div>}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 8, borderTop: "1px solid #E2E8F0" }}>
+                    <button
+                      onClick={() => handleDeleteProject(p._id)}
+                      style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FCA5A5", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      <Trash2 size={12} /> Delete Project
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
