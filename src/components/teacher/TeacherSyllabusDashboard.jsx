@@ -253,14 +253,22 @@ export default function TeacherSyllabusDashboard() {
 
   const getFilteredTopics = () => {
     let filtered = [...topics];
-    if (filterStatus !== "all") filtered = filtered.filter((t) => t.completionStatus === filterStatus);
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((t) => 
+        t.completionStatus === filterStatus || 
+        (filterStatus === "Yet to be scheduled" && t.completionStatus === "Pending")
+      );
+    }
     filtered.sort((a, b) => {
       if (sortBy === "dueDate") {
         const da = a.dueDate ? new Date(a.dueDate) : null, db = b.dueDate ? new Date(b.dueDate) : null;
         if (!da && !db) return 0; if (!da) return 1; if (!db) return -1; return da - db;
       }
       if (sortBy === "title") return (a.title || "").localeCompare(b.title || "");
-      if (sortBy === "status") { const order = { Pending: 0, "In Progress": 1, Completed: 2 }; return (order[a.completionStatus] ?? 3) - (order[b.completionStatus] ?? 3); }
+      if (sortBy === "status") {
+        const order = { "Yet to be scheduled": 0, Pending: 0, "In Progress": 1, Completed: 2 };
+        return (order[a.completionStatus] ?? 3) - (order[b.completionStatus] ?? 3);
+      }
       return 0;
     });
     return filtered;
@@ -271,7 +279,7 @@ export default function TeacherSyllabusDashboard() {
     total: topics.length,
     completed: topics.filter((t) => t.completionStatus === "Completed").length,
     inProgress: topics.filter((t) => t.completionStatus === "In Progress").length,
-    pending: topics.filter((t) => t.completionStatus === "Pending").length,
+    pending: topics.filter((t) => t.completionStatus === "Yet to be scheduled" || t.completionStatus === "Pending").length,
   };
   const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
@@ -376,7 +384,7 @@ export default function TeacherSyllabusDashboard() {
           { label: "Total Lectures", value: stats.total, icon: <BookOpen size={20} />, tint: "#EFF6FF", iconColor: "#2563EB" },
           { label: "Completed", value: stats.completed, icon: <CheckCircle2 size={20} />, tint: "#ECFDF5", iconColor: "#10B981" },
           { label: "In Progress", value: stats.inProgress, icon: <Clock size={20} />, tint: "#FEF3C7", iconColor: "#F59E0B" },
-          { label: "Pending", value: stats.pending, icon: <AlertCircle size={20} />, tint: "#FEF2F2", iconColor: "#EF4444" },
+          { label: "Yet to be scheduled", value: stats.pending, icon: <AlertCircle size={20} />, tint: "#FEF2F2", iconColor: "#EF4444" },
         ].map((s) => (
           <div key={s.label} style={{ ...S.card, padding: "18px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -537,7 +545,7 @@ export default function TeacherSyllabusDashboard() {
               <Filter size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", pointerEvents: "none" }} />
               <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ ...S.input, paddingLeft: 28, width: "auto", fontSize: 12 }}>
                 <option value="all">All Status</option>
-                <option value="Pending">Pending</option>
+                <option value="Yet to be scheduled">Yet to be scheduled</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
               </select>
@@ -661,9 +669,11 @@ function TopicCard({ topic, expanded, onToggleExpand, onStatusUpdate, onOpenRema
   const statusMap = {
     Completed: { bg: "#ECFDF5", border: "#A7F3D0", badge: { bg: "#ECFDF5", color: "#065F46" }, icon: <CheckCircle2 size={16} color="#10B981" /> },
     "In Progress": { bg: "#EFF6FF", border: "#BFDBFE", badge: { bg: "#EFF6FF", color: "#1E40AF" }, icon: <Clock size={16} color="#2563EB" /> },
+    "Yet to be scheduled": { bg: "#FEF3C7", border: "#FDE68A", badge: { bg: "#FEF3C7", color: "#92400E" }, icon: <AlertCircle size={16} color="#F59E0B" /> },
     Pending: { bg: "#FEF3C7", border: "#FDE68A", badge: { bg: "#FEF3C7", color: "#92400E" }, icon: <AlertCircle size={16} color="#F59E0B" /> },
   };
-  const cfg = statusMap[topic.completionStatus] || statusMap.Pending;
+  const cfg = statusMap[topic.completionStatus] || statusMap["Yet to be scheduled"];
+  const displayStatus = topic.completionStatus === "Pending" ? "Yet to be scheduled" : topic.completionStatus;
   const dueDate = topic.dueDate ? new Date(topic.dueDate) : null;
   const isOverdue = dueDate && dueDate < new Date() && topic.completionStatus !== "Completed";
 
@@ -677,7 +687,7 @@ function TopicCard({ topic, expanded, onToggleExpand, onStatusUpdate, onOpenRema
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6, gap: 10 }}>
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>{topic.title}</p>
             <span style={{ ...cfg.badge, borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", fontFamily: "'DM Sans', sans-serif" }}>
-              {topic.completionStatus}
+              {displayStatus}
             </span>
           </div>
           {topic.description && <p style={{ color: "#64748B", fontSize: 12, margin: "0 0 10px", lineHeight: 1.5 }}>{topic.description}</p>}
@@ -690,7 +700,7 @@ function TopicCard({ topic, expanded, onToggleExpand, onStatusUpdate, onOpenRema
             <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "2px 10px", height: "32px", boxSizing: "border-box" }}>
               <span style={{ fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase" }}>Status:</span>
               <select
-                value={topic.completionStatus}
+                value={displayStatus}
                 onChange={(e) => onStatusUpdate(topic._id, e.target.value)}
                 style={{
                   background: "transparent",
@@ -704,7 +714,7 @@ function TopicCard({ topic, expanded, onToggleExpand, onStatusUpdate, onOpenRema
                   padding: 0
                 }}
               >
-                <option value="Pending">Pending</option>
+                <option value="Yet to be scheduled">Yet to be scheduled</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
               </select>

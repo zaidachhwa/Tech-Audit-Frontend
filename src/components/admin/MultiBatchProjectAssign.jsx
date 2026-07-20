@@ -191,20 +191,21 @@ export default function MultiBatchProjectAssign({ onClose, onAssigned }) {
           const validSkills = project.skills.filter((s) => s.name.trim());
 
           // Assign to each student in the batch
-          const promises = batch.students.map((student) =>
-            API.post("/projects/create", {
+          const promises = batch.students.map((student) => {
+            const sId = typeof student === "object" ? (student._id || student.id || student) : student;
+            return API.post("/projects/create", {
               title: project.title,
-              description: project.description,
-              repo: project.repo,
-              studentId: student._id,
+              description: project.description || project.title,
+              repo: project.repo || "",
+              studentId: sId,
               batchId: batch._id,
               modules: validModules,
               outcomes: validOutcomes,
               skills: validSkills,
-              overallStatus: project.overallStatus,
-              assignedTo: student._id,
-            })
-          );
+              overallStatus: project.overallStatus || "Pending",
+              assignedTo: sId,
+            });
+          });
 
           await Promise.all(promises);
           totalAssignments += batch.students.length;

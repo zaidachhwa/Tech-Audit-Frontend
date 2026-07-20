@@ -668,7 +668,7 @@ export default function AdminSyllabusManagement() {
                 <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
                   sub.completionStatus === "Completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
                 }`}>
-                  {sub.completionStatus || "Pending"}
+                  {sub.completionStatus && sub.completionStatus !== "Pending" ? sub.completionStatus : "Yet to be scheduled"}
                 </span>
               </div>
             ))}
@@ -2201,12 +2201,21 @@ export default function AdminSyllabusManagement() {
                   >
                     <option value="">Choose teacher...</option>
                     {(() => {
-                      const assignedTeachersList = [
+                      const allAssigned = [
                         ...(selectedSyllabus?.assignedTeachers || []),
                         ...(selectedSyllabus?.assignedTeacher ? [selectedSyllabus.assignedTeacher] : [])
-                      ].filter(t => t && t._id);
-                      return assignedTeachersList.map(t => (
-                        <option key={t._id} value={t._id}>{t.name}</option>
+                      ].filter(t => t && (t._id || t.id));
+
+                      const teacherMap = new Map();
+                      allAssigned.forEach(t => {
+                        const idKey = (t._id || t.id).toString();
+                        if (!teacherMap.has(idKey)) {
+                          teacherMap.set(idKey, t);
+                        }
+                      });
+                      
+                      return Array.from(teacherMap.values()).map(t => (
+                        <option key={t._id || t.id} value={t._id || t.id}>{t.name}</option>
                       ));
                     })()}
                   </select>
