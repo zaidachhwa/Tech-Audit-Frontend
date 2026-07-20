@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fileToCleanCSV } from "../../utils/excelToCSV";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { API } from "../../api/axios";
@@ -93,42 +94,35 @@ export default function AdminBatchDetail() {
   const handleBulkUploadSubmit = async (e) => {
     e.preventDefault();
     if (!uploadFile) {
-      toast.error("Please select a CSV file");
+      toast.error("Please select a file");
       return;
     }
 
     setUploading(true);
     setUploadResult(null);
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const csvData = event.target.result;
-        const res = await API.post("/students/bulk-import", {
-          batch_name: batch.batch_name,
-          batch_no: batch.batch_no,
-          csvData
-        });
+    try {
+      const csvData = await fileToCleanCSV(uploadFile);
 
-        setUploadResult(res.data);
-        if (res.data.successCount > 0) {
-          toast.success(`Successfully imported ${res.data.successCount} students! Credentials emailed.`);
-          fetchBatchDetails();
-        } else {
-          toast.error("Failed to import students. Check row-wise errors.");
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error(err.response?.data?.message || "Bulk upload failed");
-      } finally {
-        setUploading(false);
+      const res = await API.post("/students/bulk-import", {
+        batch_name: batch.batch_name,
+        batch_no: batch.batch_no,
+        csvData
+      });
+
+      setUploadResult(res.data);
+      if (res.data.successCount > 0) {
+        toast.success(`Successfully imported ${res.data.successCount} students! Credentials emailed.`);
+        fetchBatchDetails();
+      } else {
+        toast.error("Failed to import students. Check row-wise errors.");
       }
-    };
-    reader.onerror = () => {
-      toast.error("Error reading CSV file");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || err.message || "Bulk upload failed");
+    } finally {
       setUploading(false);
-    };
-    reader.readAsText(uploadFile);
+    }
   };
 
   const downloadCsvTemplate = () => {
@@ -728,8 +722,8 @@ export default function AdminBatchDetail() {
                       <Download size={16} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-[#1E40AF]">CSV File Template</h4>
-                      <p className="text-[11px] text-[#64748B] mt-0.5">Headers required: name, email (phone optional)</p>
+                      <h4 className="text-xs font-bold text-[#1E40AF]">Excel / CSV Template</h4>
+                      <p className="text-[11px] text-[#64748B] mt-0.5">Columns required: name, email (phone optional)</p>
                     </div>
                   </div>
                   <button
@@ -744,30 +738,35 @@ export default function AdminBatchDetail() {
                 {/* File Drop Area */}
                 <div>
                   <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-2">
-                    Upload CSV File
+                    Upload Excel or CSV File
                   </label>
                   <div className="border-2 border-dashed border-[#E2E8F0] rounded-xl p-8 text-center bg-[#F8FAFC] hover:bg-[#F1F5F9] transition relative">
                     <input
+                      id="bulk-upload-file-input"
                       type="file"
-                      accept=".csv"
+                      accept=".xlsx,.xls,.csv"
+                      multiple={false}
                       required
                       onChange={(e) => {
                         const file = e.target.files[0];
-                        if (file && file.name.endsWith(".csv")) {
-                          setUploadFile(file);
-                        } else if (file) {
-                          toast.error("Please upload a valid CSV file (.csv)");
+                        if (file) {
+                          const name = file.name.toLowerCase();
+                          if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".csv")) {
+                            setUploadFile(file);
+                          } else {
+                            toast.error("Please upload a valid Excel (.xlsx, .xls) or CSV (.csv) file");
+                          }
                         }
                       }}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
                     />
                     <Upload size={32} className="mx-auto text-[#94A3B8] mb-3" />
                     {uploadFile ? (
                       <p className="text-sm font-semibold text-[#2563EB]">{uploadFile.name}</p>
                     ) : (
                       <>
-                        <p className="text-sm text-[#475569] font-medium">Click or Drag CSV file here</p>
-                        <p className="text-xs text-[#94A3B8] mt-1">Maximum file size 2 MB</p>
+                        <p className="text-sm text-[#475569] font-medium">Click or Drag Excel / CSV file here</p>
+                        <p className="text-xs text-[#94A3B8] mt-1">.xlsx, .xls, .csv — Maximum file size 2 MB</p>
                       </>
                     )}
                   </div>

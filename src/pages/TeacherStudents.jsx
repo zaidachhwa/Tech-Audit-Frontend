@@ -1,5 +1,6 @@
 // src/pages/TeacherStudents.jsx
 import React, { useEffect, useState } from "react";
+import { fileToCleanCSV } from "../utils/excelToCSV";
 import { Link } from "react-router-dom";
 import { API } from "../api/axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -102,8 +103,10 @@ export default function TeacherStudents() {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.name.endsWith(".csv")) {
-      toast.error("Please upload a valid CSV file (.csv)");
+    const name = file.name.toLowerCase();
+    const isValid = name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".csv");
+    if (!isValid) {
+      toast.error("Please upload a valid Excel (.xlsx, .xls) or CSV (.csv) file");
       return;
     }
 
@@ -140,41 +143,34 @@ export default function TeacherStudents() {
       return;
     }
     if (!importFile) {
-      toast.error("Please select a CSV file");
+      toast.error("Please select a file");
       return;
     }
 
     setImporting(true);
     setImportResult(null);
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const csvData = event.target.result;
-        const res = await API.post("/students/bulk-import", {
-          batch_name: importCourse,
-          batch_no: importBatch,
-          csvData
-        });
+    try {
+      const csvData = await fileToCleanCSV(importFile);
 
-        setImportResult(res.data);
-        if (res.data.successCount > 0) {
-          toast.success(`Successfully imported ${res.data.successCount} students!`);
-          fetchStudents();
-        } else {
-          toast.error("Failed to import students. Check row-wise errors.");
-        }
-      } catch (err) {
-        toast.error(err.response?.data?.message || "Import failed. Please try again.");
-      } finally {
-        setImporting(false);
+      const res = await API.post("/students/bulk-import", {
+        batch_name: importCourse,
+        batch_no: importBatch,
+        csvData
+      });
+
+      setImportResult(res.data);
+      if (res.data.successCount > 0) {
+        toast.success(`Successfully imported ${res.data.successCount} students!`);
+        fetchStudents();
+      } else {
+        toast.error("Failed to import students. Check row-wise errors.");
       }
-    };
-    reader.onerror = () => {
-      toast.error("Failed to read the file");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Import failed. Please try again.");
+    } finally {
       setImporting(false);
-    };
-    reader.readAsText(importFile);
+    }
   };
 
   useEffect(() => {
@@ -902,7 +898,7 @@ export default function TeacherStudents() {
                 {/* CSV File Upload Section */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-end">
-                    <label className="block text-xs font-bold text-[#1B2B4B]">Upload CSV File</label>
+                    <label className="block text-xs font-bold text-[#1B2B4B]">Upload Excel or CSV File</label>
                     <button
                       type="button"
                       onClick={downloadTemplate}
@@ -915,7 +911,7 @@ export default function TeacherStudents() {
                   <div className="border-2 border-dashed border-[#CBD5E1] rounded-xl p-8 text-center bg-[#FAFBFC] hover:bg-[#F1F5F9] transition-colors relative">
                     <input 
                       type="file" 
-                      accept=".csv"
+                      accept=".xlsx,.xls,.csv"
                       onChange={handleFileChange}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
@@ -924,8 +920,8 @@ export default function TeacherStudents() {
                       <p className="text-sm font-bold text-[#10B981]">{importFile.name}</p>
                     ) : (
                       <>
-                        <p className="text-sm font-bold text-[#1B2B4B]">Click or drag to upload CSV</p>
-                        <p className="text-xs text-[#64748B] mt-1">Maximum file size: 2MB</p>
+                        <p className="text-sm font-bold text-[#1B2B4B]">Click or drag to upload Excel / CSV</p>
+                        <p className="text-xs text-[#64748B] mt-1">.xlsx, .xls, .csv — Maximum file size: 2MB</p>
                       </>
                     )}
                   </div>
