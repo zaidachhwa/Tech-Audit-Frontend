@@ -121,8 +121,8 @@ export default function AdminDashboard() {
       const d = statsRes.data;
       setStats({
         totalStudents: d.totalStudents || 0,
-        activeStudents: d.totalStudents || 0,
-        pendingApprovals: d.pendingHomework || 0,
+        activeStudents: d.activeStudents ?? d.totalStudents ?? 0,
+        pendingApprovals: d.pendingApprovals ?? d.pendingStudents ?? 0,
         totalBatches: d.totalBatches || batchesData.length,
         totalTeachers: d.totalTeachers || 0,
         totalSubjects: d.totalSubjects || 0,

@@ -44,6 +44,8 @@ export default function LectureSchedule() {
   const [selectedBatchIds, setSelectedBatchIds] = useState([]);
   const [batchDropdownOpen, setBatchDropdownOpen] = useState(false);
   const [teacherId, setTeacherId] = useState("");
+  const [selectedTeacherIds, setSelectedTeacherIds] = useState([]);
+  const [teacherDropdownOpen, setTeacherDropdownOpen] = useState(false);
   const [numLectures, setNumLectures] = useState("");
   const [startDate, setStartDate] = useState("");
   const [frequency, setFrequency] = useState("daily");
@@ -288,16 +290,37 @@ export default function LectureSchedule() {
     return addWeekdays(startDate, offset);
   };
 
-  // Load predefined template lectures into the grid
-  const handleLoadSubjectTemplate = (e) => {
-    e.preventDefault();
-    if (!teacherId || selectedBatchIds.length === 0) return toast.error("Select a Batch and Teacher first");
-    const tmpl = subjectTemplates.find(t => t._id === selectedTemplateId);
+  // Automatically recalculate lecture dates when Start Date or Frequency changes
+  const updateLectureDates = (newStartDate, newFreq, currentLectures = lectures) => {
+    if (!newStartDate || newFreq === "custom" || currentLectures.length === 0) return;
+    let regularIndex = 0;
+    const updated = currentLectures.map((l) => {
+      if (l.isSaturdayLecture) return l;
+      const nextDate = getDateForLectureIndex(newStartDate, regularIndex, newFreq);
+      regularIndex++;
+      return {
+        ...l,
+        date: nextDate ? formatDateForInput(nextDate) : ""
+      };
+    });
+    setLectures(updated);
+  };
+
+  // Load predefined template lectures into the grid automatically
+  const loadTemplateLectures = (tmpl, overrideStartDate = startDate, overrideFreq = frequency, overrideTeachers = selectedTeacherIds) => {
     if (!tmpl) return;
 
-    let lastCalculatedDate = startDate ? new Date(startDate) : new Date();
+    let lastCalculatedDate = overrideStartDate ? new Date(overrideStartDate) : new Date();
     let regularIndex = 0;
-    const loadedLectures = tmpl.lectures.map((l, i) => {
+    const autoMatchedTeacherIds = new Set(overrideTeachers);
+
+    const rawLectures = tmpl.lectures || tmpl.topics || [];
+    if (!rawLectures || rawLectures.length === 0) {
+      toast.error("No lectures found in the selected subject template.");
+      return;
+    }
+
+    const loadedLectures = rawLectures.map((l, i) => {
       let nextDate = null;
       const isSatLec = l.isSaturdayLecture || false;
 
@@ -308,12 +331,31 @@ export default function LectureSchedule() {
         nextDate = base;
         lastCalculatedDate = base;
       } else {
-        if (frequency !== "custom") {
-          nextDate = getDateForLectureIndex(startDate || new Date(), regularIndex, frequency);
+        if (overrideFreq !== "custom" && overrideStartDate) {
+          nextDate = getDateForLectureIndex(overrideStartDate, regularIndex, overrideFreq);
           regularIndex++;
           if (nextDate) {
             lastCalculatedDate = new Date(nextDate);
           }
+        }
+      }
+
+      // Auto match teacher if specified in lecture object, description, or title
+      let matchedTeacher = (overrideTeachers.length > 0 ? overrideTeachers[0] : teacherId) || "";
+
+      if (l.assignedTo?._id) {
+        matchedTeacher = l.assignedTo._id;
+        autoMatchedTeacherIds.add(matchedTeacher);
+      } else if (l.assignedTo && typeof l.assignedTo === "string") {
+        matchedTeacher = l.assignedTo;
+        autoMatchedTeacherIds.add(matchedTeacher);
+      } else {
+        const text = `${l.title || ""} ${l.description || ""}`.toLowerCase();
+        // Check for teacher name matches in description or title
+        const found = teachers.find(t => t.name && text.includes(t.name.toLowerCase()));
+        if (found) {
+          matchedTeacher = found._id;
+          autoMatchedTeacherIds.add(found._id);
         }
       }
 
@@ -323,15 +365,52 @@ export default function LectureSchedule() {
         description: l.description || "",
         date: nextDate ? formatDateForInput(nextDate) : "",
         status: "Planned",
-        teacher: teacherId,
+        teacher: matchedTeacher,
         isSaturdayLecture: isSatLec,
         homework: { title: "", description: "", due_date: "", accept_submissions: true },
         notes_shared: l.notes_shared || { fileName: "", fileUrl: "" },
         notes_teacher: l.notes_teacher || { fileName: "", fileUrl: "" }
       };
     });
+
     setLectures(loadedLectures);
-    toast.success("Subject loaded!");
+    if (autoMatchedTeacherIds.size > 0) {
+      const arr = Array.from(autoMatchedTeacherIds);
+      setSelectedTeacherIds(arr);
+      setTeacherId(arr[0]);
+    }
+    toast.success(`Automatically fetched ${loadedLectures.length} lectures for "${tmpl.subject || tmpl.name}"!`);
+  };
+
+  const fetchAndLoadSubject = async (subjectId, overrideStartDate = startDate, overrideFreq = frequency) => {
+    if (!subjectId) return;
+    try {
+      let tmpl = subjectTemplates.find(t => t._id === subjectId);
+      try {
+        const res = await API.get(`/subjects/${subjectId}`);
+        if (res.data) {
+          tmpl = res.data?.subject || res.data?.syllabus || res.data;
+        }
+      } catch (err) {
+        console.warn("Could not fetch detailed subject from API, using list cache:", err);
+      }
+
+      if (!tmpl) {
+        toast.error("Subject details not found");
+        return;
+      }
+
+      setSubject(tmpl.subject || tmpl.name);
+      loadTemplateLectures(tmpl, overrideStartDate, overrideFreq);
+    } catch (err) {
+      toast.error("Failed to fetch subject lectures");
+    }
+  };
+
+  const handleLoadSubjectTemplate = (e) => {
+    if (e) e.preventDefault();
+    if (!selectedTemplateId) return toast.error("Select a Subject first");
+    fetchAndLoadSubject(selectedTemplateId);
   };
 
   // Generate blank rows
@@ -731,16 +810,27 @@ export default function LectureSchedule() {
     setSelectedSchedule(schedule);
     setSubject(schedule.subject);
     setSelectedBatchIds(schedule.batch?._id ? [schedule.batch._id] : []);
-    setTeacherId(schedule.teacher?._id || "");
+    const mainTeacher = schedule.teacher?._id || schedule.teacher || "";
+    setTeacherId(mainTeacher);
+    const teacherSet = new Set();
+    if (mainTeacher) teacherSet.add(mainTeacher);
+    (schedule.lectures || []).forEach(l => {
+      const tId = typeof l.teacher === "object" ? l.teacher?._id : l.teacher;
+      if (tId) teacherSet.add(tId);
+    });
+    setSelectedTeacherIds(Array.from(teacherSet));
     setLectures(schedule.lectures || []);
     setIsCreating(false);
   };
 
   // Open scheduler creator
   const handleOpenCreate = () => {
+    setSelectedTemplateId("");
     setSubject("");
     setSelectedBatchIds([]);
-    setTeacherId(role === "teacher" ? (user?.id || "") : "");
+    const defaultTeacher = role === "teacher" ? (user?.id || "") : "";
+    setTeacherId(defaultTeacher);
+    setSelectedTeacherIds(defaultTeacher ? [defaultTeacher] : []);
     setNumLectures("");
     setStartDate("");
     setFrequency("daily");
@@ -1576,7 +1666,7 @@ export default function LectureSchedule() {
                             onClick={() => {
                               handleOpenCreate();
                               setSelectedTemplateId(tmpl._id);
-                              setSubject(tmpl.subject || tmpl.name);
+                              fetchAndLoadSubject(tmpl._id);
                             }}
                             className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
                           >
@@ -1649,17 +1739,18 @@ export default function LectureSchedule() {
                       <select
                         value={selectedTemplateId}
                         onChange={(e) => {
-                          setSelectedTemplateId(e.target.value);
-                          if (e.target.value) {
-                            const tmpl = approvedTemplates.find(t => t._id === e.target.value);
-                            if (tmpl) setSubject(tmpl.subject || tmpl.name);
+                          const val = e.target.value;
+                          setSelectedTemplateId(val);
+                          if (val) {
+                            fetchAndLoadSubject(val);
                           } else {
                             setSubject("");
+                            setLectures([]);
                           }
                         }}
                         className="flex-1 px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
                       >
-                        <option value="">-- Create New Subject --</option>
+                        <option value="">-- Select Subject to Auto-Fetch --</option>
                         {approvedTemplates.map(t => <option key={t._id} value={t._id}>{t.subject || t.name}</option>)}
                       </select>
                       {role === "admin" && selectedTemplateId && (
@@ -1747,17 +1838,18 @@ export default function LectureSchedule() {
                     )}
                   </div>
 
-                  {/* Teacher Select */}
-                  <div>
+                  {/* Multiple Teachers Select */}
+                  <div className="relative">
                     <div className="flex justify-between items-center mb-1.5">
-                      <label className="block text-xs font-bold text-[#475569] uppercase">Assign Teacher</label>
+                      <label className="block text-xs font-bold text-[#475569] uppercase">Assign Teacher(s)</label>
                       {role === "admin" && (
                         <button
                           type="button"
                           onClick={() => {
-                            if (!teacherId) return toast.error("Select a teacher first");
-                            setLectures((prev) => prev.map((l) => ({ ...l, teacher: teacherId })));
-                            toast.success("Applied to all rows");
+                            const target = selectedTeacherIds[0] || teacherId;
+                            if (!target) return toast.error("Select a teacher first");
+                            setLectures((prev) => prev.map((l) => ({ ...l, teacher: target })));
+                            toast.success("Applied primary teacher to all rows");
                           }}
                           className="text-[9px] text-[#2563EB] hover:text-[#1D4ED8] font-bold uppercase tracking-wider cursor-pointer"
                         >
@@ -1765,19 +1857,64 @@ export default function LectureSchedule() {
                         </button>
                       )}
                     </div>
-                    <select
-                      required
-                      value={teacherId}
-                      onChange={(e) => setTeacherId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
+                    <button
+                      type="button"
+                      onClick={() => setTeacherDropdownOpen(!teacherDropdownOpen)}
+                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium flex justify-between items-center cursor-pointer min-h-[32px] text-left"
                     >
-                      <option value="">-- Select Teacher --</option>
-                      {teachers.map((t) => (
-                        <option key={t._id} value={t._id}>
-                          {t.name} ({t.email})
-                        </option>
-                      ))}
-                    </select>
+                      <span className="truncate pr-2">
+                        {selectedTeacherIds.length === 0
+                          ? "-- Select Teacher(s) --"
+                          : selectedTeacherIds
+                            .map((id) => teachers.find((t) => t._id === id)?.name)
+                            .filter(Boolean)
+                            .join(", ")}
+                      </span>
+                      <ChevronDown size={14} className="text-[#64748B] flex-shrink-0" />
+                    </button>
+
+                    {teacherDropdownOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40 bg-transparent"
+                          onClick={() => setTeacherDropdownOpen(false)}
+                        />
+                        <div
+                          className="absolute z-50 mt-1 w-full bg-white border border-[#E2E8F0] rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-1"
+                          style={{ top: "100%" }}
+                        >
+                          {teachers.map((t) => {
+                            const isChecked = selectedTeacherIds.includes(t._id);
+                            return (
+                              <label
+                                key={t._id}
+                                className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#F8FAFC] rounded-md cursor-pointer text-xs text-[#1B2B4B] font-medium select-none"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    let updated;
+                                    if (isChecked) {
+                                      updated = selectedTeacherIds.filter((id) => id !== t._id);
+                                    } else {
+                                      updated = [...selectedTeacherIds, t._id];
+                                    }
+                                    setSelectedTeacherIds(updated);
+                                    if (updated.length > 0) setTeacherId(updated[0]);
+                                    else setTeacherId("");
+                                  }}
+                                  className="rounded border-[#E2E8F0] text-[#2563EB] focus:ring-[#2563EB] cursor-pointer"
+                                />
+                                <span>
+                                  {t.name} ({t.email})
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Start Date */}
@@ -1790,15 +1927,16 @@ export default function LectureSchedule() {
                       value={frequency === "custom" ? "" : startDate}
                       onChange={(e) => {
                         const val = e.target.value;
+                        let formatted = val;
                         if (val) {
                           const d = new Date(val);
                           if (!isNaN(d.getTime())) {
                             const adjusted = adjustDateSkippingWeekends(d);
-                            setStartDate(formatDateForInput(adjusted));
-                            return;
+                            formatted = formatDateForInput(adjusted);
                           }
                         }
-                        setStartDate(val);
+                        setStartDate(formatted);
+                        updateLectureDates(formatted, frequency);
                       }}
                       className={`w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium ${frequency === "custom" ? "opacity-50 cursor-not-allowed" : ""}`}
                     />
@@ -1809,7 +1947,11 @@ export default function LectureSchedule() {
                     <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Interval Frequency</label>
                     <select
                       value={frequency}
-                      onChange={(e) => setFrequency(e.target.value)}
+                      onChange={(e) => {
+                        const newFreq = e.target.value;
+                        setFrequency(newFreq);
+                        updateLectureDates(startDate, newFreq);
+                      }}
                       className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
                     >
                       <option value="once a week">Once a week</option>
@@ -1831,7 +1973,7 @@ export default function LectureSchedule() {
                         onClick={handleLoadSubjectTemplate}
                         className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer w-full justify-center"
                       >
-                        Load Predefined Subject Lectures
+                        Reload Predefined Subject Lectures
                       </button>
                     </div>
                   ) : (
@@ -2034,18 +2176,29 @@ export default function LectureSchedule() {
                           <td className="px-5 py-3.5">
                             {role === "admin" ? (
                               <select
-                                value={lecture.teacher?._id || lecture.teacher || ""}
+                                value={typeof lecture.teacher === "object" ? (lecture.teacher?._id || "") : (lecture.teacher || "")}
                                 onChange={(e) => handleCellChange(index, "teacher", e.target.value)}
                                 className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded-lg text-[11px] font-bold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer bg-white"
                               >
-                                <option value="">Global Teacher</option>
-                                {teachers.map(t => (
-                                  <option key={t._id} value={t._id}>{t.name}</option>
-                                ))}
+                                <option value="">-- Select Teacher --</option>
+                                {selectedTeacherIds.length > 0 && (
+                                  <optgroup label="Selected Subject Teachers">
+                                    {teachers.filter(t => selectedTeacherIds.includes(t._id)).map(t => (
+                                      <option key={`sel-${t._id}`} value={t._id}>
+                                        ★ {t.name}
+                                      </option>
+                                    ))}
+                                  </optgroup>
+                                )}
+                                <optgroup label="All Teachers">
+                                  {teachers.map(t => (
+                                    <option key={t._id} value={t._id}>{t.name}</option>
+                                  ))}
+                                </optgroup>
                               </select>
                             ) : (
                               <span className="text-[11px] font-medium text-[#475569] block leading-tight">
-                                {typeof lecture.teacher === "object" ? lecture.teacher?.name : teachers.find(t => t._id === lecture.teacher)?.name || "Global Teacher"}
+                                {typeof lecture.teacher === "object" ? lecture.teacher?.name : teachers.find(t => t._id === lecture.teacher)?.name || "Unassigned"}
                               </span>
                             )}
                           </td>

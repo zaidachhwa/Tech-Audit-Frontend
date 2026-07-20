@@ -32,6 +32,7 @@ export default function TeacherStudents() {
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
+  const [batchFilter, setBatchFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [status, setStatus] = useState({});
 
@@ -176,12 +177,19 @@ export default function TeacherStudents() {
   useEffect(() => {
     fetchStudents();
     fetchBatches();
-  }, [page, search]);
+  }, [page, search, batchFilter]);
 
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const res = await API.get(`/students/list?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
+      let url = `/students/list?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`;
+      if (batchFilter !== "all") {
+        const selectedB = batches.find((b) => b._id === batchFilter);
+        if (selectedB) {
+          url += `&batchName=${encodeURIComponent(selectedB.batch_name)}&batchNumber=${encodeURIComponent(selectedB.batch_no)}`;
+        }
+      }
+      const res = await API.get(url);
       setStudents(res.data?.students || []);
       setTotal(res.data?.total || 0);
       setStatus({
@@ -341,6 +349,19 @@ export default function TeacherStudents() {
             className="w-full pl-9 pr-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-sm bg-[#F8FAFC]"
           />
         </div>
+
+        <select
+          value={batchFilter}
+          onChange={(e) => setBatchFilter(e.target.value)}
+          className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-white cursor-pointer"
+        >
+          <option value="all">All Batches</option>
+          {batches.map((b) => (
+            <option key={b._id} value={b._id}>
+              {b.batch_name} (#{b.batch_no})
+            </option>
+          ))}
+        </select>
 
         <select
           value={statusFilter}

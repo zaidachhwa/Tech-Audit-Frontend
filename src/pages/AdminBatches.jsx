@@ -21,6 +21,7 @@ export default function AdminBatches() {
   const navigate = useNavigate();
   const [batches, setBatches] = useState([]);
   const [students, setStudents] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -30,7 +31,9 @@ export default function AdminBatches() {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showAssignTeachers, setShowAssignTeachers] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState(null);
+  const [selectedTeacherIds, setSelectedTeacherIds] = useState([]);
 
   const [form, setForm] = useState({
     batch_name: "",
@@ -44,6 +47,7 @@ export default function AdminBatches() {
   useEffect(() => {
     fetchBatches();
     fetchStudents();
+    fetchTeachers();
   }, [page]);
 
   const fetchBatches = async () => {
@@ -64,6 +68,35 @@ export default function AdminBatches() {
       const res = await API.get("/students/list");
       setStudents(res.data?.students || []);
     } catch { }
+  };
+
+  const fetchTeachers = async () => {
+    try {
+      const res = await API.get("/teachers/list");
+      setTeachers(res.data?.teachers || []);
+    } catch { }
+  };
+
+  const openAssignTeachers = (batch) => {
+    setSelectedBatch(batch);
+    const currentIds = (batch.teachers || []).map((t) => t._id || t);
+    setSelectedTeacherIds(currentIds);
+    setShowAssignTeachers(true);
+  };
+
+  const handleSaveTeachers = async (e) => {
+    e.preventDefault();
+    if (!selectedBatch) return;
+    try {
+      await API.put(`/batches/${selectedBatch._id}/assign-teachers`, {
+        teacherIds: selectedTeacherIds,
+      });
+      toast.success("Teachers assigned to batch successfully!");
+      setShowAssignTeachers(false);
+      fetchBatches();
+    } catch {
+      toast.error("Failed to assign teachers to batch");
+    }
   };
 
   const handleCreate = async (e) => {
@@ -225,6 +258,7 @@ export default function AdminBatches() {
                 <th className="px-6 py-3.5 text-left font-bold">Batch</th>
                 <th className="px-6 py-3.5 text-left font-bold">No</th>
                 <th className="px-6 py-3.5 text-left font-bold">Students</th>
+                <th className="px-6 py-3.5 text-left font-bold">Assigned Teachers</th>
                 <th className="px-6 py-3.5 text-right font-bold">Actions</th>
               </tr>
             </thead>
@@ -232,7 +266,7 @@ export default function AdminBatches() {
             <tbody className="divide-y divide-slate-100">
               {filteredBatches.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-10 text-center text-sm text-slate-500">
+                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500">
                     No batches found.
                   </td>
                 </tr>
@@ -246,8 +280,28 @@ export default function AdminBatches() {
                     <td className="px-6 py-4 text-[13px] text-[#64748B] font-semibold">
                       {b.students?.length || 0} students
                     </td>
+                    <td className="px-6 py-4 text-[13px]">
+                      {b.teachers && b.teachers.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {b.teachers.map((t) => (
+                            <span key={t._id || t} className="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full text-[11px] font-medium">
+                              {t.name || "Teacher"}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[#94A3B8] text-xs italic">Unassigned</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-1.5">
+                        <button
+                          onClick={() => openAssignTeachers(b)}
+                          className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Assign Teachers to Batch"
+                        >
+                          <Users size={13} /> Assign Teachers
+                        </button>
                         <button onClick={() => openEdit(b)} className="text-[#2563EB] border border-[#EFF6FF] hover:bg-[#EFF6FF] p-1.5 rounded-lg transition cursor-pointer" title="Edit Batch"> <Edit2 size={14} /> </button>
                         <button onClick={() => handleDelete(b._id)} className="text-[#EF4444] border border-[#FEE2E2] hover:bg-[#FEE2E2] p-1.5 rounded-lg transition cursor-pointer" title="Delete Batch"> <Trash2 size={14} /> </button>
                       </div>
@@ -282,18 +336,30 @@ export default function AdminBatches() {
                     {b.students?.length || 0} Enrolled
                   </span>
                 </div>
+                <div className="text-xs text-[#64748B]">
+                  <strong>Assigned Teachers:</strong>{" "}
+                  {b.teachers && b.teachers.length > 0
+                    ? b.teachers.map((t) => t.name || "Teacher").join(", ")
+                    : "None"}
+                </div>
                 <div className="flex gap-2 pt-2.5 border-t border-slate-100">
                   <button
-                    onClick={() => openEdit(b)}
-                    className="flex-1 py-2 px-2.5 bg-blue-50 border border-blue-200 text-[#2563EB] rounded-lg hover:bg-blue-100 transition text-xs font-bold flex items-center justify-center gap-1 cursor-pointer"
+                    onClick={() => openAssignTeachers(b)}
+                    className="flex-1 py-2 px-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-100 transition text-xs font-bold flex items-center justify-center gap-1 cursor-pointer"
                   >
-                    <Edit2 size={14} /> Edit
+                    <Users size={14} /> Assign Teachers
+                  </button>
+                  <button
+                    onClick={() => openEdit(b)}
+                    className="py-2 px-2.5 bg-blue-50 border border-blue-200 text-[#2563EB] rounded-lg hover:bg-blue-100 transition text-xs font-bold flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Edit2 size={14} />
                   </button>
                   <button
                     onClick={() => handleDelete(b._id)}
                     className="py-2 px-2.5 bg-red-50 border border-red-200 text-[#EF4444] rounded-lg hover:bg-red-100 transition text-xs font-bold flex items-center justify-center gap-1 cursor-pointer shrink-0"
                   >
-                    <Trash2 size={14} /> Delete
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
@@ -403,6 +469,74 @@ export default function AdminBatches() {
                   className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg font-medium hover:bg-[#1D4ED8]"
                 >
                   Update
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Teachers Modal */}
+      {showAssignTeachers && selectedBatch && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full border border-[#E2E8F0] shadow-2xl">
+            <div className="flex justify-between items-center mb-4 border-b border-[#E2E8F0] pb-3">
+              <div>
+                <h2 className="text-base font-bold text-[#1B2B4B]">Assign Teachers to Batch</h2>
+                <p className="text-xs text-[#64748B]">{selectedBatch.batch_name} (#{selectedBatch.batch_no})</p>
+              </div>
+              <button onClick={() => setShowAssignTeachers(false)} className="text-[#94A3B8] hover:text-[#1B2B4B]">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTeachers} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#475569] uppercase mb-2">Select Teachers</label>
+                <div className="max-h-60 overflow-y-auto border border-[#E2E8F0] rounded-lg p-2 bg-slate-50 space-y-1">
+                  {teachers.length === 0 ? (
+                    <p className="text-xs text-slate-400 p-2">No teachers found</p>
+                  ) : (
+                    teachers.map((t) => {
+                      const isChecked = selectedTeacherIds.includes(t._id);
+                      return (
+                        <label key={t._id} className="flex items-center gap-3 p-2 rounded hover:bg-white transition cursor-pointer text-xs">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTeacherIds([...selectedTeacherIds, t._id]);
+                              } else {
+                                setSelectedTeacherIds(selectedTeacherIds.filter((id) => id !== t._id));
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                          />
+                          <div>
+                            <p className="font-bold text-[#1B2B4B]">{t.name}</p>
+                            <p className="text-[10px] text-[#64748B]">{t.email}</p>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAssignTeachers(false)}
+                  className="flex-1 px-4 py-2 border border-[#E2E8F0] text-[#1B2B4B] rounded-lg text-xs font-semibold hover:bg-[#F8FAFC]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-[#2563EB] text-white rounded-lg text-xs font-semibold hover:bg-[#1D4ED8]"
+                >
+                  Save Allocation
                 </button>
               </div>
             </form>

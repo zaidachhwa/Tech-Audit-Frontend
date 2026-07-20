@@ -277,6 +277,7 @@ export default function AdminSyllabusManagement() {
       toast.success("Syllabus assigned to batches successfully!");
       setAssignBatchForm({ batchIds: [], notes: "", dueDate: "" });
       setShowAssignBatchModal(false);
+      fetchData();
     } catch (err) {
       console.error(err);
       toast.error(err?.response?.data?.message || "Failed to assign syllabus to batches");
@@ -1008,7 +1009,10 @@ export default function AdminSyllabusManagement() {
                           <button
                             onClick={() => {
                               setSelectedSyllabus(syllabus);
-                              setAssignBatchForm({ batchIds: [], notes: "", dueDate: "" });
+                              const currentlyAssignedBatchIds = (batchesWithSyllabi || [])
+                                .filter(batch => batch && (batch.assignedSyllabi || []).some(bs => bs && (bs.syllabus?._id || bs.syllabus) === syllabus._id))
+                                .map(b => b._id);
+                              setAssignBatchForm({ batchIds: currentlyAssignedBatchIds, notes: "", dueDate: "" });
                               setShowAssignBatchModal(true);
                             }}
                             className="px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2"
@@ -2043,8 +2047,15 @@ export default function AdminSyllabusManagement() {
                           }}
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-gray-800">{batch.batch_name}</span>
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-gray-800">{batch.batch_name}</span>
+                            {isChecked && (
+                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                Assigned
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10px] text-gray-400">Batch #{batch.batch_no}</span>
                         </div>
                       </label>

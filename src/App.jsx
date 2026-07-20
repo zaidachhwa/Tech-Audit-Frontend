@@ -104,6 +104,8 @@ export default function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard"          element={<AdminDashboard />} />
           <Route path="student-management" element={<AdminStudents />} />
+          <Route path="student management" element={<TeacherStudents />} />
+          <Route path="students"           element={<AdminStudents />} />
           <Route path="teacher-management" element={<AdminTeachers />} />
           <Route path="batch-management"   element={<AdminBatches />} />
           <Route path="project-tracking"   element={<ProjectTracking />} />
@@ -146,6 +148,8 @@ export default function App() {
           <Route path="add-reports"        element={<AddReport2 />} />
           <Route path="drafts"             element={<Drafts />} />
           <Route path="student-management" element={<TeacherStudents />} />
+          <Route path="student management" element={<TeacherStudents />} />
+          <Route path="students"           element={<TeacherStudents />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
           <Route path="project-tracking"   element={<ProjectTracking />} />
           <Route path="project-tracking/batch/:batchId"     element={<AdminBatchDetail />} />
