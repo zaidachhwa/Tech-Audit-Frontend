@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { API } from "../api/axios";
 import toast from "react-hot-toast";
+import CalendarView from "../components/shared/CalendarView";
 import {
   CalendarDays,
   Plus,
@@ -29,6 +31,7 @@ import {
 
 export default function LectureSchedule() {
   const { user } = useAuth();
+  const location = useLocation();
   const role = user?.role || "student";
 
   // Navigation states
@@ -36,6 +39,7 @@ export default function LectureSchedule() {
   const [loading, setLoading] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [scheduleViewMode, setScheduleViewMode] = useState("calendar"); // "calendar" | "grid"
 
   // Setup form states (Admin)
   const [subjectTemplates, setSubjectTemplates] = useState([]);
@@ -48,7 +52,11 @@ export default function LectureSchedule() {
   const [teacherDropdownOpen, setTeacherDropdownOpen] = useState(false);
   const [numLectures, setNumLectures] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [frequency, setFrequency] = useState("daily");
+  const [frequency, setFrequency] = useState("once a week");
+
+  // Conflict detection state
+  const [lectureConflicts, setLectureConflicts] = useState({}); // { lectureIndex: [conflict, ...] }
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
 
   // Grid / Spreadsheet states
   const [lectures, setLectures] = useState([]);
@@ -172,7 +180,8 @@ export default function LectureSchedule() {
           API.get("/subjects")
         ]);
         setBatches(batchesRes.data?.batches || []);
-        setTeachers(teachersRes.data?.teachers || []);
+        const loadedTeachers = teachersRes.data?.teachers || [];
+        setTeachers(loadedTeachers);
         const data = subjectsRes.data;
         setSubjectTemplates(Array.isArray(data) ? data : (data?.subjects || data?.syllabi || []));
       } else if (role === "teacher") {
@@ -201,6 +210,53 @@ export default function LectureSchedule() {
     fetchSchedules();
     fetchDropdowns();
   }, [role]);
+
+  // Auto-populate form when navigated from AdminSyllabusManagement with prefill state
+  useEffect(() => {
+    const prefill = location.state?.prefill;
+    if (!prefill) return;
+    // Wait until dropdowns are loaded before populating
+    if (batches.length === 0 && teachers.length === 0 && subjectTemplates.length === 0) return;
+
+    // Enter create mode
+    setIsCreating(true);
+    setSelectedSchedule(null);
+    setLectures([]);
+
+    // Pre-fill subject
+    if (prefill.subjectName) {
+      setSubject(prefill.subjectName);
+    }
+
+    // Pre-fill batch
+    if (prefill.batchId) {
+      setSelectedBatchIds([prefill.batchId]);
+    }
+
+    // Pre-fill teacher
+    if (prefill.teacherId) {
+      setTeacherId(prefill.teacherId);
+      setSelectedTeacherIds([prefill.teacherId]);
+    }
+
+    // Pre-fill start date from topic due date
+    if (prefill.date) {
+      setStartDate(prefill.date);
+    }
+
+    // Auto-load the syllabus template lectures if syllabusId provided
+    if (prefill.syllabusId) {
+      setSelectedTemplateId(prefill.syllabusId);
+      fetchAndLoadSubject(
+        prefill.syllabusId,
+        prefill.date || startDate,
+        frequency
+      );
+    }
+
+    // Clear the location state so it doesn't re-run on subsequent renders
+    window.history.replaceState({}, document.title);
+  }, [location.state, batches.length, teachers.length, subjectTemplates.length]);
 
   // Formatter helper for dates
   const formatDateForInput = (date) => {
@@ -292,11 +348,12 @@ export default function LectureSchedule() {
 
   // Automatically recalculate lecture dates when Start Date or Frequency changes
   const updateLectureDates = (newStartDate, newFreq, currentLectures = lectures) => {
-    if (!newStartDate || newFreq === "custom" || currentLectures.length === 0) return;
+    const start = newStartDate || startDate || formatDateForInput(new Date());
+    if (!start || newFreq === "custom" || currentLectures.length === 0) return;
     let regularIndex = 0;
     const updated = currentLectures.map((l) => {
       if (l.isSaturdayLecture) return l;
-      const nextDate = getDateForLectureIndex(newStartDate, regularIndex, newFreq);
+      const nextDate = getDateForLectureIndex(start, regularIndex, newFreq);
       regularIndex++;
       return {
         ...l,
@@ -312,18 +369,38 @@ export default function LectureSchedule() {
 
     let lastCalculatedDate = overrideStartDate ? new Date(overrideStartDate) : new Date();
     let regularIndex = 0;
-    const autoMatchedTeacherIds = new Set(overrideTeachers);
 
-    const rawLectures = tmpl.lectures || tmpl.topics || [];
-    if (!rawLectures || rawLectures.length === 0) {
-      toast.error("No lectures found in the selected subject template.");
-      return;
+    // Resolve template assigned teacher
+    let tmplTeacherId = "";
+    if (tmpl.assignedTeachers && Array.isArray(tmpl.assignedTeachers) && tmpl.assignedTeachers.length > 0) {
+      const first = tmpl.assignedTeachers[0];
+      tmplTeacherId = typeof first === "object" ? first._id : first;
+    } else if (tmpl.teacher) {
+      tmplTeacherId = typeof tmpl.teacher === "object" ? tmpl.teacher._id : tmpl.teacher;
+    } else if (tmpl.teachers && Array.isArray(tmpl.teachers) && tmpl.teachers.length > 0) {
+      const first = tmpl.teachers[0];
+      tmplTeacherId = typeof first === "object" ? first._id : first;
+    }
+
+    const autoMatchedTeacherIds = new Set(overrideTeachers);
+    if (tmplTeacherId) autoMatchedTeacherIds.add(tmplTeacherId);
+
+    const subjName = (typeof tmpl === "object" ? (tmpl.subject || tmpl.name || tmpl.title) : String(tmpl)) || subject || "Subject";
+
+    let rawLectures = tmpl.lectures || tmpl.topics || [];
+    if (!Array.isArray(rawLectures) || rawLectures.length === 0) {
+      rawLectures = [1, 2, 3, 4, 5].map(i => ({
+        title: `${subjName} - Session ${i}`,
+        description: `Topics outline for session ${i}`
+      }));
     }
 
     const loadedLectures = rawLectures.map((l, i) => {
-      let nextDate = null;
-      const isSatLec = l.isSaturdayLecture || false;
+      const isSatLec = (typeof l === "object" && l.isSaturdayLecture) || false;
+      const titleStr = typeof l === "object" ? (l.title || l.subject || `Lecture ${i + 1}`) : String(l);
+      const descStr = typeof l === "object" ? (l.description || "") : "";
 
+      let nextDate = null;
       if (isSatLec) {
         const daysUntilSaturday = (6 - lastCalculatedDate.getDay() + 7) % 7 || 7;
         const base = new Date(lastCalculatedDate);
@@ -341,16 +418,17 @@ export default function LectureSchedule() {
       }
 
       // Auto match teacher if specified in lecture object, description, or title
-      let matchedTeacher = (overrideTeachers.length > 0 ? overrideTeachers[0] : teacherId) || "";
+      let defaultTeacher = tmplTeacherId || (overrideTeachers.length > 0 ? overrideTeachers[0] : (teacherId || (role === "teacher" ? user?.id : "")));
+      let matchedTeacher = defaultTeacher;
 
-      if (l.assignedTo?._id) {
+      if (typeof l === "object" && l.assignedTo?._id) {
         matchedTeacher = l.assignedTo._id;
         autoMatchedTeacherIds.add(matchedTeacher);
-      } else if (l.assignedTo && typeof l.assignedTo === "string") {
+      } else if (typeof l === "object" && l.assignedTo && typeof l.assignedTo === "string") {
         matchedTeacher = l.assignedTo;
         autoMatchedTeacherIds.add(matchedTeacher);
       } else {
-        const text = `${l.title || ""} ${l.description || ""}`.toLowerCase();
+        const text = `${titleStr} ${descStr}`.toLowerCase();
         // Check for teacher name matches in description or title
         const found = teachers.find(t => t.name && text.includes(t.name.toLowerCase()));
         if (found) {
@@ -361,38 +439,51 @@ export default function LectureSchedule() {
 
       return {
         _id: `temp-${Date.now()}-${i}`,
-        title: l.title || `Lecture ${i + 1}`,
-        description: l.description || "",
+        title: titleStr,
+        description: descStr,
         date: nextDate ? formatDateForInput(nextDate) : "",
         status: "Planned",
         teacher: matchedTeacher,
         isSaturdayLecture: isSatLec,
         homework: { title: "", description: "", due_date: "", accept_submissions: true },
-        notes_shared: l.notes_shared || { fileName: "", fileUrl: "" },
-        notes_teacher: l.notes_teacher || { fileName: "", fileUrl: "" }
+        notes_shared: (typeof l === "object" && l.notes_shared) || { fileName: "", fileUrl: "" },
+        notes_teacher: (typeof l === "object" && l.notes_teacher) || { fileName: "", fileUrl: "" }
       };
     });
 
     setLectures(loadedLectures);
-    if (autoMatchedTeacherIds.size > 0) {
+    if (tmplTeacherId) {
+      setTeacherId(tmplTeacherId);
+      setSelectedTeacherIds([tmplTeacherId]);
+    } else if (autoMatchedTeacherIds.size > 0) {
       const arr = Array.from(autoMatchedTeacherIds);
       setSelectedTeacherIds(arr);
       setTeacherId(arr[0]);
     }
-    toast.success(`Automatically fetched ${loadedLectures.length} lectures for "${tmpl.subject || tmpl.name}"!`);
+    toast.success(`Loaded ${loadedLectures.length} lectures for "${tmpl.subject || tmpl.name || tmpl.title || "Subject"}"!`);
   };
 
   const fetchAndLoadSubject = async (subjectId, overrideStartDate = startDate, overrideFreq = frequency) => {
-    if (!subjectId) return;
+    if (!subjectId) {
+      toast.error("Please select a subject template first.");
+      return;
+    }
     try {
-      let tmpl = subjectTemplates.find(t => t._id === subjectId);
+      let tmpl = subjectTemplates.find(t => String(t._id) === String(subjectId));
       try {
         const res = await API.get(`/subjects/${subjectId}`);
         if (res.data) {
-          tmpl = res.data?.subject || res.data?.syllabus || res.data;
+          tmpl = (typeof res.data?.subject === "object" ? res.data.subject : null) || (typeof res.data?.syllabus === "object" ? res.data.syllabus : null) || res.data;
         }
       } catch (err) {
-        console.warn("Could not fetch detailed subject from API, using list cache:", err);
+        try {
+          const res2 = await API.get(`/syllabus/template/${subjectId}`);
+          if (res2.data) {
+            tmpl = (typeof res2.data?.subject === "object" ? res2.data.subject : null) || (typeof res2.data?.syllabus === "object" ? res2.data.syllabus : null) || res2.data;
+          }
+        } catch (err2) {
+          console.warn("Could not fetch detailed subject from API, using list cache:", err2);
+        }
       }
 
       if (!tmpl) {
@@ -400,7 +491,25 @@ export default function LectureSchedule() {
         return;
       }
 
-      setSubject(tmpl.subject || tmpl.name);
+      const subjTitle = tmpl.subject || tmpl.name || tmpl.title || "Subject";
+      setSubject(subjTitle);
+
+      // Check if an existing schedule already exists for this subject (and selected batch)!
+      const targetBatchId = selectedBatchIds[0];
+      const existing = schedules.find(s => {
+        const matchSubj = (s.subject || "").trim().toLowerCase() === subjTitle.trim().toLowerCase();
+        if (!matchSubj) return false;
+        if (!targetBatchId) return true;
+        const bId = s.batch?._id ? String(s.batch._id) : String(s.batch || "");
+        return bId === String(targetBatchId);
+      });
+
+      if (existing) {
+        handleOpenEdit(existing);
+        toast.info(`Loaded existing schedule with ${existing.lectures?.length || 0} lectures for "${subjTitle}"!`);
+        return;
+      }
+
       loadTemplateLectures(tmpl, overrideStartDate, overrideFreq);
     } catch (err) {
       toast.error("Failed to fetch subject lectures");
@@ -450,6 +559,7 @@ export default function LectureSchedule() {
         title: `Lecture ${i + 1}`,
         description: "",
         date: nextDate ? formatDateForInput(nextDate) : "",
+        time_slot: "",
         status: "Planned",
         teacher: teacherId,
         homework: {
@@ -462,6 +572,7 @@ export default function LectureSchedule() {
     }
 
     setLectures(generated);
+    setLectureConflicts({});
     toast.success(`Generated schedule with ${numLectures} lectures.`);
   };
 
@@ -495,6 +606,7 @@ export default function LectureSchedule() {
       title: `Lecture ${list.length + 1}`,
       description: "",
       date: frequency === "custom" || !nextDate ? "" : formatDateForInput(nextDate),
+      time_slot: list.length > 0 ? (list[list.length - 1].time_slot || "") : "",
       status: "Planned",
       teacher: teacherId,
       homework: {
@@ -648,6 +760,10 @@ export default function LectureSchedule() {
 
   // Save changes to database
   const saveSchedule = async () => {
+    if (!subject || !subject.trim()) {
+      toast.error("Please enter or select a Subject name.");
+      return;
+    }
     if (selectedBatchIds.length === 0) {
       toast.error("Please select at least one batch.");
       return;
@@ -657,12 +773,25 @@ export default function LectureSchedule() {
       return;
     }
 
-    // Clean temp IDs before saving
+    const finalTeacherId = teacherId || (selectedTeacherIds.length > 0 ? selectedTeacherIds[0] : (role === "teacher" ? user?.id : ""));
+    if (!finalTeacherId) {
+      toast.error("Please select at least one Teacher.");
+      return;
+    }
+
+    // Block save if there are unresolved conflicts
+    if (Object.keys(lectureConflicts).length > 0) {
+      toast.error("Please resolve all scheduling conflicts before saving.");
+      return;
+    }
+
+    // Clean temp IDs before saving and resolve teacher ID
     const sanitizedLectures = lectures.map(l => {
       const cleaned = { ...l };
-      if (cleaned._id && cleaned._id.startsWith("temp-")) {
+      if (cleaned._id && String(cleaned._id).startsWith("temp-")) {
         delete cleaned._id;
       }
+      cleaned.teacher = (typeof l.teacher === "object" ? l.teacher?._id : l.teacher) || finalTeacherId;
       return cleaned;
     });
 
@@ -674,13 +803,13 @@ export default function LectureSchedule() {
             API.post("/schedules/create", {
               subject,
               batch: bId,
-              teacher: teacherId,
+              teacher: finalTeacherId,
               lectures: sanitizedLectures
             })
           )
         );
         if (role === "teacher") {
-          toast.success("Sent for approval");
+          toast.success("Sent for approval!");
         } else {
           toast.success("Schedules successfully saved to database!");
         }
@@ -689,7 +818,7 @@ export default function LectureSchedule() {
         await API.put(`/schedules/update/${selectedSchedule._id}`, {
           subject,
           batch: selectedBatchIds[0],
-          teacher: teacherId,
+          teacher: finalTeacherId,
           lectures: sanitizedLectures
         });
 
@@ -701,7 +830,7 @@ export default function LectureSchedule() {
               API.post("/schedules/create", {
                 subject,
                 batch: bId,
-                teacher: teacherId,
+                teacher: finalTeacherId,
                 lectures: sanitizedLectures
               })
             )
@@ -709,7 +838,7 @@ export default function LectureSchedule() {
         }
 
         if (role === "teacher") {
-          toast.success("Sent for approval");
+          toast.success("Sent for approval!");
         } else {
           toast.success("Schedule changes successfully saved!");
         }
@@ -717,9 +846,62 @@ export default function LectureSchedule() {
 
       setIsCreating(false);
       setSelectedSchedule(null);
+      setLectureConflicts({});
       fetchSchedules();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save schedule.");
+    }
+  };
+
+  // Check for batch/teacher conflicts by calling the backend
+  const checkForConflicts = async () => {
+    const lecturesToCheck = lectures
+      .map((l, i) => ({
+        index: i,
+        date: l.date || null,
+        time_slot: l.time_slot || null,
+        teacher: typeof l.teacher === "object" ? (l.teacher?._id || "") : (l.teacher || ""),
+        batchIds: selectedBatchIds
+      }))
+      .filter(l => l.date && l.time_slot);
+
+    if (lecturesToCheck.length === 0) {
+      toast("No lectures with both date and time slot set — nothing to check.", { icon: "ℹ️" });
+      return;
+    }
+
+    try {
+      setCheckingConflicts(true);
+      const res = await API.post("/schedules/check-conflicts", {
+        lectures: lecturesToCheck,
+        batchIds: selectedBatchIds,
+        currentScheduleId: selectedSchedule?._id || null
+      });
+
+      const raw = res.data.conflicts || [];
+      if (raw.length === 0) {
+        setLectureConflicts({});
+        toast.success("No conflicts found! Schedule is clear to save.");
+        return;
+      }
+
+      // Group by lectureIndex
+      const grouped = {};
+      for (const c of raw) {
+        if (!grouped[c.lectureIndex]) grouped[c.lectureIndex] = [];
+        grouped[c.lectureIndex].push(c);
+      }
+      setLectureConflicts(grouped);
+
+      const batchConflicts = raw.filter(c => c.type === "batch").length;
+      const teacherConflicts = raw.filter(c => c.type === "teacher").length;
+      toast.error(
+        `${raw.length} conflict(s) found: ${batchConflicts} batch, ${teacherConflicts} teacher. Rows highlighted in red.`
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Conflict check failed.");
+    } finally {
+      setCheckingConflicts(false);
     }
   };
 
@@ -808,18 +990,34 @@ export default function LectureSchedule() {
   // Open scheduler editor
   const handleOpenEdit = (schedule) => {
     setSelectedSchedule(schedule);
-    setSubject(schedule.subject);
-    setSelectedBatchIds(schedule.batch?._id ? [schedule.batch._id] : []);
+    setSubject(schedule.subject || "");
+    setSelectedBatchIds(schedule.batch?._id ? [schedule.batch._id] : (schedule.batch ? [schedule.batch] : []));
     const mainTeacher = schedule.teacher?._id || schedule.teacher || "";
     setTeacherId(mainTeacher);
     const teacherSet = new Set();
     if (mainTeacher) teacherSet.add(mainTeacher);
-    (schedule.lectures || []).forEach(l => {
+    const scheduleLecs = schedule.lectures || [];
+    scheduleLecs.forEach(l => {
       const tId = typeof l.teacher === "object" ? l.teacher?._id : l.teacher;
       if (tId) teacherSet.add(tId);
     });
     setSelectedTeacherIds(Array.from(teacherSet));
-    setLectures(schedule.lectures || []);
+
+    // If opening an empty schedule (0 lectures), auto-load matching subject template lectures!
+    if (scheduleLecs.length === 0 && schedule.subject) {
+      const matchedTmpl = subjectTemplates.find(t =>
+        (t.subject || t.name || "").trim().toLowerCase() === schedule.subject.trim().toLowerCase()
+      );
+      if (matchedTmpl) {
+        setSelectedTemplateId(matchedTmpl._id);
+        loadTemplateLectures(matchedTmpl, startDate || formatDateForInput(new Date()), frequency, Array.from(teacherSet));
+      } else {
+        setLectures([]);
+      }
+    } else {
+      setLectures(scheduleLecs);
+    }
+
     setIsCreating(false);
   };
 
@@ -1159,9 +1357,16 @@ export default function LectureSchedule() {
 
   // Render a clean submission download helper
   const handleDownloadFile = (fileName, base64Url) => {
+    if (!base64Url) return toast.error("No file available for download");
     const link = document.createElement("a");
-    link.href = base64Url;
-    link.download = fileName;
+    let targetUrl = base64Url;
+    if (!targetUrl.startsWith("data:") && !targetUrl.startsWith("http://") && !targetUrl.startsWith("https://") && !targetUrl.startsWith("blob:")) {
+      const serverOrigin = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "") : "http://localhost:5000";
+      targetUrl = `${serverOrigin}/${targetUrl.replace(/^\//, "")}`;
+    }
+    link.href = targetUrl;
+    link.download = fileName || "download.pdf";
+    link.target = "_blank";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1199,38 +1404,63 @@ export default function LectureSchedule() {
           </p>
         </div>
 
-        {(role === "admin" || role === "teacher") && !selectedSchedule && !isCreating && (
+        {!selectedSchedule && !isCreating && (
           <div className="flex flex-wrap gap-2.5 items-center">
-            {!isViewingSubmissionsCenter ? (
-              <button
-                onClick={() => {
-                  setIsViewingSubmissionsCenter(true);
-                  setTrackerCourse("");
-                  setTrackerSchedule(null);
-                  setTrackerSubmissions([]);
-                  setTrackerStudents([]);
-                  setTrackerSelectedStudentId("");
-                }}
-                className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-              >
-                <Eye size={16} className="text-[#4F46E5]" /> Submissions Tracker
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsViewingSubmissionsCenter(false)}
-                className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-              >
-                <ArrowLeft size={16} /> View Schedules
-              </button>
+            {!isViewingSubmissionsCenter && (
+              <div className="flex items-center bg-[#E2E8F0] p-0.5 rounded-lg text-xs font-bold shrink-0">
+                <button
+                  onClick={() => setScheduleViewMode("calendar")}
+                  className={`px-3 py-2 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                    scheduleViewMode === "calendar" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
+                  }`}
+                >
+                  <CalendarDays size={15} /> Calendar View
+                </button>
+                <button
+                  onClick={() => setScheduleViewMode("grid")}
+                  className={`px-3 py-2 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                    scheduleViewMode === "grid" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
+                  }`}
+                >
+                  <ListTodo size={15} /> Course Cards
+                </button>
+              </div>
             )}
 
-            {!isViewingSubmissionsCenter && (
-              <button
-                onClick={handleOpenCreate}
-                className="bg-[#2563EB] text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer"
-              >
-                <Plus size={16} /> New Schedule
-              </button>
+            {(role === "admin" || role === "teacher") && (
+              <>
+                {!isViewingSubmissionsCenter ? (
+                  <button
+                    onClick={() => {
+                      setIsViewingSubmissionsCenter(true);
+                      setTrackerCourse("");
+                      setTrackerSchedule(null);
+                      setTrackerSubmissions([]);
+                      setTrackerStudents([]);
+                      setTrackerSelectedStudentId("");
+                    }}
+                    className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                  >
+                    <Eye size={16} className="text-[#4F46E5]" /> Submissions Tracker
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsViewingSubmissionsCenter(false)}
+                    className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                  >
+                    <ArrowLeft size={16} /> View Schedules
+                  </button>
+                )}
+
+                {!isViewingSubmissionsCenter && (
+                  <button
+                    onClick={handleOpenCreate}
+                    className="bg-[#2563EB] text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer"
+                  >
+                    <Plus size={16} /> New Schedule
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
@@ -1498,6 +1728,46 @@ export default function LectureSchedule() {
               </button>
             )}
           </div>
+        ) : scheduleViewMode === "calendar" ? (
+          <div className="space-y-6">
+            <CalendarView
+              schedules={schedules}
+              role={role}
+              onSelectLecture={(evt) => {
+                const targetSch = schedules.find(s => String(s._id) === String(evt.scheduleId));
+                if (targetSch) handleOpenEdit(targetSch);
+              }}
+              onAddLectureOnDate={(dateStr) => {
+                if (role === "admin" || role === "teacher") {
+                  handleOpenCreate();
+                  setStartDate(dateStr);
+                }
+              }}
+              onUpdateLectureStatus={async (scheduleId, lectureIndex, newStatus) => {
+                try {
+                  const sch = schedules.find(s => String(s._id) === String(scheduleId));
+                  if (!sch) return;
+                  const updatedLectures = [...(sch.lectures || [])];
+                  if (updatedLectures[lectureIndex]) {
+                    updatedLectures[lectureIndex] = {
+                      ...updatedLectures[lectureIndex],
+                      status: newStatus
+                    };
+                  }
+                  await API.put(`/schedules/update/${scheduleId}`, {
+                    subject: sch.subject,
+                    batch: sch.batch?._id || sch.batch,
+                    teacher: sch.teacher?._id || sch.teacher,
+                    lectures: updatedLectures
+                  });
+                  toast.success(`Lecture status updated to ${newStatus}!`);
+                  fetchSchedules();
+                } catch (err) {
+                  toast.error("Failed to update lecture status");
+                }
+              }}
+            />
+          </div>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1525,10 +1795,11 @@ export default function LectureSchedule() {
                           </h3>
                         </div>
 
-                        {(role === "admin" || (role === "teacher" && (schedule.teacher?._id === user?.id || schedule.teacher === user?.id))) && (
+                        {(role === "admin" || role === "teacher") && (
                           <button
                             onClick={() => handleDeleteSchedule(schedule._id)}
                             className="text-[#94A3B8] hover:text-red-500 p-1 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete Schedule Card"
                           >
                             <Trash2 size={15} />
                           </button>
@@ -1538,7 +1809,27 @@ export default function LectureSchedule() {
                       <div className="space-y-2 mt-4 text-xs text-[#64748B] border-t border-[#F1F5F9] pt-4">
                         <div className="flex items-center gap-1.5">
                           <User size={13} className="text-[#94A3B8]" />
-                          <span>Teacher: <strong className="text-[#475569]">{schedule.teacher?.name || "Unassigned"}</strong></span>
+                          <span>
+                            Teacher:{" "}
+                            <strong className="text-[#475569]">
+                              {(() => {
+                                if (schedule.teacher?.name) return schedule.teacher.name;
+                                if (typeof schedule.teacher === "string") {
+                                  const found = teachers.find(t => String(t._id) === String(schedule.teacher));
+                                  if (found?.name) return found.name;
+                                }
+                                const firstLec = (schedule.lectures || []).find(l => l.teacher);
+                                if (firstLec) {
+                                  if (firstLec.teacher?.name) return firstLec.teacher.name;
+                                  if (typeof firstLec.teacher === "string") {
+                                    const found = teachers.find(t => String(t._id) === String(firstLec.teacher));
+                                    if (found?.name) return found.name;
+                                  }
+                                }
+                                return "Unassigned";
+                              })()}
+                            </strong>
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <ListTodo size={13} className="text-[#94A3B8]" />
@@ -1556,7 +1847,7 @@ export default function LectureSchedule() {
                         <div className="bg-[#10B981] h-1.5 rounded-full transition-all duration-300" style={{ width: `${percent}%` }} />
                       </div>
 
-                      {role === "teacher" && schedule.verificationStatus === "pending_teacher" && (
+                      {(role === "admin" || (role === "teacher" && (String(schedule.teacher?._id || schedule.teacher) === String(user?.id)))) && (schedule.verificationStatus === "pending_teacher" || schedule.verificationStatus === "pending") && (
                         <div className="mb-3 p-2 bg-amber-50/50 border border-amber-100 rounded-lg flex flex-col gap-2">
                           <span className="text-[10px] font-bold text-amber-700">Verify this schedule:</span>
                           <div className="flex gap-1.5">
@@ -1730,12 +2021,12 @@ export default function LectureSchedule() {
                 <BookOpen size={16} className="text-[#2563EB]" /> Configuration Setup
               </h2>
               <form onSubmit={handleGenerateSchedule} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5 items-start">
 
                   {/* Subject */}
-                  <div className="col-span-1 md:col-span-2 lg:col-span-1">
+                  <div className="col-span-1 md:col-span-2 lg:col-span-1 min-w-0 w-full">
                     <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Subject</label>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 min-w-0 w-full">
                       <select
                         value={selectedTemplateId}
                         onChange={(e) => {
@@ -1748,16 +2039,16 @@ export default function LectureSchedule() {
                             setLectures([]);
                           }
                         }}
-                        className="flex-1 px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
+                        className="w-full min-w-0 max-w-full truncate px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
                       >
-                        <option value="">-- Select Subject to Auto-Fetch --</option>
+                        <option value="">-- Select Subject --</option>
                         {approvedTemplates.map(t => <option key={t._id} value={t._id}>{t.subject || t.name}</option>)}
                       </select>
                       {role === "admin" && selectedTemplateId && (
                         <button
                           type="button"
                           onClick={() => handleDeleteSubjectTemplate(selectedTemplateId)}
-                          className="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 px-3 py-2 rounded-lg transition-colors"
+                          className="bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 p-2 rounded-lg transition-colors shrink-0"
                           title="Delete Subject Template"
                         >
                           <Trash2 size={16} />
@@ -1771,150 +2062,64 @@ export default function LectureSchedule() {
                         placeholder="e.g. Full Stack Web Development"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
+                        className="w-full min-w-0 max-w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
                       />
                     )}
                   </div>
 
                   {/* Batch Select */}
-                  <div className="relative">
-                    <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Assign Batch</label>
-                    <button
-                      type="button"
-                      onClick={() => setBatchDropdownOpen(!batchDropdownOpen)}
-                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium flex justify-between items-center cursor-pointer min-h-[32px] text-left"
+                  <div className="min-w-0 w-full">
+                    <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Assign Batch *</label>
+                    <select
+                      value={selectedBatchIds[0] || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedBatchIds(val ? [val] : []);
+                        if (val && subject) {
+                          const existing = schedules.find(s => {
+                            const matchSubj = (s.subject || "").trim().toLowerCase() === subject.trim().toLowerCase();
+                            const bId = s.batch?._id ? String(s.batch._id) : String(s.batch || "");
+                            return matchSubj && bId === String(val);
+                          });
+                          if (existing) {
+                            handleOpenEdit(existing);
+                            toast.info(`Loaded existing schedule with ${existing.lectures?.length || 0} lectures!`);
+                          }
+                        }
+                      }}
+                      className="w-full min-w-0 max-w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium cursor-pointer"
                     >
-                      <span className="truncate pr-2">
-                        {selectedBatchIds.length === 0
-                          ? "-- Select Batches --"
-                          : selectedBatchIds
-                            .map((id) => {
-                              const b = batches.find((x) => x._id === id);
-                              return b ? `${b.batch_name} #${b.batch_no}` : "";
-                            })
-                            .filter(Boolean)
-                            .join(", ")}
-                      </span>
-                      <ChevronDown size={14} className="text-[#64748B] flex-shrink-0" />
-                    </button>
-
-                    {batchDropdownOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40 bg-transparent"
-                          onClick={() => setBatchDropdownOpen(false)}
-                        />
-                        <div
-                          className="absolute z-50 mt-1 w-full bg-white border border-[#E2E8F0] rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-1"
-                          style={{ top: "100%" }}
-                        >
-                          {batches.map((b) => {
-                            const isChecked = selectedBatchIds.includes(b._id);
-                            return (
-                              <label
-                                key={b._id}
-                                className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#F8FAFC] rounded-md cursor-pointer text-xs text-[#1B2B4B] font-medium select-none"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => {
-                                    if (isChecked) {
-                                      setSelectedBatchIds((prev) => prev.filter((id) => id !== b._id));
-                                    } else {
-                                      setSelectedBatchIds((prev) => [...prev, b._id]);
-                                    }
-                                  }}
-                                  className="rounded border-[#E2E8F0] text-[#2563EB] focus:ring-[#2563EB] cursor-pointer"
-                                />
-                                <span>
-                                  {b.batch_name} #{b.batch_no}
-                                </span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
+                      <option value="">-- Select Batch --</option>
+                      {batches.map((b) => (
+                        <option key={b._id} value={b._id}>
+                          {b.batch_name} #{b.batch_no}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Multiple Teachers Select */}
-                  <div className="relative">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <label className="block text-xs font-bold text-[#475569] uppercase">Assign Teacher(s)</label>
-                      {role === "admin" && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const target = selectedTeacherIds[0] || teacherId;
-                            if (!target) return toast.error("Select a teacher first");
-                            setLectures((prev) => prev.map((l) => ({ ...l, teacher: target })));
-                            toast.success("Applied primary teacher to all rows");
-                          }}
-                          className="text-[9px] text-[#2563EB] hover:text-[#1D4ED8] font-bold uppercase tracking-wider cursor-pointer"
-                        >
-                          Apply to All
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setTeacherDropdownOpen(!teacherDropdownOpen)}
-                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium flex justify-between items-center cursor-pointer min-h-[32px] text-left"
+                  {/* Teacher Select */}
+                  <div className="min-w-0 w-full">
+                    <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Assign Teacher *</label>
+                    <select
+                      value={teacherId || selectedTeacherIds[0] || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTeacherId(val);
+                        setSelectedTeacherIds(val ? [val] : []);
+                        if (val) {
+                          setLectures((prev) => prev.map((l) => ({ ...l, teacher: val })));
+                        }
+                      }}
+                      className="w-full min-w-0 max-w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium cursor-pointer"
                     >
-                      <span className="truncate pr-2">
-                        {selectedTeacherIds.length === 0
-                          ? "-- Select Teacher(s) --"
-                          : selectedTeacherIds
-                            .map((id) => teachers.find((t) => t._id === id)?.name)
-                            .filter(Boolean)
-                            .join(", ")}
-                      </span>
-                      <ChevronDown size={14} className="text-[#64748B] flex-shrink-0" />
-                    </button>
-
-                    {teacherDropdownOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40 bg-transparent"
-                          onClick={() => setTeacherDropdownOpen(false)}
-                        />
-                        <div
-                          className="absolute z-50 mt-1 w-full bg-white border border-[#E2E8F0] rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-1"
-                          style={{ top: "100%" }}
-                        >
-                          {teachers.map((t) => {
-                            const isChecked = selectedTeacherIds.includes(t._id);
-                            return (
-                              <label
-                                key={t._id}
-                                className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#F8FAFC] rounded-md cursor-pointer text-xs text-[#1B2B4B] font-medium select-none"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => {
-                                    let updated;
-                                    if (isChecked) {
-                                      updated = selectedTeacherIds.filter((id) => id !== t._id);
-                                    } else {
-                                      updated = [...selectedTeacherIds, t._id];
-                                    }
-                                    setSelectedTeacherIds(updated);
-                                    if (updated.length > 0) setTeacherId(updated[0]);
-                                    else setTeacherId("");
-                                  }}
-                                  className="rounded border-[#E2E8F0] text-[#2563EB] focus:ring-[#2563EB] cursor-pointer"
-                                />
-                                <span>
-                                  {t.name} ({t.email})
-                                </span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
+                      <option value="">-- Select Teacher --</option>
+                      {teachers.map((t) => (
+                        <option key={t._id} value={t._id}>
+                          {t.name} ({t.email})
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Start Date */}
@@ -2066,15 +2271,16 @@ export default function LectureSchedule() {
               <table className="w-full border-collapse text-left text-sm text-[#1B2B4B]">
                 <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[11px] font-bold uppercase text-[#64748B] tracking-wider">
                   <tr>
-                    <th className="px-5 py-3 w-16 text-center">#</th>
-                    <th className="px-5 py-3 min-w-[180px]">Lecture Title</th>
-                    <th className="px-5 py-3 min-w-[220px]">Description Summary</th>
-                    <th className="px-5 py-3 w-40">Date</th>
-                    <th className="px-5 py-3 w-40">Teacher</th>
-                    <th className="px-5 py-3 w-40">Notes</th>
-                    <th className="px-5 py-3 w-40">Homework</th>
-                    <th className="px-5 py-3 w-36">Status</th>
-                    {(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker && <th className="px-5 py-3 w-16 text-center">Action</th>}
+                    <th className="px-4 py-3 w-12 text-center">#</th>
+                    <th className="px-4 py-3 min-w-[180px]">Lecture Title</th>
+                    <th className="px-4 py-3 min-w-[200px]">Description Summary</th>
+                    <th className="px-4 py-3 min-w-[140px]">Date</th>
+                    <th className="px-4 py-3 min-w-[180px]">Time Slot</th>
+                    <th className="px-4 py-3 min-w-[150px]">Teacher</th>
+                    <th className="px-4 py-3 min-w-[120px]">Notes</th>
+                    <th className="px-4 py-3 min-w-[120px]">Homework</th>
+                    <th className="px-4 py-3 min-w-[130px]">Status</th>
+                    {(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker && <th className="px-4 py-3 w-16 text-center">Action</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F1F5F9]">
@@ -2088,9 +2294,22 @@ export default function LectureSchedule() {
                     lectures.map((lecture, index) => {
                       const isDone = lecture.status === "Done";
                       const hasHW = lecture.homework?.title;
+                      const rowConflicts = lectureConflicts[index] || [];
+                      const hasConflict = rowConflicts.length > 0;
+                      const conflictTip = hasConflict
+                        ? rowConflicts.map(c =>
+                            `${c.type === "batch" ? "🔴 Batch" : "🟠 Teacher"} conflict: "${c.conflictWith.subject}" (${c.conflictWith.batchName} #${c.conflictWith.batchNo}) at ${c.conflictWith.existingTimeSlot}`
+                          ).join("\n")
+                        : "";
 
                       return (
-                        <tr key={lecture._id || index} className="hover:bg-[#F8FAFC]/50 transition-colors">
+                        <tr
+                          key={lecture._id || index}
+                          className={`hover:bg-[#F8FAFC]/50 transition-colors ${
+                            hasConflict ? "bg-red-50 border-l-4 border-l-red-500" : ""
+                          }`}
+                          title={conflictTip}
+                        >
 
                           {/* # Index Badge */}
                           <td className="px-5 py-3.5 text-center">
@@ -2149,7 +2368,11 @@ export default function LectureSchedule() {
                                 <input
                                   type="date"
                                   value={lecture.date ? String(lecture.date).split("T")[0] : ""}
-                                  onChange={(e) => handleCellChange(index, "date", e.target.value)}
+                                  onChange={(e) => {
+                                    handleCellChange(index, "date", e.target.value);
+                                    // Clear conflict for this row when date changes
+                                    setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                  }}
                                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg text-xs font-medium focus:outline-none focus:border-[#2563EB] shadow-sm bg-white"
                                 />
                                 {lecture.isSaturdayLecture && (
@@ -2172,13 +2395,64 @@ export default function LectureSchedule() {
                             )}
                           </td>
 
+                          {/* Time Slot */}
+                          <td className="px-4 py-3.5 min-w-[180px]">
+                            {(role === "admin" || role === "teacher") ? (
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="time"
+                                    value={lecture.time_slot ? (lecture.time_slot.includes("-") ? lecture.time_slot.split("-")[0]?.trim() : lecture.time_slot.trim()) : ""}
+                                    onChange={(e) => {
+                                      const startVal = e.target.value || "";
+                                      const endVal = lecture.time_slot && lecture.time_slot.includes("-")
+                                        ? (lecture.time_slot.split("-")[1]?.trim() || "")
+                                        : "";
+                                      const newSlot = endVal ? `${startVal}-${endVal}` : startVal;
+                                      handleCellChange(index, "time_slot", newSlot);
+                                      setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                    }}
+                                    className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded text-xs focus:outline-none focus:border-[#2563EB] bg-white cursor-pointer"
+                                    placeholder="Start"
+                                  />
+                                  <span className="text-[10px] text-[#94A3B8] font-bold">–</span>
+                                  <input
+                                    type="time"
+                                    value={lecture.time_slot && lecture.time_slot.includes("-") ? (lecture.time_slot.split("-")[1]?.trim() || "") : ""}
+                                    onChange={(e) => {
+                                      const endVal = e.target.value || "";
+                                      const startVal = lecture.time_slot
+                                        ? (lecture.time_slot.includes("-") ? lecture.time_slot.split("-")[0]?.trim() : lecture.time_slot.trim())
+                                        : "";
+                                      const newSlot = startVal ? `${startVal}-${endVal}` : endVal;
+                                      handleCellChange(index, "time_slot", newSlot);
+                                      setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                    }}
+                                    className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded text-xs focus:outline-none focus:border-[#2563EB] bg-white cursor-pointer"
+                                    placeholder="End"
+                                  />
+                                </div>
+                                {lectureConflicts[index]?.length > 0 && (
+                                  <div className="text-[10px] text-red-600 font-bold flex items-center gap-1">
+                                    <span>⚠️</span>
+                                    <span>{lectureConflicts[index].map(c => c.type === "batch" ? "Batch" : "Teacher").join(" & ")} Conflict</span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs font-semibold text-[#475569]">
+                                {lecture.time_slot || "–"}
+                              </span>
+                            )}
+                          </td>
+
                           {/* Teacher Column */}
-                          <td className="px-5 py-3.5">
+                          <td className="px-4 py-3.5 min-w-[150px]">
                             {role === "admin" ? (
                               <select
                                 value={typeof lecture.teacher === "object" ? (lecture.teacher?._id || "") : (lecture.teacher || "")}
                                 onChange={(e) => handleCellChange(index, "teacher", e.target.value)}
-                                className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded-lg text-[11px] font-bold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer bg-white"
+                                className="w-full px-2.5 py-1.5 border border-[#E2E8F0] rounded-lg text-xs font-semibold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer bg-white"
                               >
                                 <option value="">-- Select Teacher --</option>
                                 {selectedTeacherIds.length > 0 && (
@@ -2204,7 +2478,7 @@ export default function LectureSchedule() {
                           </td>
 
                           {/* Notes Action Column */}
-                          <td className="px-5 py-3.5">
+                          <td className="px-4 py-3.5 min-w-[120px]">
                             {role === "student" ? (
                               lecture.status === "Done" ? (
                                 <button
@@ -2224,7 +2498,7 @@ export default function LectureSchedule() {
                                   <Lock size={12} /> Locked
                                 </span>
                               )
-                            ) : role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
+                            ) : (
                               <button
                                 onClick={() => openNotesModal(lecture, index)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl
@@ -2235,15 +2509,11 @@ export default function LectureSchedule() {
                                 <FileText size={13} />
                                 {lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl ? "Edit Notes" : "Add Notes"}
                               </button>
-                            ) : (
-                              <span className="text-[11px] text-[#94A3B8] font-medium italic block leading-tight">
-                                Save schedule first
-                              </span>
                             )}
                           </td>
 
                            {/* Homework Action Column */}
-                          <td className="px-5 py-3.5">
+                          <td className="px-4 py-3.5 min-w-[120px]">
                             {role === "student" ? (
                               <button
                                 onClick={() => openHomeworkModal(lecture, index)}
@@ -2256,7 +2526,7 @@ export default function LectureSchedule() {
                                 <BookOpen size={13} />
                                 {hasHW ? "View Homework" : "No HW"}
                               </button>
-                            ) : role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) || isCreating || !selectedSchedule ? (
+                            ) : (
                               <button
                                 onClick={() => openHomeworkModal(lecture, index)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${hasHW
@@ -2270,20 +2540,16 @@ export default function LectureSchedule() {
                                   <span className="w-1.5 h-1.5 bg-[#4F46E5] rounded-full inline-block animate-pulse" />
                                 )}
                               </button>
-                            ) : (
-                              <span className="text-[11px] text-[#94A3B8] font-medium italic block leading-tight">
-                                Save schedule first
-                              </span>
                             )}
                           </td>
 
                           {/* Status */}
-                          <td className="px-5 py-3.5">
+                          <td className="px-4 py-3.5 min-w-[130px]">
                             {role === "admin" || (role === "teacher" && selectedSchedule?.teacher?._id === user?.id) ? (
                               <select
                                 value={lecture.status}
                                 onChange={(e) => handleCellChange(index, "status", e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg text-xs font-bold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer ${lecture.status === "Done"
+                                className={`w-full px-3 py-1.5 border rounded-lg text-xs font-semibold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer ${lecture.status === "Done"
                                     ? "bg-[#ECFDF5] border-[#A7F3D0] text-[#047857]"
                                     : lecture.status === "Scheduled"
                                       ? "bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
@@ -2347,10 +2613,21 @@ export default function LectureSchedule() {
                     <Plus size={14} /> Add Saturday Row
                   </button>
 
+                  {/* Check Conflicts Button */}
+                  <button
+                    onClick={checkForConflicts}
+                    disabled={checkingConflicts}
+                    className="bg-white border border-[#E2E8F0] hover:bg-[#FEF3C7] hover:border-[#F59E0B] text-[#92400E] px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+                  >
+                    <AlertCircle size={14} className="text-[#F59E0B]" />
+                    {checkingConflicts ? "Checking..." : Object.keys(lectureConflicts).length > 0 ? `${Object.keys(lectureConflicts).length} Conflict(s) Found` : "Check Conflicts"}
+                  </button>
+
                   <button
                     onClick={() => {
                       if (window.confirm("Are you sure you want to clear the entire spreadsheet?")) {
                         setLectures([]);
+                        setLectureConflicts({});
                         toast.success("Spreadsheet cleared.");
                       }
                     }}
@@ -2359,6 +2636,7 @@ export default function LectureSchedule() {
                   >
                     Clear All Rows
                   </button>
+
                 </>
               )}
             </div>
@@ -2383,7 +2661,6 @@ export default function LectureSchedule() {
               {role !== "student" && !selectedSchedule?.isFromSyllabusTracker && (
                 <button
                   onClick={saveSchedule}
-                  disabled={lectures.length === 0}
                   className="bg-[#10B981] hover:bg-[#059669] text-white px-5 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
                 >
                   Save Schedule Database / Request Approval

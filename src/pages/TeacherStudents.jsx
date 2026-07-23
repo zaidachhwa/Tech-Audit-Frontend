@@ -352,7 +352,7 @@ export default function TeacherStudents() {
 
         <select
           value={batchFilter}
-          onChange={(e) => setBatchFilter(e.target.value)}
+          onChange={(e) => { setBatchFilter(e.target.value); setPage(1); }}
           className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-white cursor-pointer"
         >
           <option value="all">All Batches</option>

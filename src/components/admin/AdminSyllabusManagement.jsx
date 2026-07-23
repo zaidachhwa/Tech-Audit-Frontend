@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
 import { AnimatePresence } from "framer-motion";
+import CalendarView from "../shared/CalendarView";
 import {
   BookOpen,
   Plus,
@@ -81,6 +83,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder }) => {
 };
 
 export default function AdminSyllabusManagement() {
+  const navigate = useNavigate();
   const [syllabi, setSyllabi] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -132,6 +135,15 @@ export default function AdminSyllabusManagement() {
     subLectures: []
   });
   const [activeTab, setActiveTab] = useState("templates");
+  const [adminSchedules, setAdminSchedules] = useState([]);
+
+  useEffect(() => {
+    if (activeTab === "calendar") {
+      API.get("/schedules/list")
+        .then((res) => setAdminSchedules(res.data || []))
+        .catch(() => toast.error("Failed to load schedules for calendar"));
+    }
+  }, [activeTab]);
 
   const [chapters, setChapters] = useState([]);
   const [loadingChapters, setLoadingChapters] = useState(false);
@@ -630,15 +642,31 @@ export default function AdminSyllabusManagement() {
           </div>
           <button
             onClick={() => {
-              setSelectedTopic(topic);
-              setSelectedSyllabus(syllabus);
-              setScheduleForm({
-                batchId: "",
-                teacherId: "",
-                date: "",
-                time: ""
+              // Navigate to Lecture Scheduler with pre-populated context
+              const assignedBatches = (batchesWithSyllabi || []).filter(batch =>
+                batch && (batch.assignedSyllabi || []).some(bs => bs && (bs.syllabus?._id || bs.syllabus) === syllabus?._id)
+              );
+              const firstBatch = assignedBatches[0] || null;
+              const allAssigned = [
+                ...(syllabus?.assignedTeachers || []),
+                ...(syllabus?.assignedTeacher ? [syllabus.assignedTeacher] : [])
+              ].filter(t => t && (t._id || t.id));
+              const firstTeacher = allAssigned[0] || null;
+
+              navigate("/admin/lecture-scheduler", {
+                state: {
+                  prefill: {
+                    syllabusId: syllabus?._id,
+                    subjectName: syllabus?.subject || "",
+                    batchId: firstBatch?._id || "",
+                    teacherId: firstTeacher?._id || firstTeacher?.id || "",
+                    topicTitle: topic.title,
+                    date: topic.dueDate
+                      ? new Date(topic.dueDate).toISOString().split("T")[0]
+                      : "",
+                  }
+                }
               });
-              setShowScheduleModal(true);
             }}
             className="text-xs px-2.5 py-1.5 rounded font-semibold transition cursor-pointer flex items-center gap-1"
             style={{
@@ -748,6 +776,28 @@ export default function AdminSyllabusManagement() {
             >
               Batch Assignments
             </button>
+            <button
+              onClick={() => setActiveTab("calendar")}
+              className="px-4 py-1.5 h-full rounded text-sm font-medium transition flex items-center gap-1.5"
+              style={{
+                backgroundColor: activeTab === "calendar" ? "#F8FAFC" : "transparent",
+                color: activeTab === "calendar" ? "#2563EB" : "#94A3B8",
+                borderRadius: "6px",
+                fontWeight: "600",
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== "calendar") {
+                  e.currentTarget.style.color = "#2563EB";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== "calendar") {
+                  e.currentTarget.style.color = "#94A3B8";
+                }
+              }}
+            >
+              <Calendar size={15} /> Calendar View
+            </button>
           </div>
           <button
             onClick={fetchData}
@@ -793,6 +843,18 @@ export default function AdminSyllabusManagement() {
           )}
         </div>
       </div>
+
+      {activeTab === "calendar" && (
+        <div className="space-y-6">
+          <CalendarView
+            schedules={adminSchedules}
+            role="admin"
+            onSelectLecture={(evt) => {
+              navigate("/admin/lecture-scheduler");
+            }}
+          />
+        </div>
+      )}
 
       {activeTab === "templates" && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
@@ -1224,8 +1286,8 @@ export default function AdminSyllabusManagement() {
                                       <div className="flex items-center justify-between mb-2 pb-1 border-b border-gray-100">
                                         <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
                                           <BookOpen size={12} className="text-gray-400" />
-                                          Unassigned Lectures
-                                          <span className="text-[10px] text-gray-400 normal-case font-medium">({grouped[unassignedKey].length} lectures)</span>
+                                          General / Standalone Topics (Not in a Chapter)
+                                          <span className="text-[10px] text-gray-400 normal-case font-medium">({grouped[unassignedKey].length} topics)</span>
                                         </h5>
                                       </div>
                                       <div className="space-y-2 mt-2">

@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
+import CalendarView from "../shared/CalendarView";
 import {
   ArrowLeft, BookOpen, CheckCircle2, Clock, AlertCircle,
   CheckCheck, MessageSquare, Edit, RefreshCw, ChevronDown,
@@ -30,6 +31,7 @@ export default function AssignSyllabusDetail() {
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [remarkText, setRemarkText] = useState("");
   const [expandedTopic, setExpandedTopic] = useState(null);
+  const [viewMode, setViewMode] = useState("topics"); // "topics" | "calendar"
   const latestRef = useRef({ batchId: null, syllabusId: null });
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -213,7 +215,25 @@ export default function AssignSyllabusDetail() {
             </p>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div className="flex items-center bg-[#E2E8F0] p-0.5 rounded-lg text-xs font-bold shrink-0">
+            <button
+              onClick={() => setViewMode("topics")}
+              className={`px-3 py-1.5 rounded-md transition cursor-pointer ${
+                viewMode === "topics" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
+              }`}
+            >
+              📋 Topics List
+            </button>
+            <button
+              onClick={() => setViewMode("calendar")}
+              className={`px-3 py-1.5 rounded-md transition cursor-pointer ${
+                viewMode === "calendar" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
+              }`}
+            >
+              📅 Calendar View
+            </button>
+          </div>
           <button style={{ ...S.btn, background: "#10B981" }} onClick={() => setShowCreateModal(true)}>
             <Plus size={14} />
             Create Syllabus
@@ -276,7 +296,7 @@ export default function AssignSyllabusDetail() {
             { label: "Total Topics", value: stats.total, icon: <BookOpen size={18} />, tint: "#EFF6FF", color: "#2563EB" },
             { label: "Completed", value: stats.completed, icon: <CheckCircle2 size={18} />, tint: "#ECFDF5", color: "#10B981" },
             { label: "In Progress", value: stats.inProgress, icon: <Clock size={18} />, tint: "#FEF3C7", color: "#F59E0B" },
-            { label: "Pending", value: stats.pending, icon: <AlertCircle size={18} />, tint: "#FEF2F2", color: "#EF4444" },
+            { label: "Yet to be Scheduled", value: stats.pending, icon: <AlertCircle size={18} />, tint: "#FEF2F2", color: "#EF4444" },
           ].map((s) => (
             <div key={s.label} style={{ ...S.card, padding: "16px 18px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -492,7 +512,7 @@ function TopicCard({ topic, expanded, onToggleExpand, onStatusUpdate, onOpenRema
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
             <p style={{ fontWeight: 700, color: "#1B2B4B", fontSize: 14, margin: 0 }}>{topic.title}</p>
             <span style={{ ...cfg.badge, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", fontFamily: "'DM Sans', sans-serif" }}>
-              {topic.completionStatus}
+              {topic.completionStatus === "Pending" ? "Yet to be Scheduled" : topic.completionStatus}
             </span>
           </div>
           {topic.description && <p style={{ color: "#64748B", fontSize: 12, margin: "0 0 8px", lineHeight: 1.5 }}>{topic.description}</p>}
@@ -521,7 +541,7 @@ function TopicCard({ topic, expanded, onToggleExpand, onStatusUpdate, onOpenRema
                   padding: 0
                 }}
               >
-                <option value="Pending">Pending</option>
+                <option value="Pending">Yet to be Scheduled</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
               </select>

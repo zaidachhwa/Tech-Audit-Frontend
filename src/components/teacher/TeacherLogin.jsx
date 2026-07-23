@@ -106,12 +106,6 @@ export default function TeacherLogin() {
           <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#0F3C8A", margin: 0, textTransform: "uppercase", tracking: "-0.01em", textAlign: "center" }}>
             Nexcore Institute of Technology
           </h2>
-          {/* <p style={{ fontSize: "13px", fontWeight: "800", color: "#FF6B00", margin: "4px 0 0", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center" }}>
-            Syllabus Tracker
-          </p> */}
-          {/* <p style={{ fontSize: "11px", fontWeight: "500", color: "#64748B", margin: "2px 0 28px", textTransform: "uppercase", letterSpacing: "0.04em", textAlign: "center" }}>
-            Academic Management System
-          </p> */}
 
           {/* Form Header */}
           <div style={{ alignSelf: "flex-start", width: "100%", marginBottom: "20px" }}>

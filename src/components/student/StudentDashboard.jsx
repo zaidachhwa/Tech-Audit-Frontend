@@ -80,13 +80,21 @@ export default function StudentDashboard() {
             {me?.batch_name ? `${me.batch_name} (No. ${me.batch_no})` : "Student Dashboard"}
           </p>
         </div>
-        <button
-          onClick={fetchAll}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition shadow-sm"
-        >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/student/lecture-scheduler"
+            className="flex items-center gap-2 px-4 py-2 bg-[#2563EB] text-white hover:bg-[#1D4ED8] rounded-lg text-xs font-bold transition shadow-sm"
+          >
+            <Calendar size={14} /> Open Calendar View
+          </Link>
+          <button
+            onClick={fetchAll}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition shadow-sm"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* RENDER STATS CARDS */}
