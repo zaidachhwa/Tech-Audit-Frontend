@@ -18,6 +18,8 @@ const PAGE_LABELS = {
   "/admin/drafts":             "Drafts",
   "/admin/analytics":          "Analytics",
   "/admin/lecture-scheduler":  "Lecture Scheduler",
+  "/admin/student-attendance": "Student Attendance",
+  "/admin/settings":           "Institute Settings",
 };
 
 export default function AdminLayout() {

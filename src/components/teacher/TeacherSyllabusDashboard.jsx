@@ -26,6 +26,8 @@ import {
   Send,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import TeacherUpcomingLectures from "./TeacherUpcomingLectures";
+import PunchLogsTable from "../shared/PunchLogsTable";
 
 const S = {
   page: {
@@ -122,6 +124,7 @@ export default function TeacherSyllabusDashboard() {
   const [students, setStudents] = useState([]);
   const [recentSubmissions, setRecentSubmissions] = useState([]);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [logsRefreshTrigger, setLogsRefreshTrigger] = useState(0);
   const latestSelectedRefs = useRef({ batchId: null, syllabusId: null });
 
   useEffect(() => { fetchBatchesWithSyllabi(); }, []);
@@ -342,6 +345,14 @@ export default function TeacherSyllabusDashboard() {
             Refresh
           </button>
         </div>
+      </div>
+
+      {/* UPCOMING & SCHEDULED LECTURES (PUNCH IN / PUNCH OUT) */}
+      <TeacherUpcomingLectures onRefreshLogs={() => setLogsRefreshTrigger((prev) => prev + 1)} />
+
+      {/* PUNCH IN / OUT AUDIT LOGS */}
+      <div style={{ marginBottom: 24 }}>
+        <PunchLogsTable key={logsRefreshTrigger} isAdmin={false} />
       </div>
 
       {/* BATCH SELECTORS */}

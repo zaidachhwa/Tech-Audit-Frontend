@@ -33,6 +33,7 @@ import AdminTeacherTable from "./AdminTeacherTable";
 
 // ⭐ REUSABLE SIDEBAR COMPONENT
 import AdminSidebar from "../../components/admin/AdminSidebar";
+import PunchLogsTable from "../shared/PunchLogsTable";
 
 export default function AdminDashboard() {
   const { logout } = useAuth();
@@ -439,6 +440,11 @@ export default function AdminDashboard() {
               </motion.button>
             ))}
           </div>
+        </div>
+
+        {/* Teacher Punch In & Out Logs Audit Section */}
+        <div style={{ marginTop: "30px", marginBottom: "30px" }}>
+          <PunchLogsTable isAdmin={true} />
         </div>
 
         {/* Recent Batches */}

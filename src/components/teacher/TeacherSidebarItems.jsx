@@ -12,6 +12,7 @@ import {
   FolderGit2,
   GraduationCap,
   LibraryBig,
+  Fingerprint,
 } from "lucide-react";
 
 export const teacherSidebarItems = [
@@ -34,6 +35,11 @@ export const teacherSidebarItems = [
     name: "Attendance",
     icon: CalendarCheck,
     path: "/teacher/attendance",
+  },
+  {
+    name: "Student Attendance",
+    icon: Fingerprint,
+    path: "/teacher/student-attendance",
   },
   {
     name: "Lecture Scheduler",

@@ -11,12 +11,14 @@ import {
   Megaphone,
   CalendarCheck,
   LibraryBig,
+  Fingerprint,
 } from "lucide-react";
 
 const STUDENT_SIDEBAR_ITEMS = [
   { name: "Dashboard",         path: "/student/dashboard",         icon: LayoutDashboard },
   { name: "My Homework",       path: "/student/assignments",       icon: ClipboardList },
   { name: "Lecture Scheduler", path: "/student/lecture-scheduler", icon: CalendarCheck },
+  { name: "My Attendance",     path: "/student/attendance",         icon: Fingerprint },
   { name: "Announcements",     path: "/student/announcements",     icon: Megaphone },
   { name: "LMS",               path: "/student/lms",               icon: LibraryBig },
   { name: "Projects",          path: "/student/projects",          icon: Layers },
@@ -28,6 +30,7 @@ const PAGE_LABELS = {
   "/student/dashboard":         "Dashboard",
   "/student/assignments":       "My Homework",
   "/student/lecture-scheduler": "Lecture Schedule",
+  "/student/attendance":         "My Attendance",
   "/student/announcements":     "Announcements",
   "/student/lms":               "Learning Resources",
   "/student/projects":          "My Projects",

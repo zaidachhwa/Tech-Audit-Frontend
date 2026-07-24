@@ -9,6 +9,7 @@ const PAGE_LABELS = {
   "/teacher/student-management":"My Students",
   "/teacher/performance":       "Lecture Progress",
   "/teacher/attendance":        "Attendance",
+  "/teacher/student-attendance": "Student Attendance",
   "/teacher/lecture-scheduler": "Lecture Scheduler",
   "/teacher/grades":            "Grades",
   "/teacher/announcements":     "Announcements",

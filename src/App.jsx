@@ -17,6 +17,7 @@ import Reports from './components/student/Reports';
 import StudentProfile from './components/student/StudentProfile';
 import StudentAssignments from './components/student/StudentAssignments';
 import StudentAnnouncements from './components/student/StudentAnnouncements';
+import StudentAttendancePunch from './components/student/StudentAttendancePunch';
 
 /* ADMIN */
 import AdminLogin from './components/admin/AdminLogin';
@@ -36,6 +37,8 @@ import TeacherProfileView from './components/admin/TeacherProfileView';
 import StudentProfileView from './components/admin/StudentProfileView';
 import AdminAnalytics from './pages/AdminAnalytics';
 import LectureSchedule from './pages/LectureSchedule';
+import AdminStudentAttendance from './components/admin/AdminStudentAttendance';
+import AdminInstituteSettings from './components/admin/AdminInstituteSettings';
 
 /* TEACHER */
 import TeacherLogin from './components/teacher/TeacherLogin';
@@ -52,6 +55,7 @@ import TeacherAnnouncements from './components/teacher/TeacherAnnouncements';
 import AssignSyllabus from './components/teacher/AssignSyllabus';
 import AssignSyllabusDetail from './components/teacher/AssignSyllabusDetail';
 import TeacherStudents from './pages/TeacherStudents';
+import TeacherStudentAttendance from './components/teacher/TeacherStudentAttendance';
 
 /* LMS */
 import LMSManagement from './pages/LMSManagement';
@@ -87,6 +91,7 @@ export default function App() {
           <Route path="reports"            element={<Reports />} />
           <Route path="profile"            element={<StudentProfile />} />
           <Route path="lecture-scheduler"  element={<LectureSchedule />} />
+          <Route path="attendance"          element={<StudentAttendancePunch />} />
         </Route>
 
         {/* ─── ADMIN AUTH ──────────────────────────────────────────────────── */}
@@ -121,6 +126,8 @@ export default function App() {
           <Route path="lecture-scheduler"  element={<LectureSchedule />} />
           <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
+          <Route path="student-attendance" element={<AdminStudentAttendance />} />
+          <Route path="settings"           element={<AdminInstituteSettings />} />
         </Route>
 
         {/* ─── TEACHER AUTH ────────────────────────────────────────────────── */}
@@ -155,6 +162,7 @@ export default function App() {
           <Route path="project-tracking/batch/:batchId"     element={<AdminBatchDetail />} />
           <Route path="project-tracking/student/:studentId" element={<StudentProjectsView />} />
           <Route path="attendance"         element={<TeacherAttendance />} />
+          <Route path="student-attendance" element={<TeacherStudentAttendance />} />
           <Route path="grades"             element={<TeacherGrades />} />
           <Route path="announcements"      element={<TeacherAnnouncements />} />
           <Route path="lecture-scheduler"  element={<LectureSchedule />} />

@@ -11,6 +11,8 @@ import {
   ClipboardList,
   CalendarDays,
   LibraryBig,
+  Fingerprint,
+  Settings,
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -43,6 +45,11 @@ export const adminSidebarItems = [
     name: "Lecture Scheduler",
     path: "/admin/lecture-scheduler",
     icon: CalendarDays,
+  },
+  {
+    name: "Student Attendance",
+    path: "/admin/student-attendance",
+    icon: Fingerprint,
   },
   {
     name: "Assign Homework",
@@ -78,5 +85,10 @@ export const adminSidebarItems = [
     name: "All Reports",
     path: "/admin/all-reports",
     icon: Notebook,
+  },
+  {
+    name: "Institute Settings",
+    path: "/admin/settings",
+    icon: Settings,
   },
 ];
