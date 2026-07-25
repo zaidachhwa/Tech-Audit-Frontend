@@ -773,6 +773,18 @@ export default function LectureSchedule() {
       return;
     }
 
+    // Validation: Ensure all lectures have at least one note added
+    const missingNotesIndex = lectures.findIndex(l => {
+      const hasShared = Array.isArray(l.notes_shared) ? l.notes_shared.length > 0 : !!l.notes_shared?.fileUrl;
+      const hasTeacher = Array.isArray(l.notes_teacher) ? l.notes_teacher.length > 0 : !!l.notes_teacher?.fileUrl;
+      return !hasShared && !hasTeacher;
+    });
+
+    if (missingNotesIndex !== -1) {
+      toast.error(`Please add notes for "${lectures[missingNotesIndex].title || `Lecture ${missingNotesIndex + 1}`}" before saving the schedule.`);
+      return;
+    }
+
     const finalTeacherId = teacherId || (selectedTeacherIds.length > 0 ? selectedTeacherIds[0] : (role === "teacher" ? user?.id : ""));
     if (!finalTeacherId) {
       toast.error("Please select at least one Teacher.");
