@@ -2077,34 +2077,61 @@ export default function LectureSchedule() {
                   </div>
 
                   {/* Batch Select */}
-                  <div className="min-w-0 w-full">
+                  <div className="min-w-0 w-full relative" onMouseLeave={() => setBatchDropdownOpen(false)}>
                     <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Assign Batch *</label>
-                    <select
-                      value={selectedBatchIds[0] || ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSelectedBatchIds(val ? [val] : []);
-                        if (val && subject) {
-                          const existing = schedules.find(s => {
-                            const matchSubj = (s.subject || "").trim().toLowerCase() === subject.trim().toLowerCase();
-                            const bId = s.batch?._id ? String(s.batch._id) : String(s.batch || "");
-                            return matchSubj && bId === String(val);
-                          });
-                          if (existing) {
-                            handleOpenEdit(existing);
-                            toast.info(`Loaded existing schedule with ${existing.lectures?.length || 0} lectures!`);
-                          }
-                        }
-                      }}
-                      className="w-full min-w-0 max-w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium cursor-pointer"
+                    <div 
+                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs text-[#1B2B4B] font-medium cursor-pointer flex justify-between items-center"
+                      onClick={() => setBatchDropdownOpen(!batchDropdownOpen)}
                     >
-                      <option value="">-- Select Batch --</option>
-                      {batches.map((b) => (
-                        <option key={b._id} value={b._id}>
-                          {b.batch_name} #{b.batch_no}
-                        </option>
-                      ))}
-                    </select>
+                      <span className="truncate">
+                        {selectedBatchIds.length === 0 
+                          ? "-- Select Batch --" 
+                          : selectedBatchIds.length === 1 
+                            ? (() => {
+                                const b = batches.find(b => String(b._id) === String(selectedBatchIds[0]));
+                                return b ? `${b.batch_name} #${b.batch_no}` : "-- Select Batch --";
+                              })()
+                            : `${selectedBatchIds.length} batches selected`}
+                      </span>
+                      <ChevronDown size={14} className="text-[#64748B]" />
+                    </div>
+                    {batchDropdownOpen && (
+                      <div className="absolute z-[100] mt-1 w-full bg-white border border-[#E2E8F0] rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {batches.map((b) => (
+                          <label key={b._id} className="flex items-center px-3 py-2 hover:bg-[#F8FAFC] cursor-pointer text-xs text-[#1B2B4B]">
+                            <input
+                              type="checkbox"
+                              className="mr-2 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]"
+                              checked={selectedBatchIds.includes(b._id)}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                let newSelected = [];
+                                if (checked) {
+                                  newSelected = [...selectedBatchIds, b._id];
+                                } else {
+                                  newSelected = selectedBatchIds.filter(id => id !== b._id);
+                                }
+                                setSelectedBatchIds(newSelected);
+                                
+                                if (checked && newSelected.length === 1 && subject) {
+                                  const existing = schedules.find(s => {
+                                    const matchSubj = (s.subject || "").trim().toLowerCase() === subject.trim().toLowerCase();
+                                    const bId = s.batch?._id ? String(s.batch._id) : String(s.batch || "");
+                                    return matchSubj && bId === String(b._id);
+                                  });
+                                  if (existing) {
+                                    // Notice: handleOpenEdit might be invoked here to auto-populate from existing
+                                    handleOpenEdit(existing);
+                                    toast.info(`Loaded existing schedule with ${existing.lectures?.length || 0} lectures!`);
+                                  }
+                                }
+                              }}
+                            />
+                            {b.batch_name} #{b.batch_no}
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Teacher Select */}
