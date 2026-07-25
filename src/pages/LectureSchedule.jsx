@@ -1242,8 +1242,7 @@ export default function LectureSchedule() {
       if (selectedSchedule?._id && activeNotesLecture?._id && !activeNotesLecture._id.startsWith("temp-")) {
         const res = await API.post(
           `/schedules/${selectedSchedule._id}/lectures/${activeNotesLecture._id}/notes`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
+          formData
         );
 
         const list = [...lectures];
@@ -1254,9 +1253,7 @@ export default function LectureSchedule() {
         };
         setLectures(list);
       } else {
-        const res = await API.post(`/schedules/upload`, formData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
+        const res = await API.post(`/schedules/upload`, formData);
 
         const list = [...lectures];
         list[notesIndex] = {

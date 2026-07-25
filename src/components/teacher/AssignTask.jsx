@@ -133,9 +133,7 @@ export default function AssignTask() {
       setUploading(true);
       const formData = new FormData();
       formData.append("file", file);
-      const res = await API.post("/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const res = await API.post("/upload", formData);
       setAttachments(prev => [...prev, res.data.fileUrl]);
       toast.success("File uploaded successfully");
     } catch (err) {

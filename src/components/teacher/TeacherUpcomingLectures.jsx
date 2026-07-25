@@ -106,9 +106,7 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
         formData.append("file", file);
       }
 
-      const res = await API.post("/punch/in", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await API.post("/punch/in", formData);
 
       toast.success(res.data?.message || "Punched In successfully!");
       fetchUpcomingLectures();
@@ -139,9 +137,7 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
         formData.append("file", file);
       }
 
-      const res = await API.post("/punch/out", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await API.post("/punch/out", formData);
 
       toast.success(res.data?.message || "Punched Out successfully!");
       fetchUpcomingLectures();

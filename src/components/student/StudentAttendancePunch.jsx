@@ -139,9 +139,7 @@ export default function StudentAttendancePunch() {
       formData.append("photo", photoBlob, "selfie.jpg");
 
       const endpoint = punchType === 'in' ? "/student-attendance/punch-in" : "/student-attendance/punch-out";
-      const res = await API.post(endpoint, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const res = await API.post(endpoint, formData);
       
       toast.success(res.data.message, { id: "punch" });
       fetchToday();
