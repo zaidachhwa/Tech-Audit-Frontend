@@ -88,8 +88,8 @@ export default function LectureSchedule() {
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [activeNotesLecture, setActiveNotesLecture] = useState(null);
   const [notesIndex, setNotesIndex] = useState(null);
-  const [notesSharedFile, setNotesSharedFile] = useState(null);
-  const [notesTeacherFile, setNotesTeacherFile] = useState(null);
+  const [notesSharedFiles, setNotesSharedFiles] = useState([]);
+  const [notesTeacherFiles, setNotesTeacherFiles] = useState([]);
   const [savingNotes, setSavingNotes] = useState(false);
 
   // Student submission states
@@ -1226,8 +1226,8 @@ export default function LectureSchedule() {
   const openNotesModal = (lecture, index) => {
     setActiveNotesLecture(lecture);
     setNotesIndex(index);
-    setNotesSharedFile(null);
-    setNotesTeacherFile(null);
+    setNotesSharedFiles([]);
+    setNotesTeacherFiles([]);
     setIsNotesModalOpen(true);
   };
 
@@ -1236,8 +1236,8 @@ export default function LectureSchedule() {
     try {
       setSavingNotes(true);
       const formData = new FormData();
-      if (notesSharedFile) formData.append("notes_shared", notesSharedFile);
-      if (notesTeacherFile) formData.append("notes_teacher", notesTeacherFile);
+      notesSharedFiles.forEach(file => formData.append("notes_shared", file));
+      notesTeacherFiles.forEach(file => formData.append("notes_teacher", file));
 
       if (selectedSchedule?._id && activeNotesLecture?._id && !activeNotesLecture._id.startsWith("temp-")) {
         const res = await API.post(
@@ -2483,15 +2483,15 @@ export default function LectureSchedule() {
                               lecture.status === "Done" ? (
                                 <button
                                   onClick={() => openNotesModal(lecture, index)}
-                                  disabled={!lecture.notes_shared?.fileUrl}
+                                  disabled={!(Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl)}
                                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                    lecture.notes_shared?.fileUrl
+                                    (Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl)
                                       ? "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7] cursor-pointer"
                                       : "bg-[#F8FAFC] text-[#94A3B8] border border-[#E2E8F0] cursor-not-allowed opacity-60"
                                   }`}
                                 >
                                   <FileText size={13} />
-                                  {lecture.notes_shared?.fileUrl ? "View Notes" : "No Notes"}
+                                  {(Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl) ? "View Notes" : "No Notes"}
                                 </button>
                               ) : (
                                 <span className="inline-flex items-center gap-1 text-[11px] text-[#94A3B8] font-medium italic">
@@ -2501,13 +2501,13 @@ export default function LectureSchedule() {
                             ) : (
                               <button
                                 onClick={() => openNotesModal(lecture, index)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${(Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl) || (Array.isArray(lecture.notes_teacher) ? lecture.notes_teacher.length > 0 : lecture.notes_teacher?.fileUrl)
                                     ? "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7]"
                                     : "bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
                                   }`}
                               >
                                 <FileText size={13} />
-                                {lecture.notes_shared?.fileUrl || lecture.notes_teacher?.fileUrl ? "Edit Notes" : "Add Notes"}
+                                {(Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl) || (Array.isArray(lecture.notes_teacher) ? lecture.notes_teacher.length > 0 : lecture.notes_teacher?.fileUrl) ? "Edit Notes" : "Add Notes"}
                               </button>
                             )}
                           </td>
@@ -2707,43 +2707,95 @@ export default function LectureSchedule() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Shared Notes (Students & Teachers)</label>
-                      <p className="text-[9px] text-[#94A3B8] mb-2">Max 10MB limit. All formats allowed.</p>
+                      <p className="text-[9px] text-[#94A3B8] mb-2">Max 3 files, 10MB total limit. All formats allowed.</p>
                       <input
                         type="file"
+                        multiple
                         onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file && file.size > 10 * 1024 * 1024) {
-                            toast.error("File is too large. Maximum size allowed is 10MB.");
-                            e.target.value = "";
-                          } else {
-                            setNotesSharedFile(file);
+                          const files = Array.from(e.target.files);
+                          e.target.value = "";
+                          const allFiles = [...notesSharedFiles, ...files];
+                          if (allFiles.length > 3) {
+                            toast.error("You can upload a maximum of 3 files.");
+                            return;
                           }
+                          const totalSize = allFiles.reduce((acc, f) => acc + f.size, 0);
+                          if (totalSize > 10 * 1024 * 1024) {
+                            toast.error("Total selected file size cannot exceed 10 MB.");
+                            return;
+                          }
+                          setNotesSharedFiles(allFiles);
                         }}
                         className="w-full text-xs text-[#475569] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#EEF2FF] file:text-[#4F46E5] hover:file:bg-[#E0E7FF] cursor-pointer"
                       />
-                      {activeNotesLecture.notes_shared?.fileName && !notesSharedFile && (
-                        <p className="text-[10px] mt-2 text-[#10B981] font-medium">Currently uploaded: {activeNotesLecture.notes_shared.fileName}</p>
+                      {notesSharedFiles.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {notesSharedFiles.map((f, i) => (
+                            <div key={i} className="flex justify-between items-center text-[10px] bg-white border border-[#E2E8F0] p-1.5 rounded">
+                              <span className="truncate">{f.name} ({(f.size/1024/1024).toFixed(2)}MB)</span>
+                              <button onClick={() => setNotesSharedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500 hover:text-red-700">X</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {Array.isArray(activeNotesLecture.notes_shared) ? (
+                        activeNotesLecture.notes_shared.length > 0 && !notesSharedFiles.length && (
+                          <div className="mt-2 text-[10px] text-[#10B981] font-medium">
+                            <p>Currently uploaded:</p>
+                            {activeNotesLecture.notes_shared.map((f, i) => <p key={i}>- {f.fileName}</p>)}
+                          </div>
+                        )
+                      ) : (
+                        activeNotesLecture.notes_shared?.fileName && !notesSharedFiles.length && (
+                          <p className="text-[10px] mt-2 text-[#10B981] font-medium">Currently uploaded: {activeNotesLecture.notes_shared.fileName}</p>
+                        )
                       )}
                     </div>
 
                     <div>
                       <label className="block text-[10px] font-bold text-[#64748B] uppercase mb-1">Teacher Notes (Teachers Only)</label>
-                      <p className="text-[9px] text-[#94A3B8] mb-2">Max 10MB limit. All formats allowed.</p>
+                      <p className="text-[9px] text-[#94A3B8] mb-2">Max 3 files, 10MB total limit. All formats allowed.</p>
                       <input
                         type="file"
+                        multiple
                         onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file && file.size > 10 * 1024 * 1024) {
-                            toast.error("File is too large. Maximum size allowed is 10MB.");
-                            e.target.value = "";
-                          } else {
-                            setNotesTeacherFile(file);
+                          const files = Array.from(e.target.files);
+                          e.target.value = "";
+                          const allFiles = [...notesTeacherFiles, ...files];
+                          if (allFiles.length > 3) {
+                            toast.error("You can upload a maximum of 3 files.");
+                            return;
                           }
+                          const totalSize = allFiles.reduce((acc, f) => acc + f.size, 0);
+                          if (totalSize > 10 * 1024 * 1024) {
+                            toast.error("Total selected file size cannot exceed 10 MB.");
+                            return;
+                          }
+                          setNotesTeacherFiles(allFiles);
                         }}
                         className="w-full text-xs text-[#475569] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer"
                       />
-                      {activeNotesLecture.notes_teacher?.fileName && !notesTeacherFile && (
-                        <p className="text-[10px] mt-2 text-[#10B981] font-medium">Currently uploaded: {activeNotesLecture.notes_teacher.fileName}</p>
+                      {notesTeacherFiles.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {notesTeacherFiles.map((f, i) => (
+                            <div key={i} className="flex justify-between items-center text-[10px] bg-white border border-[#E2E8F0] p-1.5 rounded">
+                              <span className="truncate">{f.name} ({(f.size/1024/1024).toFixed(2)}MB)</span>
+                              <button onClick={() => setNotesTeacherFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500 hover:text-red-700">X</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {Array.isArray(activeNotesLecture.notes_teacher) ? (
+                        activeNotesLecture.notes_teacher.length > 0 && !notesTeacherFiles.length && (
+                          <div className="mt-2 text-[10px] text-[#10B981] font-medium">
+                            <p>Currently uploaded:</p>
+                            {activeNotesLecture.notes_teacher.map((f, i) => <p key={i}>- {f.fileName}</p>)}
+                          </div>
+                        )
+                      ) : (
+                        activeNotesLecture.notes_teacher?.fileName && !notesTeacherFiles.length && (
+                          <p className="text-[10px] mt-2 text-[#10B981] font-medium">Currently uploaded: {activeNotesLecture.notes_teacher.fileName}</p>
+                        )
                       )}
                     </div>
                   </div>
@@ -2751,7 +2803,7 @@ export default function LectureSchedule() {
                   <div className="flex justify-end pt-2 border-t border-[#E2E8F0]">
                     <button
                       onClick={saveNotes}
-                      disabled={savingNotes || (!notesSharedFile && !notesTeacherFile)}
+                      disabled={savingNotes || (!notesSharedFiles.length && !notesTeacherFiles.length)}
                       className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
                     >
                       {savingNotes ? "Uploading..." : "Upload Selected Notes"}
@@ -2767,7 +2819,25 @@ export default function LectureSchedule() {
                 </h4>
                 <div className="grid grid-cols-1 gap-3">
                   {/* Shared Notes Download */}
-                  {activeNotesLecture.notes_shared?.fileUrl ? (
+                  {Array.isArray(activeNotesLecture.notes_shared) && activeNotesLecture.notes_shared.length > 0 ? (
+                    activeNotesLecture.notes_shared.map((note, idx) => (
+                      <div key={`shared-${idx}`} className="flex justify-between items-center bg-blue-50/40 border border-blue-100 p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FileText size={16} className="text-[#2563EB]" />
+                          <div>
+                            <p className="text-xs font-bold text-[#1B2B4B]">{note.fileName}</p>
+                            <p className="text-[10px] text-[#64748B]">For Students & Teachers</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadFile(note.fileName, note.fileUrl)}
+                          className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                        >
+                          <Download size={13} /> Download
+                        </button>
+                      </div>
+                    ))
+                  ) : activeNotesLecture.notes_shared?.fileUrl ? (
                     <div className="flex justify-between items-center bg-blue-50/40 border border-blue-100 p-3 rounded-lg">
                       <div className="flex items-center gap-2">
                         <FileText size={16} className="text-[#2563EB]" />
@@ -2793,22 +2863,42 @@ export default function LectureSchedule() {
                   )}
 
                   {/* Teacher Notes Download */}
-                  {role !== "student" && activeNotesLecture.notes_teacher?.fileUrl && (
-                    <div className="flex justify-between items-center bg-amber-50/40 border border-amber-100 p-3 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <FileText size={16} className="text-amber-600" />
-                        <div>
-                          <p className="text-xs font-bold text-[#1B2B4B]">{activeNotesLecture.notes_teacher.fileName}</p>
-                          <p className="text-[10px] text-[#64748B]">Teacher Notes Only</p>
+                  {role !== "student" && (
+                    Array.isArray(activeNotesLecture.notes_teacher) && activeNotesLecture.notes_teacher.length > 0 ? (
+                      activeNotesLecture.notes_teacher.map((note, idx) => (
+                        <div key={`teacher-${idx}`} className="flex justify-between items-center bg-amber-50/40 border border-amber-100 p-3 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <FileText size={16} className="text-amber-600" />
+                            <div>
+                              <p className="text-xs font-bold text-[#1B2B4B]">{note.fileName}</p>
+                              <p className="text-[10px] text-[#64748B]">Teacher Notes Only</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDownloadFile(note.fileName, note.fileUrl)}
+                            className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                          >
+                            <Download size={13} /> Download
+                          </button>
                         </div>
+                      ))
+                    ) : activeNotesLecture.notes_teacher?.fileUrl ? (
+                      <div className="flex justify-between items-center bg-amber-50/40 border border-amber-100 p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FileText size={16} className="text-amber-600" />
+                          <div>
+                            <p className="text-xs font-bold text-[#1B2B4B]">{activeNotesLecture.notes_teacher.fileName}</p>
+                            <p className="text-[10px] text-[#64748B]">Teacher Notes Only</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadFile(activeNotesLecture.notes_teacher.fileName, activeNotesLecture.notes_teacher.fileUrl)}
+                          className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                        >
+                          <Download size={13} /> Download
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleDownloadFile(activeNotesLecture.notes_teacher.fileName, activeNotesLecture.notes_teacher.fileUrl)}
-                        className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
-                      >
-                        <Download size={13} /> Download
-                      </button>
-                    </div>
+                    ) : null
                   )}
                 </div>
               </div>

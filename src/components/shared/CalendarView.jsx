@@ -31,6 +31,7 @@ export default function CalendarView({
   const [selectedTeacher, setSelectedTeacher] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [activeLectureModal, setActiveLectureModal] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
 
   // Extract list of unique batches & teachers for filters
   const filterOptions = useMemo(() => {
@@ -229,6 +230,34 @@ export default function CalendarView({
       default:
         return { label: "Scheduled", bg: "#EFF6FF", text: "#1E40AF", border: "#BFDBFE" };
     }
+  };
+
+  const handlePreviewFile = (e, fileUrl, fileName) => {
+    e.preventDefault();
+    e.stopPropagation();
+    let targetUrl = fileUrl;
+    if (!targetUrl.startsWith("data:") && !targetUrl.startsWith("http://") && !targetUrl.startsWith("https://") && !targetUrl.startsWith("blob:")) {
+      const serverOrigin = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "") : "http://localhost:5000";
+      targetUrl = `${serverOrigin}/${targetUrl.replace(/^\//, "")}`;
+    }
+    setPreviewFile({ url: targetUrl, name: fileName });
+  };
+
+  const handleDownloadFile = (e, fileName, fileUrl) => {
+    e.preventDefault();
+    e.stopPropagation();
+    let targetUrl = fileUrl;
+    if (!targetUrl.startsWith("data:") && !targetUrl.startsWith("http://") && !targetUrl.startsWith("https://") && !targetUrl.startsWith("blob:")) {
+      const serverOrigin = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "") : "http://localhost:5000";
+      targetUrl = `${serverOrigin}/${targetUrl.replace(/^\//, "")}`;
+    }
+    const link = document.createElement("a");
+    link.href = targetUrl;
+    link.download = fileName || "download";
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -576,62 +605,60 @@ export default function CalendarView({
             )}
 
             {/* Notes Section */}
-            {(activeLectureModal.notes_shared?.fileUrl || activeLectureModal.notes_teacher?.fileUrl) && (
+            {((Array.isArray(activeLectureModal.notes_shared) && activeLectureModal.notes_shared.length > 0) || activeLectureModal.notes_shared?.fileUrl || (Array.isArray(activeLectureModal.notes_teacher) && activeLectureModal.notes_teacher.length > 0) || activeLectureModal.notes_teacher?.fileUrl) && (
               <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-lg text-xs space-y-2">
                 <span className="block text-[9px] font-extrabold text-blue-800 uppercase tracking-wider">
                   📄 Study Notes & Resources
                 </span>
-                {activeLectureModal.notes_shared?.fileUrl && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const fileUrl = activeLectureModal.notes_shared.fileUrl;
-                      const fileName = activeLectureModal.notes_shared.fileName || "study_notes.pdf";
-                      const link = document.createElement("a");
-                      let targetUrl = fileUrl;
-                      if (!targetUrl.startsWith("data:") && !targetUrl.startsWith("http://") && !targetUrl.startsWith("https://") && !targetUrl.startsWith("blob:")) {
-                        const serverOrigin = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "") : "http://localhost:5000";
-                        targetUrl = `${serverOrigin}/${targetUrl.replace(/^\//, "")}`;
-                      }
-                      link.href = targetUrl;
-                      link.download = fileName;
-                      link.target = "_blank";
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
-                    className="flex items-center gap-1.5 text-blue-700 font-bold hover:underline cursor-pointer bg-transparent border-0 p-0 text-left"
-                  >
-                    <Download size={13} /> {activeLectureModal.notes_shared.fileName || "Shared Notes File"}
-                  </button>
+                
+                {/* Shared Notes array map */}
+                {Array.isArray(activeLectureModal.notes_shared) && activeLectureModal.notes_shared.map((note, idx) => (
+                  <div key={`shared-${idx}`} className="flex items-center justify-between bg-white border border-blue-100 p-2 rounded-md">
+                    <span className="text-blue-700 font-bold truncate text-[10px] mr-2 flex items-center gap-1.5">
+                      <FileText size={12} /> {note.fileName || `Shared Notes File ${idx + 1}`}
+                    </span>
+                    <div className="flex gap-1 shrink-0">
+                       <button onClick={(e) => handlePreviewFile(e, note.fileUrl, note.fileName || `Shared Notes File ${idx + 1}`)} className="bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition-all"><Eye size={10}/> View</button>
+                       <button onClick={(e) => handleDownloadFile(e, note.fileName || `Shared Notes File ${idx + 1}`, note.fileUrl)} className="bg-white border border-[#E2E8F0] text-[#475569] hover:bg-[#F8FAFC] px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition-all"><Download size={10}/> Download</button>
+                    </div>
+                  </div>
+                ))}
+                {/* Shared Notes single object (legacy) */}
+                {!Array.isArray(activeLectureModal.notes_shared) && activeLectureModal.notes_shared?.fileUrl && (
+                  <div className="flex items-center justify-between bg-white border border-blue-100 p-2 rounded-md">
+                    <span className="text-blue-700 font-bold truncate text-[10px] mr-2 flex items-center gap-1.5">
+                      <FileText size={12} /> {activeLectureModal.notes_shared.fileName || "Shared Notes File"}
+                    </span>
+                    <div className="flex gap-1 shrink-0">
+                       <button onClick={(e) => handlePreviewFile(e, activeLectureModal.notes_shared.fileUrl, activeLectureModal.notes_shared.fileName || "Shared Notes File")} className="bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#E0E7FF] px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition-all"><Eye size={10}/> View</button>
+                       <button onClick={(e) => handleDownloadFile(e, activeLectureModal.notes_shared.fileName || "Shared Notes File", activeLectureModal.notes_shared.fileUrl)} className="bg-white border border-[#E2E8F0] text-[#475569] hover:bg-[#F8FAFC] px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition-all"><Download size={10}/> Download</button>
+                    </div>
+                  </div>
                 )}
-                {activeLectureModal.notes_teacher?.fileUrl && role !== "student" && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const fileUrl = activeLectureModal.notes_teacher.fileUrl;
-                      const fileName = activeLectureModal.notes_teacher.fileName || "teacher_reference.pdf";
-                      const link = document.createElement("a");
-                      let targetUrl = fileUrl;
-                      if (!targetUrl.startsWith("data:") && !targetUrl.startsWith("http://") && !targetUrl.startsWith("https://") && !targetUrl.startsWith("blob:")) {
-                        const serverOrigin = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "") : "http://localhost:5000";
-                        targetUrl = `${serverOrigin}/${targetUrl.replace(/^\//, "")}`;
-                      }
-                      link.href = targetUrl;
-                      link.download = fileName;
-                      link.target = "_blank";
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
-                    className="flex items-center gap-1.5 text-amber-700 font-bold hover:underline cursor-pointer bg-transparent border-0 p-0 text-left"
-                  >
-                    <Download size={13} /> {activeLectureModal.notes_teacher.fileName || "Teacher Reference Notes"}
-                  </button>
+
+                {/* Teacher Notes array map */}
+                {role !== "student" && Array.isArray(activeLectureModal.notes_teacher) && activeLectureModal.notes_teacher.map((note, idx) => (
+                  <div key={`teacher-${idx}`} className="flex items-center justify-between bg-amber-50 border border-amber-100 p-2 rounded-md">
+                    <span className="text-amber-700 font-bold truncate text-[10px] mr-2 flex items-center gap-1.5">
+                      <FileText size={12} /> {note.fileName || `Teacher Reference Notes ${idx + 1}`}
+                    </span>
+                    <div className="flex gap-1 shrink-0">
+                       <button onClick={(e) => handlePreviewFile(e, note.fileUrl, note.fileName || `Teacher Reference Notes ${idx + 1}`)} className="bg-white text-amber-700 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition-all"><Eye size={10}/> View</button>
+                       <button onClick={(e) => handleDownloadFile(e, note.fileName || `Teacher Reference Notes ${idx + 1}`, note.fileUrl)} className="bg-white border border-[#E2E8F0] text-[#475569] hover:bg-[#F8FAFC] px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition-all"><Download size={10}/> Download</button>
+                    </div>
+                  </div>
+                ))}
+                {/* Teacher Notes single object (legacy) */}
+                {role !== "student" && !Array.isArray(activeLectureModal.notes_teacher) && activeLectureModal.notes_teacher?.fileUrl && (
+                  <div className="flex items-center justify-between bg-amber-50 border border-amber-100 p-2 rounded-md">
+                    <span className="text-amber-700 font-bold truncate text-[10px] mr-2 flex items-center gap-1.5">
+                      <FileText size={12} /> {activeLectureModal.notes_teacher.fileName || "Teacher Reference Notes"}
+                    </span>
+                    <div className="flex gap-1 shrink-0">
+                       <button onClick={(e) => handlePreviewFile(e, activeLectureModal.notes_teacher.fileUrl, activeLectureModal.notes_teacher.fileName || "Teacher Reference Notes")} className="bg-white text-amber-700 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition-all"><Eye size={10}/> View</button>
+                       <button onClick={(e) => handleDownloadFile(e, activeLectureModal.notes_teacher.fileName || "Teacher Reference Notes", activeLectureModal.notes_teacher.fileUrl)} className="bg-white border border-[#E2E8F0] text-[#475569] hover:bg-[#F8FAFC] px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1 transition-all"><Download size={10}/> Download</button>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -675,6 +702,57 @@ export default function CalendarView({
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* File Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-3 border-b border-[#E2E8F0] bg-[#FAFBFC]">
+              <div className="flex items-center gap-2">
+                <FileText size={18} className="text-[#2563EB]" />
+                <h3 className="font-bold text-[#1E293B] text-sm truncate max-w-xs sm:max-w-md">
+                  {previewFile.name || "File Preview"}
+                </h3>
+              </div>
+              <button
+                onClick={() => setPreviewFile(null)}
+                className="text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] p-1.5 rounded-lg transition-colors"
+                title="Close Preview"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 bg-[#F8FAFC] overflow-hidden flex items-center justify-center p-4 relative">
+              {previewFile.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+                <img
+                  src={previewFile.url}
+                  alt={previewFile.name}
+                  className="max-w-full max-h-full object-contain rounded-md shadow-sm border border-[#E2E8F0]"
+                />
+              ) : previewFile.url.match(/\.(mp4|webm|ogg)$/i) ? (
+                <video
+                  src={previewFile.url}
+                  controls
+                  className="max-w-full max-h-full rounded-md shadow-sm border border-[#E2E8F0]"
+                />
+              ) : (
+                <iframe
+                  src={previewFile.url}
+                  title={previewFile.name}
+                  className="w-full h-full rounded-md bg-white border border-[#E2E8F0]"
+                />
+              )}
+            </div>
+            <div className="p-3 border-t border-[#E2E8F0] bg-white flex justify-end">
+              <button
+                onClick={() => setPreviewFile(null)}
+                className="px-4 py-1.5 bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#475569] hover:text-[#0F172A] rounded-lg text-xs font-semibold transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import {
   ClipboardList, Calendar, MessageSquare, ChevronDown,
   CheckCircle, AlertCircle, Loader2, BookOpen, Clock,
-  Search, FileText, Send, Upload, Paperclip
+  Search, FileText, Send, Upload, Paperclip, Video, Image, File
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { getHomeworkStatusBadge } from "../../utils/statusHelper";
@@ -40,6 +40,16 @@ function HomeworkCard({ homework, onSubmitted }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 10 MB size limit
+    if (file.size > 10 * 1024 * 1024) {
+      if (file.type.startsWith("video/")) {
+        toast.error("Video size cannot exceed 10 MB.");
+      } else {
+        toast.error("File size cannot exceed 10 MB.");
+      }
+      return;
+    }
+
     try {
       setUploading(true);
       const formData = new FormData();
@@ -52,9 +62,11 @@ function HomeworkCard({ homework, onSubmitted }) {
       setAttachments(prev => [...prev, res.data.fileUrl]);
       toast.success("File uploaded successfully");
     } catch (err) {
-      toast.error("File upload failed");
+      toast.error(err.response?.data?.message || "File upload failed");
     } finally {
       setUploading(false);
+      // Reset input value to allow uploading the same file again if needed
+      e.target.value = null;
     }
   };
 
@@ -71,7 +83,6 @@ function HomeworkCard({ homework, onSubmitted }) {
 
     try {
       setSubmitting(true);
-      // For V2 POST /api/student-homework body: { homeworkId, submissionText, attachments }
       await API.post("/student-homework", {
         homeworkId: homework._id,
         submissionText,
@@ -86,6 +97,18 @@ function HomeworkCard({ homework, onSubmitted }) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const getFileIcon = (url) => {
+    const extension = url.split(".").pop().toLowerCase();
+    const videoExts = ["mp4", "mov", "avi", "mkv", "webm"];
+    const imageExts = ["jpg", "jpeg", "png", "gif", "webp"];
+    const pdfExts = ["pdf"];
+
+    if (videoExts.includes(extension)) return <Video size={12} className="text-purple-500" />;
+    if (imageExts.includes(extension)) return <Image size={12} className="text-blue-500" />;
+    if (pdfExts.includes(extension)) return <FileText size={12} className="text-red-500" />;
+    return <File size={12} className="text-gray-500" />;
   };
 
   return (
@@ -147,7 +170,6 @@ function HomeworkCard({ homework, onSubmitted }) {
 
       {open && (
         <div className="p-6 border-t border-[#E2E8F0] bg-white space-y-6">
-          {/* Homework description & attachments */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Instructions</h4>
             <p className="text-sm text-[#334155] leading-relaxed">{homework.description}</p>
@@ -172,7 +194,6 @@ function HomeworkCard({ homework, onSubmitted }) {
             )}
           </div>
 
-          {/* Submission Feedback (for Approved/Rejected) */}
           {homework.remarks && (
             <div className={`p-4 rounded-xl border ${
               status === "approved" ? "bg-emerald-50/50 border-emerald-100" : "bg-rose-50/50 border-rose-100"
@@ -187,7 +208,6 @@ function HomeworkCard({ homework, onSubmitted }) {
             </div>
           )}
 
-          {/* Submission Form (or submission details) */}
           {status === "assigned" || status === "rejected" ? (
             <form onSubmit={handleSubmit} className="space-y-4 pt-4 border-t border-[#E2E8F0]">
               <h4 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">
@@ -209,33 +229,45 @@ function HomeworkCard({ homework, onSubmitted }) {
                 <div className="flex items-center gap-3">
                   <label className="inline-flex items-center gap-2 px-4 py-2 border border-[#E2E8F0] rounded-xl text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition">
                     <Upload size={16} />
-                    {uploading ? "Uploading..." : "Upload Document"}
-                    <input type="file" onChange={handleFileUpload} className="hidden" disabled={uploading} />
+                    {uploading ? "Uploading..." : "Upload Document or Video"}
+                    <input 
+                      type="file" 
+                      onChange={handleFileUpload} 
+                      className="hidden" 
+                      disabled={uploading} 
+                      accept="image/*,.pdf,.doc,.docx,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm"
+                    />
                   </label>
                 </div>
 
                 {attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {attachments.map((url, i) => (
-                      <div key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-[#E2E8F0] text-xs">
-                        <FileText size={12} className="text-gray-500" />
-                        <span className="max-w-[120px] truncate text-gray-700">File {i + 1}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAttachment(i)}
-                          className="text-rose-500 font-bold hover:text-rose-700"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                    {attachments.map((url, i) => {
+                      const extension = url.split(".").pop().toLowerCase();
+                      const isVideo = ["mp4", "mov", "avi", "mkv", "webm"].includes(extension);
+                      return (
+                        <div key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-[#E2E8F0] text-xs">
+                          {getFileIcon(url)}
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="max-w-[120px] truncate text-gray-700 hover:text-blue-600 transition">
+                            {url.split('/').pop()}
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAttachment(i)}
+                            className="text-rose-500 font-bold hover:text-rose-700 ml-1"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || uploading}
                 className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
               >
                 <Send size={16} />
@@ -252,17 +284,22 @@ function HomeworkCard({ homework, onSubmitted }) {
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-[#64748B]">Submitted Attachments:</p>
                   <div className="flex flex-wrap gap-2">
-                    {homework.submissionAttachments.map((url, i) => (
-                      <a
-                        key={i}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-[#E2E8F0] text-xs font-medium text-blue-600 hover:bg-blue-50"
-                      >
-                        <FileText size={12} /> Submission Document {i + 1}
-                      </a>
-                    ))}
+                    {homework.submissionAttachments.map((url, i) => {
+                      const extension = url.split(".").pop().toLowerCase();
+                      const isVideo = ["mp4", "mov", "avi", "mkv", "webm"].includes(extension);
+                      return (
+                        <a
+                          key={i}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-[#E2E8F0] text-xs font-medium text-blue-600 hover:bg-blue-50"
+                        >
+                          {getFileIcon(url)} 
+                          <span className="truncate max-w-[150px]">{url.split('/').pop()}</span>
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               )}
