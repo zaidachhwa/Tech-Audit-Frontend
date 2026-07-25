@@ -539,6 +539,20 @@ export default function StudentProfileView() {
                   </div>
                 </div>
 
+                {student.customFields && Object.keys(student.customFields).length > 0 && (
+                  <div className="bg-slate-50 p-4 border border-slate-100 rounded-xl space-y-3">
+                    <h4 className="text-xs font-extrabold text-[#0F3C8A] uppercase tracking-wider">Additional Information</h4>
+                    <div className="space-y-2 text-xs">
+                      {Object.entries(student.customFields).map(([key, value], idx, arr) => (
+                        <div key={key} className={`flex justify-between ${idx !== arr.length - 1 ? 'border-b border-slate-200/50 pb-1.5' : ''}`}>
+                          <span className="text-slate-400 capitalize">{key}:</span>
+                          <span className="text-slate-700 font-bold">{value || "N/A"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-slate-50 p-4 border border-slate-100 rounded-xl space-y-3">
                   <h4 className="text-xs font-extrabold text-[#0F3C8A] uppercase tracking-wider">Assigned Teachers</h4>
                   {academicInfo?.assignedTeachers && academicInfo.assignedTeachers.length > 0 ? (

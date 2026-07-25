@@ -3,8 +3,10 @@ import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Fingerprint, Search, Filter, ChevronDown, ChevronUp, CheckCircle2, XCircle,
-  RefreshCw, Edit3, X, Clock, Calendar, Users, LogIn, LogOut, Save, AlertTriangle
+  RefreshCw, Edit3, X, Clock, Calendar, Users, LogIn, LogOut, Save, AlertTriangle, Download
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 function formatTime(dateStr) {
   if (!dateStr) return "—";
@@ -132,6 +134,41 @@ export default function AdminStudentAttendance() {
     setSearchQuery("");
   };
 
+  const downloadPDF = () => {
+    const doc = new jsPDF("landscape");
+    doc.text("Student Attendance Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
+
+    const tableColumn = ["Student", "Roll No", "Batch", "Date", "Punch In", "Punch Out", "Hours", "Status"];
+    const tableRows = [];
+
+    filtered.forEach(rec => {
+      const studentData = [
+        rec.student?.name || "Unknown",
+        rec.student?.rollNo || "—",
+        `${rec.batch?.batch_name || "—"} ${rec.batch?.batch_no ? `#${rec.batch.batch_no}` : ""}`,
+        formatDate(rec.date),
+        formatTime(rec.punchInTime),
+        formatTime(rec.punchOutTime),
+        calcHours(rec.punchInTime, rec.punchOutTime),
+        rec.status === "PUNCHED_OUT" ? "Complete" : rec.status === "PUNCHED_IN" ? "Active" : "Missing"
+      ];
+      tableRows.push(studentData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 28,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [15, 60, 138] },
+    });
+
+    doc.save("Student_Attendance_Report.pdf");
+  };
+
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px" }}>
       <Toaster position="top-center" />
@@ -142,13 +179,22 @@ export default function AdminStudentAttendance() {
           <div style={{ width: 5, height: 28, background: "#0F3C8A", borderRadius: 4 }} />
           <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e293b", margin: 0 }}>Student Attendance</h1>
         </div>
-        <button onClick={fetchRecords} disabled={loading} style={{
-          display: "flex", alignItems: "center", gap: 6, padding: "8px 16px",
-          border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer",
-          fontSize: 12, fontWeight: 700, color: "#475569"
-        }}>
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={downloadPDF} disabled={filtered.length === 0} style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "8px 16px",
+            border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer",
+            fontSize: 12, fontWeight: 700, color: "#0F3C8A", opacity: filtered.length === 0 ? 0.5 : 1
+          }}>
+            <Download size={14} /> Download PDF
+          </button>
+          <button onClick={fetchRecords} disabled={loading} style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "8px 16px",
+            border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer",
+            fontSize: 12, fontWeight: 700, color: "#475569"
+          }}>
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

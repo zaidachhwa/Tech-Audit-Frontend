@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import * as XLSX from "xlsx";
 import { fileToCleanCSV } from "../../utils/excelToCSV";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -44,8 +44,10 @@ export default function AdminBatchDetail() {
   const [manualForm, setManualForm] = useState({
     name: "",
     email: "",
-    phoneNo: ""
+    phoneNo: "",
+    customFields: {}
   });
+  const [customFieldsSchema, setCustomFieldsSchema] = useState([]);
 
   // Bulk Upload Student States
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
@@ -78,9 +80,10 @@ export default function AdminBatchDetail() {
         phoneNo: manualForm.phoneNo,
         batch_name: batch.batch_name,
         batch_no: batch.batch_no,
+        customFields: manualForm.customFields
       });
       toast.success("Student added successfully! Credentials emailed.");
-      setManualForm({ name: "", email: "", phoneNo: "" });
+      setManualForm({ name: "", email: "", phoneNo: "", customFields: {} });
       setShowManualAddModal(false);
       fetchBatchDetails();
     } catch (err) {
@@ -125,22 +128,24 @@ export default function AdminBatchDetail() {
     }
   };
 
-  const downloadCsvTemplate = () => {
+  const downloadExcelTemplate = () => {
     const headers = ["name", "email", "phone"];
+    customFieldsSchema.forEach(f => headers.push(f.name));
+
     const rows = [
       ["John Doe", "john.doe@example.com", "9876543210"],
       ["Jane Smith", "jane.smith@example.com", ""]
     ];
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `student_import_template_${batch?.batch_name || 'batch'}_${batch?.batch_no || 'no'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Pad the example rows with empty values for custom fields
+    rows.forEach(r => {
+      while (r.length < headers.length) r.push("");
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+
+    XLSX.writeFile(workbook, `student_import_template_${batch?.batch_name || 'batch'}_${batch?.batch_no || 'no'}.xlsx`);
   };
 
   const fetchBatchDetails = async () => {
@@ -178,6 +183,13 @@ export default function AdminBatchDetail() {
         (s) => String(s.batch?._id || s.batch) === String(batchId)
       );
       setEnrolledSubjects(batchSchedules);
+
+      // Fetch Custom Fields Schema
+      const settingsRes = await API.get("/settings");
+      const fieldsSetting = settingsRes.data.find(s => s.key === "student_custom_fields");
+      if (fieldsSetting && Array.isArray(fieldsSetting.value)) {
+        setCustomFieldsSchema(fieldsSetting.value);
+      }
       
     } catch (err) {
       console.error(err);
@@ -664,6 +676,25 @@ export default function AdminBatchDetail() {
                 </div>
               </div>
 
+              {customFieldsSchema.map((field, idx) => (
+                <div key={idx}>
+                  <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">
+                    {field.name} {field.isRequired ? "" : "(Optional)"}
+                  </label>
+                  <input
+                    type={field.type === "date" ? "date" : field.type === "number" ? "number" : "text"}
+                    required={field.isRequired}
+                    placeholder={`Enter ${field.name}`}
+                    value={manualForm.customFields[field.name] || ""}
+                    onChange={(e) => setManualForm({
+                      ...manualForm,
+                      customFields: { ...manualForm.customFields, [field.name]: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+              ))}
+
               <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -728,7 +759,7 @@ export default function AdminBatchDetail() {
                   </div>
                   <button
                     type="button"
-                    onClick={downloadCsvTemplate}
+                    onClick={downloadExcelTemplate}
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2563EB] bg-white border border-[#BFDBFE] px-3 py-1.5 rounded-lg hover:bg-[#EFF6FF] transition cursor-pointer"
                   >
                     Download Template

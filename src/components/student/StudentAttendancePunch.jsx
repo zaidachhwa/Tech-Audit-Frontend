@@ -5,8 +5,10 @@ import { useAuth } from "../../context/AuthContext";
 import CameraCaptureModal from "./CameraCaptureModal";
 import {
   Fingerprint, Clock, LogIn, LogOut, Calendar, ChevronLeft, ChevronRight,
-  CheckCircle2, XCircle, ChevronDown, ChevronUp, RefreshCw
+  CheckCircle2, XCircle, ChevronDown, ChevronUp, RefreshCw, Download
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -162,6 +164,38 @@ export default function StudentAttendancePunch() {
     else setViewMonth(viewMonth + 1);
   };
 
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.text(`My Attendance Report - ${MONTHS[viewMonth]} ${viewYear}`, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
+
+    const tableColumn = ["Date", "Punch In", "Punch Out", "Total Hours", "Status"];
+    const tableRows = [];
+
+    monthRecords.forEach(rec => {
+      const rowData = [
+        formatDate(rec.date),
+        formatTime(rec.punchInTime),
+        formatTime(rec.punchOutTime),
+        calcHours(rec.punchInTime, rec.punchOutTime),
+        rec.status === "PUNCHED_OUT" ? "Complete" : rec.status === "PUNCHED_IN" ? "Active" : "Missing"
+      ];
+      tableRows.push(rowData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 28,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [15, 60, 138] },
+    });
+
+    doc.save(`Attendance_Report_${MONTHS[viewMonth]}_${viewYear}.pdf`);
+  };
+
   const status = todayRecord?.status || "NOT_PUNCHED";
 
   // Stats
@@ -187,17 +221,26 @@ export default function StudentAttendancePunch() {
           <div style={{ width: 5, height: 28, background: "#0F3C8A", borderRadius: 4 }} />
           <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e293b", margin: 0 }}>My Attendance</h1>
         </div>
-        <button
-          onClick={() => { fetchToday(); fetchMonth(); }}
-          disabled={loading}
-          style={{
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={downloadPDF} disabled={monthRecords.length === 0} style={{
             display: "flex", alignItems: "center", gap: 6, padding: "8px 16px",
             border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer",
-            fontSize: 12, fontWeight: 700, color: "#475569"
-          }}
-        >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
-        </button>
+            fontSize: 12, fontWeight: 700, color: "#0F3C8A", opacity: monthRecords.length === 0 ? 0.5 : 1
+          }}>
+            <Download size={14} /> Download PDF
+          </button>
+          <button
+            onClick={() => { fetchToday(); fetchMonth(); }}
+            disabled={loading}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "8px 16px",
+              border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer",
+              fontSize: 12, fontWeight: 700, color: "#475569"
+            }}
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* ── PUNCH CARD ── */}
