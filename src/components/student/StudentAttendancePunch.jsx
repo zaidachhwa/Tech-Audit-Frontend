@@ -60,7 +60,7 @@ export default function StudentAttendancePunch() {
 
   const fetchToday = useCallback(async () => {
     try {
-      const res = await API.get("/student-attendance/today");
+      const res = await API.get("/attendance/student/today");
       setTodayRecord(res.data.record);
     } catch (err) {
       console.error(err);
@@ -70,7 +70,7 @@ export default function StudentAttendancePunch() {
   const fetchMonth = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await API.get("/student-attendance/my", {
+      const res = await API.get("/attendance/student/my", {
         params: { month: viewMonth, year: viewYear },
       });
       setMonthRecords(res.data.records || []);
@@ -88,7 +88,7 @@ export default function StudentAttendancePunch() {
   const handlePunchIn = async () => {
     try {
       setPunching(true);
-      const res = await API.post("/student-attendance/punch-in");
+      const res = await API.post("/attendance/student/punch-in");
       toast.success(res.data.message);
       fetchToday();
       fetchMonth();
@@ -138,7 +138,7 @@ export default function StudentAttendancePunch() {
       formData.append("lng", location.lng);
       formData.append("photo", photoBlob, "selfie.jpg");
 
-      const endpoint = punchType === 'in' ? "/student-attendance/punch-in" : "/student-attendance/punch-out";
+      const endpoint = punchType === 'in' ? "/attendance/student/punch-in" : "/attendance/student/punch-out";
       const res = await API.post(endpoint, formData);
       
       toast.success(res.data.message, { id: "punch" });
