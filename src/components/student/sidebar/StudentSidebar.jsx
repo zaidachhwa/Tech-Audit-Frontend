@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { LayoutDashboard, Layers, BarChart2, User, LogOut, Menu, Mail, BookOpen, ClipboardList, Megaphone, CalendarCheck, X } from "lucide-react";
+import { LayoutDashboard, Layers, BarChart2, User, LogOut, Menu, Mail, BookOpen, ClipboardList, Megaphone, CalendarCheck, X, Download } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import { usePWAInstall } from "../../../hooks/usePWAInstall";
 
 const navLinks = [
   { name: "Dashboard", path: "/student/dashboard", icon: LayoutDashboard },
@@ -16,6 +17,7 @@ export default function StudentSidebar({ currentPath, onNavigate, user, collapse
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsedInternal, setCollapsedInternal] = useState(false);
   const auth = useAuth();
+  const { isInstallable, installPWA } = usePWAInstall();
 
   // Use controlled prop if provided, otherwise internal state
   const collapsed = collapsedProp !== undefined ? collapsedProp : collapsedInternal;
@@ -193,7 +195,20 @@ export default function StudentSidebar({ currentPath, onNavigate, user, collapse
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-[#F1F5F9] shrink-0">
+        <div className="p-4 border-t border-[#F1F5F9] shrink-0 flex flex-col gap-2">
+          {isInstallable && (
+            <button
+              onClick={installPWA}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all duration-200 font-semibold text-xs cursor-pointer border-none bg-transparent"
+              style={{
+                justifyContent: collapsed ? "center" : "flex-start",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              <Download size={20} className="shrink-0" />
+              {!collapsed && <span>Install App</span>}
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 font-semibold text-xs cursor-pointer border-none bg-transparent"
