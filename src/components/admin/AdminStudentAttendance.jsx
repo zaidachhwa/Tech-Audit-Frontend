@@ -491,7 +491,12 @@ export default function AdminStudentAttendance() {
 
       {/* ── IMAGE MODAL ── */}
       {viewingImage && (() => {
-        const getFullUrl = (path) => path?.startsWith("http") ? path : `${import.meta.env.VITE_API_URL.replace("/api", "")}${path}`;
+        const getFullUrl = (path) => {
+          if (path?.startsWith("http")) return path;
+          const baseUrl = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "");
+          const apiPath = path?.startsWith("/uploads") ? `/api${path}` : path;
+          return `${baseUrl}${apiPath}`;
+        };
         
         return (
           <div style={{
@@ -517,7 +522,7 @@ export default function AdminStudentAttendance() {
                       src={getFullUrl(viewingImage.punchInPhoto)} 
                       alt="Punch In" 
                       style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "contain", border: "1px solid #e2e8f0", background: "#fff" }} 
-                      onError={(e) => { e.target.src = "https://via.placeholder.com/300?text=Not+Found"; }}
+                      onError={(e) => { e.target.src = "https://placehold.co/300x300?text=Not+Found"; }}
                     />
                   </div>
                 )}
@@ -528,7 +533,7 @@ export default function AdminStudentAttendance() {
                       src={getFullUrl(viewingImage.punchOutPhoto)} 
                       alt="Punch Out" 
                       style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "contain", border: "1px solid #e2e8f0", background: "#fff" }} 
-                      onError={(e) => { e.target.src = "https://via.placeholder.com/300?text=Not+Found"; }}
+                      onError={(e) => { e.target.src = "https://placehold.co/300x300?text=Not+Found"; }}
                     />
                   </div>
                 )}
