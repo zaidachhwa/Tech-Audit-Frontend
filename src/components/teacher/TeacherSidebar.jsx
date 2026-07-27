@@ -1,11 +1,13 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LogOut, X } from "lucide-react";
+import { LogOut, X, Download } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { teacherSidebarItems } from "./TeacherSidebarItems";
+import { usePWAInstall } from "../../hooks/usePWAInstall";
 
 export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
   const location = useLocation();
   const { logout, user } = useAuth();
+  const { isInstallable, installPWA } = usePWAInstall();
 
   return (
     <>
@@ -155,7 +157,16 @@ export default function TeacherSidebar({ sidebarOpen, setSidebarOpen }) {
         </nav>
 
         {/* LOGOUT */}
-        <div className="p-4 border-t border-[#F1F5F9] shrink-0">
+        <div className="p-4 border-t border-[#F1F5F9] shrink-0 flex flex-col gap-2">
+          {isInstallable && (
+            <button
+              onClick={installPWA}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all duration-200 font-semibold text-xs cursor-pointer border-none bg-transparent"
+            >
+              <Download size={20} className="shrink-0" />
+              {sidebarOpen && <span>Install App</span>}
+            </button>
+          )}
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 font-semibold text-xs cursor-pointer border-none bg-transparent"
