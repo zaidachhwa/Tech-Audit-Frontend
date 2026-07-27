@@ -50,7 +50,7 @@ export default function TeacherStudentAttendance() {
       if (filterBatch !== "all") params.batchId = filterBatch;
       if (filterStartDate) params.startDate = filterStartDate;
       if (filterEndDate) params.endDate = filterEndDate;
-      const res = await API.get("/student-attendance/logs", { params });
+      const res = await API.get("/attendance/student/records", { params });
       setRecords(res.data.records || []);
     } catch (err) {
       toast.error("Failed to load attendance logs");

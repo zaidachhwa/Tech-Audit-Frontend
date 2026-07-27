@@ -3,7 +3,7 @@ import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Fingerprint, Search, Filter, ChevronDown, ChevronUp, CheckCircle2, XCircle,
-  RefreshCw, Edit3, X, Clock, Calendar, Users, LogIn, LogOut, Save, AlertTriangle, Download
+  RefreshCw, Edit3, X, Clock, Calendar, Users, LogIn, LogOut, Save, AlertTriangle, Download, Camera
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -47,6 +47,9 @@ export default function AdminStudentAttendance() {
   const [editReason, setEditReason] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Image Modal
+  const [viewingImage, setViewingImage] = useState(null);
+
   const fetchBatches = async () => {
     try {
       const res = await API.get("/batches");
@@ -63,7 +66,7 @@ export default function AdminStudentAttendance() {
       if (filterBatch !== "all") params.batchId = filterBatch;
       if (filterStartDate) params.startDate = filterStartDate;
       if (filterEndDate) params.endDate = filterEndDate;
-      const res = await API.get("/student-attendance/logs", { params });
+      const res = await API.get("/attendance/student/records", { params });
       setRecords(res.data.records || []);
     } catch (err) {
       toast.error("Failed to load attendance logs");
@@ -92,7 +95,7 @@ export default function AdminStudentAttendance() {
       const body = { reason: editReason.trim() };
       if (editPunchIn) body.punchInTime = new Date(editPunchIn).toISOString();
       if (editPunchOut) body.punchOutTime = new Date(editPunchOut).toISOString();
-      const res = await API.patch(`/student-attendance/${editRecord._id}/edit`, body);
+      const res = await API.patch(`/attendance/student/${editRecord._id}/edit`, body);
       toast.success(res.data.message || "Updated successfully");
       setEditRecord(null);
       fetchRecords();
@@ -288,7 +291,7 @@ export default function AdminStudentAttendance() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  {["Student", "Batch", "Date", "Punch In", "Punch Out", "Hours", "Status", "Actions", ""].map((h, i) => (
+                  {["Student", "Batch", "Date", "Punch In", "Punch Out", "Hours", "Status", "Image", "Actions", ""].map((h, i) => (
                     <th key={i} style={{
                       padding: "10px 12px", textAlign: "left", fontWeight: 700, color: "#64748b",
                       fontSize: 10, textTransform: "uppercase", letterSpacing: 1, borderBottom: "1px solid #f1f5f9"
@@ -327,6 +330,26 @@ export default function AdminStudentAttendance() {
                             <span title="Edited by admin" style={{ marginLeft: 6, display: "inline-flex" }}>
                               <AlertTriangle size={12} style={{ color: "#f59e0b" }} />
                             </span>
+                          )}
+                        </td>
+                        <td style={{ padding: "10px 12px" }}>
+                          {(rec.punchInPhoto || rec.punchOutPhoto) ? (
+                            <button onClick={() => setViewingImage({
+                              punchInPhoto: rec.punchInPhoto,
+                              punchOutPhoto: rec.punchOutPhoto,
+                              name: rec.student?.name || "Unknown",
+                              date: formatDate(rec.date),
+                              inTime: formatTime(rec.punchInTime),
+                              outTime: formatTime(rec.punchOutTime)
+                            })} style={{
+                              display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 6,
+                              border: "1px solid #e2e8f0", background: "#f8fafc", cursor: "pointer",
+                              fontSize: 11, fontWeight: 700, color: "#3b82f6"
+                            }}>
+                              <Camera size={12} /> View Image
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}>No Image</span>
                           )}
                         </td>
                         <td style={{ padding: "10px 12px" }}>
@@ -465,6 +488,85 @@ export default function AdminStudentAttendance() {
           </div>
         </div>
       )}
+
+      {/* ── IMAGE MODAL ── */}
+      {viewingImage && (() => {
+        const getFullUrl = (path) => path?.startsWith("http") ? path : `${import.meta.env.VITE_API_URL.replace("/api", "")}${path}`;
+        
+        return (
+          <div style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex",
+            alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 20
+          }} onClick={() => setViewingImage(null)}>
+            <div style={{
+              background: "#fff", borderRadius: 16, width: "100%", maxWidth: 600, maxHeight: "90vh", overflowY: "auto",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)", display: "flex", flexDirection: "column"
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid #f1f5f9", position: "sticky", top: 0, background: "#fff", zIndex: 10 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1e293b", margin: 0 }}>Attendance Image</h3>
+                <button onClick={() => setViewingImage(null)} style={{ border: "none", background: "transparent", cursor: "pointer" }}>
+                  <X size={18} color="#94a3b8" />
+                </button>
+              </div>
+              
+              <div style={{ padding: 24, background: "#f8fafc", display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
+                {viewingImage.punchInPhoto && (
+                  <div style={{ flex: "1 1 250px", textAlign: "center" }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>PUNCH IN</p>
+                    <img 
+                      src={getFullUrl(viewingImage.punchInPhoto)} 
+                      alt="Punch In" 
+                      style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "contain", border: "1px solid #e2e8f0", background: "#fff" }} 
+                      onError={(e) => { e.target.src = "https://via.placeholder.com/300?text=Not+Found"; }}
+                    />
+                  </div>
+                )}
+                {viewingImage.punchOutPhoto && (
+                  <div style={{ flex: "1 1 250px", textAlign: "center" }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8 }}>PUNCH OUT</p>
+                    <img 
+                      src={getFullUrl(viewingImage.punchOutPhoto)} 
+                      alt="Punch Out" 
+                      style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "contain", border: "1px solid #e2e8f0", background: "#fff" }} 
+                      onError={(e) => { e.target.src = "https://via.placeholder.com/300?text=Not+Found"; }}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div style={{ padding: "16px 24px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+                  <div>
+                    <p style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", margin: "0 0 4px" }}>Student Name</p>
+                    <p style={{ fontSize: 13, color: "#1e293b", fontWeight: 600, margin: 0 }}>{viewingImage.name}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", margin: "0 0 4px" }}>Date</p>
+                    <p style={{ fontSize: 13, color: "#1e293b", fontWeight: 600, margin: 0 }}>{viewingImage.date}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", margin: "0 0 4px" }}>Punch In Time</p>
+                    <p style={{ fontSize: 13, color: "#1e293b", fontWeight: 600, margin: 0 }}>{viewingImage.inTime}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", margin: "0 0 4px" }}>Punch Out Time</p>
+                    <p style={{ fontSize: 13, color: "#1e293b", fontWeight: 600, margin: 0 }}>{viewingImage.outTime}</p>
+                  </div>
+                </div>
+                
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => setViewingImage(null)} style={{
+                    padding: "10px 24px", borderRadius: 8, border: "none", background: "#3b82f6",
+                    color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer"
+                  }}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
