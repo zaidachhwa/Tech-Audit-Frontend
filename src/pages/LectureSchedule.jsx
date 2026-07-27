@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { API } from "../api/axios";
 import toast from "react-hot-toast";
 import CalendarView from "../components/shared/CalendarView";
+import DownloadScheduleModal from "../components/shared/DownloadScheduleModal";
 import {
   CalendarDays,
   Plus,
@@ -109,6 +110,9 @@ export default function LectureSchedule() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewFileName, setPreviewFileName] = useState("");
   const [previewFileUrl, setPreviewFileUrl] = useState("");
+
+  // Download Modal state
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   const handlePreviewFile = (fileName, fileUrl) => {
     if (!fileUrl) return toast.error("No file URL available for preview");
@@ -1414,12 +1418,12 @@ export default function LectureSchedule() {
         </div>
 
         {!selectedSchedule && !isCreating && (
-          <div className="flex flex-wrap gap-2.5 items-center">
+          <div className="flex flex-wrap lg:flex-nowrap gap-2 lg:gap-2.5 items-center justify-end">
             {!isViewingSubmissionsCenter && (
               <div className="flex items-center bg-[#E2E8F0] p-0.5 rounded-lg text-xs font-bold shrink-0">
                 <button
                   onClick={() => setScheduleViewMode("calendar")}
-                  className={`px-3 py-2 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-md transition cursor-pointer flex items-center gap-1 lg:gap-1.5 whitespace-nowrap ${
                     scheduleViewMode === "calendar" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
                   }`}
                 >
@@ -1427,7 +1431,7 @@ export default function LectureSchedule() {
                 </button>
                 <button
                   onClick={() => setScheduleViewMode("grid")}
-                  className={`px-3 py-2 rounded-md transition cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-md transition cursor-pointer flex items-center gap-1 lg:gap-1.5 whitespace-nowrap ${
                     scheduleViewMode === "grid" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
                   }`}
                 >
@@ -1448,26 +1452,34 @@ export default function LectureSchedule() {
                       setTrackerStudents([]);
                       setTrackerSelectedStudentId("");
                     }}
-                    className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                    className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-2.5 lg:px-4 py-2 lg:py-2.5 rounded-lg text-[13px] lg:text-sm font-semibold flex items-center gap-1 lg:gap-1.5 transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                   >
                     <Eye size={16} className="text-[#4F46E5]" /> Submissions Tracker
                   </button>
                 ) : (
                   <button
                     onClick={() => setIsViewingSubmissionsCenter(false)}
-                    className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                    className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-2.5 lg:px-4 py-2 lg:py-2.5 rounded-lg text-[13px] lg:text-sm font-semibold flex items-center gap-1 lg:gap-1.5 transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                   >
                     <ArrowLeft size={16} /> View Schedules
                   </button>
                 )}
 
                 {!isViewingSubmissionsCenter && (
-                  <button
-                    onClick={handleOpenCreate}
-                    className="bg-[#2563EB] text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer"
-                  >
-                    <Plus size={16} /> New Schedule
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setIsDownloadModalOpen(true)}
+                      className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] px-2.5 lg:px-4 py-2 lg:py-2.5 rounded-lg text-[13px] lg:text-sm font-semibold flex items-center gap-1 lg:gap-1.5 transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
+                    >
+                      <Download size={16} className="text-[#4F46E5]" /> Download Schedule Lectures
+                    </button>
+                    <button
+                      onClick={handleOpenCreate}
+                      className="bg-[#2563EB] text-white px-2.5 lg:px-4 py-2 lg:py-2.5 rounded-lg text-[13px] lg:text-sm font-semibold flex items-center gap-1 lg:gap-1.5 hover:bg-[#1D4ED8] transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
+                    >
+                      <Plus size={16} /> New Schedule
+                    </button>
+                  </>
                 )}
               </>
             )}
@@ -3428,6 +3440,16 @@ export default function LectureSchedule() {
           </div>
         </div>
       )}
+
+      {/* Download Schedule Modal */}
+      <DownloadScheduleModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+        schedules={schedules}
+        batches={batches}
+        teachers={teachers}
+        onPreview={handlePreviewFile}
+      />
 
     </div>
   );
