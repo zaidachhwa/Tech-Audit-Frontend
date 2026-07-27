@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import PwaUpdatePrompt from './components/shared/PwaUpdatePrompt';
 
 /* AUTH / SHARED */
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -64,6 +65,7 @@ import StudentLMS from './pages/StudentLMS';
 export default function App() {
   return (
     <AuthProvider>
+      <PwaUpdatePrompt />
       <Routes>
         {/* ─── PUBLIC ─────────────────────────────────────────────────────── */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
