@@ -492,10 +492,10 @@ export default function AdminStudentAttendance() {
       {/* ── IMAGE MODAL ── */}
       {viewingImage && (() => {
         const getFullUrl = (path) => {
-          if (path?.startsWith("http")) return path;
-          const baseUrl = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "");
-          const apiPath = path?.startsWith("/uploads") ? `/api${path}` : path;
-          return `${baseUrl}${apiPath}`;
+          if (!path) return "";
+          if (path.startsWith("http")) return path;
+          const baseUrl = import.meta.env.VITE_API_URL;
+          return `${baseUrl}/attendance/student/photo?file=${encodeURIComponent(path)}`;
         };
         
         return (
