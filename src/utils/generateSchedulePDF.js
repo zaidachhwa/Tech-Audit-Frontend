@@ -30,6 +30,11 @@ export const generateSchedulePDF = async (schedules, filters, action = "download
       const teacherId = teacherObj?._id || teacherObj;
       const teacherName = teacherObj?.name || "Unassigned";
 
+      let finalTeacherName = teacherName;
+      if (lecture.isTransferred) {
+        finalTeacherName += " (Transferred)";
+      }
+
       if (type === "teachers") {
         if (!selectedTeachers.includes(teacherId)) return;
       }
@@ -39,7 +44,8 @@ export const generateSchedulePDF = async (schedules, filters, action = "download
         dateStr: lecDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }),
         time: lecture.time_slot || "9:00 AM - 10:45 AM", 
         subject: subjectName,
-        faculty: teacherName,
+        faculty: finalTeacherName,
+        venue: lecture.venue || "Unassigned",
         batch: batchName,
         topics: lecture.title || ""
       });
@@ -130,18 +136,20 @@ export const generateSchedulePDF = async (schedules, filters, action = "download
         lec.time,
         lec.subject,
         lec.faculty,
+        lec.venue,
         lec.batch,
         lec.topics
       ]);
 
       autoTable(doc, {
         startY: finalY,
-        head: [[{ content: dateStr, colSpan: 5, styles: { halign: 'left', fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' } }]],
+        head: [[{ content: dateStr, colSpan: 6, styles: { halign: 'left', fillColor: [220, 220, 220], textColor: [0, 0, 0], fontStyle: 'bold' } }]],
         body: [
           // Subheader row (columns)
           [{ content: 'Time', styles: { fontStyle: 'bold' } }, 
            { content: 'Subject', styles: { fontStyle: 'bold' } }, 
            { content: 'Faculty', styles: { fontStyle: 'bold' } }, 
+           { content: 'Venue', styles: { fontStyle: 'bold' } }, 
            { content: 'Batch', styles: { fontStyle: 'bold' } }, 
            { content: 'Topics', styles: { fontStyle: 'bold' } }],
           ...tableData
@@ -156,11 +164,12 @@ export const generateSchedulePDF = async (schedules, filters, action = "download
           textColor: 20
         },
         columnStyles: {
-          0: { cellWidth: 80 },
-          1: { cellWidth: 120 },
-          2: { cellWidth: 100 },
-          3: { cellWidth: 100 },
-          4: { cellWidth: 'auto' }
+          0: { cellWidth: 70 },
+          1: { cellWidth: 100 },
+          2: { cellWidth: 80 },
+          3: { cellWidth: 80 },
+          4: { cellWidth: 90 },
+          5: { cellWidth: 'auto' }
         },
         margin: { top: 40, left: 40, right: 40 }
       });

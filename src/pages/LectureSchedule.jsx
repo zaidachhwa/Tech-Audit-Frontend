@@ -5,6 +5,7 @@ import { API } from "../api/axios";
 import toast from "react-hot-toast";
 import CalendarView from "../components/shared/CalendarView";
 import DownloadScheduleModal from "../components/shared/DownloadScheduleModal";
+import TransferLectureModal from "../components/shared/TransferLectureModal";
 import {
   CalendarDays,
   Plus,
@@ -27,7 +28,8 @@ import {
   Eye,
   Check,
   UploadCloud,
-  X
+  X,
+  ArrowRightLeft
 } from "lucide-react";
 
 export default function LectureSchedule() {
@@ -114,11 +116,20 @@ export default function LectureSchedule() {
   // Download Modal state
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
+  // Transfer Lecture Modal state
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [activeTransferLecture, setActiveTransferLecture] = useState(null);
+
   const handlePreviewFile = (fileName, fileUrl) => {
     if (!fileUrl) return toast.error("No file URL available for preview");
     setPreviewFileName(fileName);
     setPreviewFileUrl(fileUrl);
     setIsPreviewModalOpen(true);
+  };
+
+  const handleTransferLecture = (lecture) => {
+    setActiveTransferLecture(lecture);
+    setIsTransferModalOpen(true);
   };
 
   // Delete predefined subject template
@@ -877,6 +888,7 @@ export default function LectureSchedule() {
         date: l.date || null,
         time_slot: l.time_slot || null,
         teacher: typeof l.teacher === "object" ? (l.teacher?._id || "") : (l.teacher || ""),
+        venue: l.venue || null,
         batchIds: selectedBatchIds
       }))
       .filter(l => l.date && l.time_slot);
@@ -1754,6 +1766,8 @@ export default function LectureSchedule() {
             <CalendarView
               schedules={schedules}
               role={role}
+              userId={user?.id}
+              onTransferLecture={handleTransferLecture}
               onSelectLecture={(evt) => {
                 const targetSch = schedules.find(s => String(s._id) === String(evt.scheduleId));
                 if (targetSch) handleOpenEdit(targetSch);
@@ -2042,7 +2056,7 @@ export default function LectureSchedule() {
                 <BookOpen size={16} className="text-[#2563EB]" /> Configuration Setup
               </h2>
               <form onSubmit={handleGenerateSchedule} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 items-start">
 
                   {/* Subject */}
                   <div className="col-span-1 md:col-span-2 lg:col-span-1 min-w-0 w-full">
@@ -2215,7 +2229,6 @@ export default function LectureSchedule() {
                       <option value="custom">Custom Dates (Leave Blank)</option>
                     </select>
                   </div>
-
                 </div>
 
                 <div className="flex justify-between items-center pt-2">
@@ -2324,6 +2337,7 @@ export default function LectureSchedule() {
                     <th className="px-4 py-3 min-w-[200px]">Description Summary</th>
                     <th className="px-4 py-3 min-w-[140px]">Date</th>
                     <th className="px-4 py-3 min-w-[180px]">Time Slot</th>
+                    <th className="px-4 py-3 min-w-[150px]">Venue</th>
                     <th className="px-4 py-3 min-w-[150px]">Teacher</th>
                     <th className="px-4 py-3 min-w-[120px]">Notes</th>
                     <th className="px-4 py-3 min-w-[120px]">Homework</th>
@@ -2334,7 +2348,7 @@ export default function LectureSchedule() {
                 <tbody className="divide-y divide-[#F1F5F9]">
                   {lectures.length === 0 ? (
                     <tr>
-                      <td colSpan={(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker ? 9 : 8} className="px-5 py-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
+                      <td colSpan={(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker ? 11 : 10} className="px-5 py-8 text-center text-xs text-[#94A3B8] font-medium bg-[#FAFBFC]">
                         Grid is empty. Use the configuration generator above to create lecture rows.
                       </td>
                     </tr>
@@ -2346,7 +2360,9 @@ export default function LectureSchedule() {
                       const hasConflict = rowConflicts.length > 0;
                       const conflictTip = hasConflict
                         ? rowConflicts.map(c =>
-                            `${c.type === "batch" ? "🔴 Batch" : "🟠 Teacher"} conflict: "${c.conflictWith.subject}" (${c.conflictWith.batchName} #${c.conflictWith.batchNo}) at ${c.conflictWith.existingTimeSlot}`
+                            c.type === "venue"
+                              ? "This venue is already assigned during the selected time. Please choose another available venue."
+                              : `${c.type === "batch" ? "🔴 Batch" : "🟠 Teacher"} conflict: "${c.conflictWith.subject}" (${c.conflictWith.batchName} #${c.conflictWith.batchNo}) at ${c.conflictWith.existingTimeSlot}`
                           ).join("\n")
                         : "";
 
@@ -2494,9 +2510,59 @@ export default function LectureSchedule() {
                             )}
                           </td>
 
+                          {/* Venue Column */}
+                          <td className="px-4 py-3.5 min-w-[150px]">
+                            {(role === "admin" || role === "teacher") ? (
+                              <div className="space-y-1">
+                                <select
+                                  value={lecture.venue || ""}
+                                  onChange={(e) => {
+                                    handleCellChange(index, "venue", e.target.value);
+                                    setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                  }}
+                                  className="w-full px-2.5 py-1.5 border border-[#E2E8F0] rounded-lg text-xs font-semibold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer bg-white"
+                                >
+                                  <option value="">Select Venue</option>
+                                  <option value="Workspace 5">Workspace 5</option>
+                                  <option value="Workspace 6">Workspace 6</option>
+                                  <option value="Conference Room 1">Conference Room 1</option>
+                                  <option value="Conference Room 2">Conference Room 2</option>
+                                  <option value="Conference Room 3">Conference Room 3</option>
+                                </select>
+                                {lectureConflicts[index]?.some(c => c.type === "venue") && (
+                                  <div className="mt-1 space-y-1">
+                                    <div className="text-[10px] text-red-600 font-bold flex items-center gap-1">
+                                      <span>❌</span>
+                                      <span>Occupied</span>
+                                    </div>
+                                    <div className="text-[9px] font-semibold text-[#64748B]">Available:</div>
+                                    <div className="flex flex-col gap-1">
+                                      {lectureConflicts[index].find(c => c.type === "venue")?.availableVenues?.map(av => (
+                                        <button
+                                          key={av}
+                                          onClick={() => {
+                                            handleCellChange(index, "venue", av);
+                                            setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                          }}
+                                          className="text-left px-1.5 py-0.5 bg-green-50 text-green-700 hover:bg-green-100 rounded text-[9px] font-bold border border-green-200 transition-colors"
+                                        >
+                                          ✓ {av}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs font-semibold text-[#475569]">
+                                {lecture.venue || "Unassigned"}
+                              </span>
+                            )}
+                          </td>
+
                           {/* Teacher Column */}
                           <td className="px-4 py-3.5 min-w-[150px]">
-                            {role === "admin" ? (
+                            {role === "admin" && !lecture._id ? (
                               <select
                                 value={typeof lecture.teacher === "object" ? (lecture.teacher?._id || "") : (lecture.teacher || "")}
                                 onChange={(e) => handleCellChange(index, "teacher", e.target.value)}
@@ -2519,9 +2585,30 @@ export default function LectureSchedule() {
                                 </optgroup>
                               </select>
                             ) : (
-                              <span className="text-[11px] font-medium text-[#475569] block leading-tight">
-                                {typeof lecture.teacher === "object" ? lecture.teacher?.name : teachers.find(t => t._id === lecture.teacher)?.name || "Unassigned"}
-                              </span>
+                              <div className="space-y-1">
+                                <span className="text-[11px] font-medium text-[#475569] block leading-tight">
+                                  {typeof lecture.teacher === "object" ? lecture.teacher?.name : teachers.find(t => t._id === lecture.teacher)?.name || "Unassigned"}
+                                </span>
+                                {lecture.isTransferred && (
+                                  <span className="inline-block text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 font-extrabold truncate w-full">
+                                    From {lecture.originalTeacher?.name || "Previous"}
+                                  </span>
+                                )}
+                                {(role === "admin" || role === "teacher") && lecture._id && lecture.status !== "Done" && (
+                                  <button
+                                    onClick={() => handleTransferLecture({
+                                      ...lecture,
+                                      scheduleId: selectedSchedule._id,
+                                      teacherId: typeof lecture.teacher === "object" ? lecture.teacher?._id : lecture.teacher,
+                                      teacherName: typeof lecture.teacher === "object" ? lecture.teacher?.name : teachers.find(t => t._id === lecture.teacher)?.name,
+                                      batchName: selectedSchedule.batch?.batch_name
+                                    })}
+                                    className="w-full mt-1 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white py-1 px-2 rounded text-[10px] font-bold transition cursor-pointer flex items-center justify-center gap-1 shadow-xs whitespace-nowrap"
+                                  >
+                                    <ArrowRightLeft size={10} /> Switch Teacher
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </td>
 
@@ -3449,6 +3536,14 @@ export default function LectureSchedule() {
         batches={batches}
         teachers={teachers}
         onPreview={handlePreviewFile}
+      />
+
+      <TransferLectureModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        lecture={activeTransferLecture}
+        teachers={teachers}
+        onTransferSuccess={fetchSchedules}
       />
 
     </div>

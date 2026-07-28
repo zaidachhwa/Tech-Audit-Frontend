@@ -15,13 +15,16 @@ import {
   Filter,
   Plus,
   Layers,
-  Sparkles
+  Sparkles,
+  ArrowRightLeft
 } from "lucide-react";
 
 export default function CalendarView({
   schedules = [],
   role = "student",
+  userId,
   onSelectLecture,
+  onTransferLecture,
   onAddLectureOnDate,
   onUpdateLectureStatus
 }) {
@@ -481,9 +484,27 @@ export default function CalendarView({
                               👤 {evt.teacherName}
                             </span>
                           )}
+                          {evt.venue && (
+                            <span className="truncate max-w-[90px] text-purple-600 font-extrabold" title={`Venue: ${evt.venue}`}>
+                              📍 {evt.venue}
+                            </span>
+                          )}
                           {evt.homework?.title && <span title="Homework assigned">📝</span>}
                           {evt.notes_shared?.fileUrl && <span title="Shared notes">📄</span>}
                         </div>
+                        {evt.isTransferred && userId && (
+                          <div className="mt-0.5">
+                            {String(userId) === String(evt.originalTeacher?._id || evt.originalTeacher) ? (
+                              <span className="inline-block text-[8px] bg-orange-100/80 text-orange-700 px-1 py-0.5 rounded border border-orange-200 font-extrabold w-full text-center truncate">
+                                Transferred To {evt.teacherName}
+                              </span>
+                            ) : (
+                              <span className="inline-block text-[8px] bg-emerald-100/80 text-emerald-700 px-1 py-0.5 rounded border border-emerald-200 font-extrabold w-full text-center truncate">
+                                Transferred From {evt.originalTeacher?.name || "Previous Teacher"}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -568,6 +589,15 @@ export default function CalendarView({
                 <span className="font-bold text-[#0F172A] flex items-center gap-1">
                   <CheckCircle2 size={12} className="text-[#10B981]" />
                   {activeLectureModal.status || "Planned"}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-[#F8FAFC] rounded-lg border border-[#E2E8F0]">
+                <span className="block text-[9px] font-extrabold text-[#64748B] uppercase mb-0.5">
+                  Venue
+                </span>
+                <span className="font-bold text-[#0F172A] flex items-center gap-1">
+                  📍 {activeLectureModal.venue || "Unassigned"}
                 </span>
               </div>
             </div>
@@ -692,6 +722,17 @@ export default function CalendarView({
                     className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
                   >
                     <Eye size={14} /> Open Full Editor
+                  </button>
+                )}
+                {onTransferLecture && activeLectureModal.status !== "Done" && (
+                  <button
+                    onClick={() => {
+                      onTransferLecture(activeLectureModal);
+                      setActiveLectureModal(null);
+                    }}
+                    className="flex-1 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 shadow-xs whitespace-nowrap"
+                  >
+                    <ArrowRightLeft size={14} /> Switch Teacher
                   </button>
                 )}
                 <button
