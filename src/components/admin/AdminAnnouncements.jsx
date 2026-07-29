@@ -20,12 +20,13 @@ const PRIORITIES = [
   { value: "urgent", label: "Urgent", icon: <Megaphone size={14} />, badge: { bg: "#FEF2F2", color: "#991B1B" } },
 ];
 
-export default function TeacherAnnouncements() {
+export default function AdminAnnouncements() {
   const { user } = useAuth();
   const [announcements, setAnnouncements] = useState([]); // Start with empty array
   const [batches, setBatches] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", message: "", batch: "All Batches", priority: "info" });
+  const [form, setForm] = useState({ title: "", message: "", batch: "All Batches", priority: "info", targetAudience: "Students", targetTeacher: "" });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
@@ -50,6 +51,11 @@ export default function TeacherAnnouncements() {
     API.get("/batches/public")
       .then((r) => setBatches(r.data || []))
       .catch(console.error);
+    
+    // Fetch teachers for the dropdown
+    API.get("/teachers/list")
+      .then((r) => setTeachers(r.data.teachers || []))
+      .catch(console.error);
   }, []);
 
   // 2. POST TO DATABASE
@@ -65,7 +71,7 @@ export default function TeacherAnnouncements() {
       
       // Update UI with the newly created database object
       setAnnouncements((prev) => [res.data.announcement, ...prev]);
-      setForm({ title: "", message: "", batch: "All Batches", priority: "info" });
+      setForm({ title: "", message: "", batch: "All Batches", priority: "info", targetAudience: "Students", targetTeacher: "" });
       setShowForm(false);
       toast.success("Announcement posted successfully!");
     } catch (err) {
@@ -113,7 +119,7 @@ export default function TeacherAnnouncements() {
             <div style={{ width: 4, height: 20, background: "#2563EB", borderRadius: 4 }} />
             <h1 style={S.pageTitle}>Announcements</h1>
           </div>
-          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Post notices and announcements to your batches.</p>
+          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Post notices and announcements to batches.</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button style={{ ...S.primaryBtn, background: "#fff", color: "#2563EB", border: "1.5px solid #E2E8F0" }} onClick={fetchAnnouncements}>
@@ -163,15 +169,43 @@ export default function TeacherAnnouncements() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Target Batch</label>
+                <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Target Audience</label>
                 <div style={{ position: "relative" }}>
-                  <select value={form.batch} onChange={(e) => setForm({ ...form, batch: e.target.value })} style={S.select}>
-                    <option value="All Batches">All Batches</option>
-                    {batches.map((b) => <option key={b._id} value={b.batch_name}>{b.batch_name}</option>)}
+                  <select value={form.targetAudience} onChange={(e) => setForm({ ...form, targetAudience: e.target.value })} style={S.select}>
+                    <option value="Students">Students</option>
+                    <option value="Teachers">Teachers</option>
+                    <option value="Both">Both (Everyone)</option>
                   </select>
                   <ChevronDown size={14} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", pointerEvents: "none" }} />
                 </div>
               </div>
+              
+              {form.targetAudience === "Students" && (
+                <div>
+                  <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Target Batch</label>
+                  <div style={{ position: "relative" }}>
+                    <select value={form.batch} onChange={(e) => setForm({ ...form, batch: e.target.value })} style={S.select}>
+                      <option value="All Batches">All Batches</option>
+                      {batches.map((b) => <option key={b._id} value={b.batch_name}>{b.batch_name}</option>)}
+                    </select>
+                    <ChevronDown size={14} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", pointerEvents: "none" }} />
+                  </div>
+                </div>
+              )}
+
+              {form.targetAudience === "Teachers" && (
+                <div>
+                  <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Target Teacher</label>
+                  <div style={{ position: "relative" }}>
+                    <select value={form.targetTeacher} onChange={(e) => setForm({ ...form, targetTeacher: e.target.value })} style={S.select}>
+                      <option value="">All Teachers</option>
+                      {teachers.map((t) => <option key={t._id} value={t._id}>{t.name}</option>)}
+                    </select>
+                    <ChevronDown size={14} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", pointerEvents: "none" }} />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label style={{ ...S.label, display: "block", marginBottom: 8 }}>Priority</label>
                 <div style={{ position: "relative" }}>
@@ -222,7 +256,7 @@ export default function TeacherAnnouncements() {
                           {a.targetAudience === "Both" 
                             ? "Everyone (Students & Teachers)" 
                             : a.targetAudience === "Teachers" 
-                              ? (a.targetTeacher ? "Just for You" : "All Teachers") 
+                              ? (a.targetTeacher ? a.targetTeacher.name : "All Teachers") 
                               : a.batch}
                         </span>
                       </div>
@@ -230,15 +264,13 @@ export default function TeacherAnnouncements() {
                         <Clock size={12} /> <span>{timeAgo(a.createdAt)}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#94A3B8", fontSize: 12 }}>
-                        <BookOpen size={12} /> <span>by {a.admin?.name || a.teacher?.name || "Teacher"}</span>
+                        <BookOpen size={12} /> <span>by {a.admin?.name || a.teacher?.name || "Admin"}</span>
                       </div>
                     </div>
                   </div>
-                  {(!a.admin && (a.teacher?._id === user?.id || a.teacher === user?.id)) && (
-                    <button onClick={() => handleDelete(a._id)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#CBD5E1", padding: 4, borderRadius: 6, flexShrink: 0 }}>
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+                  <button onClick={() => handleDelete(a._id)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#CBD5E1", padding: 4, borderRadius: 6, flexShrink: 0 }}>
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             );

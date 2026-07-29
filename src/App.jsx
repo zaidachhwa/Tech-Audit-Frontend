@@ -40,6 +40,7 @@ import AdminAnalytics from './pages/AdminAnalytics';
 import LectureSchedule from './pages/LectureSchedule';
 import AdminStudentAttendance from './components/admin/AdminStudentAttendance';
 import AdminInstituteSettings from './components/admin/AdminInstituteSettings';
+import AdminAnnouncements from './components/admin/AdminAnnouncements';
 
 /* TEACHER */
 import TeacherLogin from './components/teacher/TeacherLogin';
@@ -130,6 +131,7 @@ export default function App() {
           <Route path="student/:studentId" element={<StudentProfileView />} />
           <Route path="student-attendance" element={<AdminStudentAttendance />} />
           <Route path="settings"           element={<AdminInstituteSettings />} />
+          <Route path="announcements"      element={<AdminAnnouncements />} />
         </Route>
 
         {/* ─── TEACHER AUTH ────────────────────────────────────────────────── */}
