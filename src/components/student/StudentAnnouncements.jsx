@@ -94,13 +94,13 @@ export default function StudentAnnouncements() {
                     <p style={{ color: "#64748B", fontSize: 13, margin: "0 0 10px", lineHeight: 1.6 }}>{a.message}</p>
                     <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#94A3B8", fontSize: 12 }}>
-                        <Users size={12} /> <span>{a.batch}</span>
+                        <Users size={12} /> <span>{a.targetAudience === "Both" ? "Everyone (Students & Teachers)" : a.batch}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#94A3B8", fontSize: 12 }}>
                         <Clock size={12} /> <span>{timeAgo(a.createdAt)}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#94A3B8", fontSize: 12 }}>
-                        <BookOpen size={12} /> <span>by {a.teacher?.name || "Teacher"}</span>
+                        <BookOpen size={12} /> <span>by {a.admin?.name || a.teacher?.name || "Teacher"}</span>
                       </div>
                     </div>
                   </div>

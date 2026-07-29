@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { LogOut, X, Menu, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import usePushNotifications from "../../hooks/usePushNotifications";
 
 export default function DashboardLayout({
   role,
@@ -11,6 +12,9 @@ export default function DashboardLayout({
   children,
 }) {
   const location = useLocation();
+  
+  // Register for push notifications
+  usePushNotifications();
   
   // Sidebar open/close state for mobile drawer
   const [mobileOpen, setMobileOpen] = useState(false);

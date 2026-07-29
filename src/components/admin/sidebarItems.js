@@ -13,6 +13,7 @@ import {
   LibraryBig,
   Fingerprint,
   Settings,
+  Megaphone,
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -90,5 +91,10 @@ export const adminSidebarItems = [
     name: "Institute Settings",
     path: "/admin/settings",
     icon: Settings,
+  },
+  {
+    name: "Announcements",
+    path: "/admin/announcements",
+    icon: Megaphone,
   },
 ];
