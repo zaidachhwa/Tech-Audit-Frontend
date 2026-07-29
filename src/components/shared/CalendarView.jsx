@@ -17,7 +17,8 @@ import {
   Layers,
   Sparkles,
   ArrowRightLeft,
-  MapPin
+  MapPin,
+  Trash2
 } from "lucide-react";
 
 export default function CalendarView({
@@ -27,6 +28,7 @@ export default function CalendarView({
   onSelectLecture,
   onTransferLecture,
   onChangeVenue,
+  onDeleteLecture,
   onAddLectureOnDate,
   onUpdateLectureStatus
 }) {
@@ -36,6 +38,7 @@ export default function CalendarView({
   const [selectedTeacher, setSelectedTeacher] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [activeLectureModal, setActiveLectureModal] = useState(null);
+  const [deleteConfirmLecture, setDeleteConfirmLecture] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
 
   // Extract list of unique batches & teachers for filters
@@ -268,7 +271,7 @@ export default function CalendarView({
 
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden select-none font-sans">
-      {/* ── TOOLBAR / CONTROLS ── */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ TOOLBAR / CONTROLS Ã¢â€â‚¬Ã¢â€â‚¬ */}
       <div className="p-4 sm:p-5 border-b border-[#E2E8F0] bg-[#FAFBFC] flex flex-col gap-4">
         {/* Top Header Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -389,7 +392,7 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* ── CALENDAR GRID ── */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ CALENDAR GRID Ã¢â€â‚¬Ã¢â€â‚¬ */}
       <div>
         {/* Days Header */}
         <div className="grid grid-cols-7 border-b border-[#E2E8F0] bg-[#F8FAFC] text-center">
@@ -489,10 +492,10 @@ export default function CalendarView({
                           )}
                           {evt.venue && (
                             <span className="truncate max-w-[90px] text-purple-600 font-extrabold" title={`Venue: ${evt.venue}`}>
-                              📍 {evt.venue}
+                              Ã°Å¸â€œÂ {evt.venue}
                             </span>
                           )}
-                          {evt.homework?.title && <span title="Homework assigned">📝</span>}
+                          {evt.homework?.title && <span title="Homework assigned">Ã°Å¸â€œÂ</span>}
                           {evt.notes_shared?.fileUrl && <span title="Shared notes">📄</span>}
                         </div>
                         {evt.isTransferred && userId && (
@@ -528,7 +531,7 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* ── LECTURE EVENT DETAIL MODAL ── */}
+      {/* Ã¢â€â‚¬Ã¢â€â‚¬ LECTURE EVENT DETAIL MODAL Ã¢â€â‚¬Ã¢â€â‚¬ */}
       {activeLectureModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E2E8F0] space-y-4 animate-in fade-in zoom-in duration-200">
@@ -545,12 +548,23 @@ export default function CalendarView({
                   Course: {activeLectureModal.subject}
                 </p>
               </div>
-              <button
-                onClick={() => setActiveLectureModal(null)}
-                className="p-1 rounded-lg text-[#94A3B8] hover:bg-slate-100 hover:text-[#0F172A] transition cursor-pointer"
-              >
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                {(role === "admin" || (role === "teacher" && String(userId) === String(activeLectureModal.teacherId))) && (
+                  <button
+                    onClick={() => setDeleteConfirmLecture(activeLectureModal)}
+                    className="p-1 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition cursor-pointer"
+                    title="Delete Lecture"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
+                <button
+                  onClick={() => setActiveLectureModal(null)}
+                  className="p-1 rounded-lg text-[#94A3B8] hover:bg-slate-100 hover:text-[#0F172A] transition cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Lecture Properties Grid */}
@@ -621,7 +635,7 @@ export default function CalendarView({
             {activeLectureModal.homework?.title && (
               <div className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg text-xs space-y-1">
                 <span className="block text-[9px] font-extrabold text-amber-800 uppercase">
-                  📝 Homework Assignment
+                  Ã°Å¸â€œÂ Homework Assignment
                 </span>
                 <p className="font-bold text-amber-950">{activeLectureModal.homework.title}</p>
                 {activeLectureModal.homework.description && (
@@ -807,6 +821,41 @@ export default function CalendarView({
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DELETE CONFIRMATION MODAL ── */}
+      {deleteConfirmLecture && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-[#E2E8F0] animate-in fade-in zoom-in duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                <Trash2 className="text-red-600" size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Delete Lecture</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Are you sure you want to delete this lecture? This action cannot be undone and the lecture will be removed from all calendars.
+              </p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setDeleteConfirmLecture(null)}
+                  className="flex-1 py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onDeleteLecture(deleteConfirmLecture.scheduleId, deleteConfirmLecture._id);
+                    setDeleteConfirmLecture(null);
+                    setActiveLectureModal(null);
+                  }}
+                  className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors cursor-pointer"
+                >
+                  Delete Lecture
+                </button>
+              </div>
             </div>
           </div>
         </div>

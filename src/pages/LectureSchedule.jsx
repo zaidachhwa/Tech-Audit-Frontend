@@ -147,6 +147,16 @@ export default function LectureSchedule() {
     setIsTransferModalOpen(true);
   };
 
+  const handleDeleteLecture = async (scheduleId, lectureId) => {
+    try {
+      const res = await API.delete(`/schedules/${scheduleId}/lectures/${lectureId}`);
+      toast.success(res.data?.message || "Lecture deleted successfully.");
+      fetchSchedules();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete lecture.");
+    }
+  };
+
   const handleChangeVenueClick = async (lecture) => {
     setVenueModalLecture(lecture);
     setShowVenueModal(true);
@@ -1066,7 +1076,7 @@ export default function LectureSchedule() {
       .filter(l => l.date && l.time_slot);
 
     if (lecturesToCheck.length === 0) {
-      toast("No lectures with both date and time slot set — nothing to check.", { icon: "ℹ️" });
+      toast("No lectures with both date and time slot set â€” nothing to check.", { icon: "â„¹ï¸" });
       return;
     }
 
@@ -1941,6 +1951,7 @@ export default function LectureSchedule() {
               userId={user?.id}
               onTransferLecture={handleTransferLecture}
               onChangeVenue={handleChangeVenueClick}
+              onDeleteLecture={handleDeleteLecture}
               onSelectLecture={(evt) => {
                 const targetSch = schedules.find(s => String(s._id) === String(evt.scheduleId));
                 if (targetSch) handleOpenEdit(targetSch);
@@ -2546,7 +2557,7 @@ export default function LectureSchedule() {
                         ? rowConflicts.map(c =>
                             c.type === "venue"
                               ? "This venue is already assigned during the selected time. Please choose another available venue."
-                              : `${c.type === "batch" ? "🔴 Batch" : "🟠 Teacher"} conflict: "${c.conflictWith.subject}" (${c.conflictWith.batchName} #${c.conflictWith.batchNo}) at ${c.conflictWith.existingTimeSlot}`
+                              : `${c.type === "batch" ? "ðŸ”´ Batch" : "ðŸŸ  Teacher"} conflict: "${c.conflictWith.subject}" (${c.conflictWith.batchName} #${c.conflictWith.batchNo}) at ${c.conflictWith.existingTimeSlot}`
                           ).join("\n")
                         : "";
 
@@ -2663,7 +2674,7 @@ export default function LectureSchedule() {
                                     className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded text-xs focus:outline-none focus:border-[#2563EB] bg-white cursor-pointer"
                                     placeholder="Start"
                                   />
-                                  <span className="text-[10px] text-[#94A3B8] font-bold">–</span>
+                                  <span className="text-[10px] text-[#94A3B8] font-bold">â€“</span>
                                   <input
                                     type="time"
                                     value={lecture.time_slot && lecture.time_slot.includes("-") ? (lecture.time_slot.split("-")[1]?.trim() || "") : ""}
@@ -2682,14 +2693,14 @@ export default function LectureSchedule() {
                                 </div>
                                 {lectureConflicts[index]?.length > 0 && (
                                   <div className="text-[10px] text-red-600 font-bold flex items-center gap-1">
-                                    <span>⚠️</span>
+                                    <span>âš ï¸</span>
                                     <span>{lectureConflicts[index].map(c => c.type === "batch" ? "Batch" : "Teacher").join(" & ")} Conflict</span>
                                   </div>
                                 )}
                               </div>
                             ) : (
                               <span className="text-xs font-semibold text-[#475569]">
-                                {lecture.time_slot || "–"}
+                                {lecture.time_slot || "â€“"}
                               </span>
                             )}
                           </td>
@@ -2716,7 +2727,7 @@ export default function LectureSchedule() {
                                 {lectureConflicts[index]?.some(c => c.type === "venue") && (
                                   <div className="mt-1 space-y-1">
                                     <div className="text-[10px] text-red-600 font-bold flex items-center gap-1">
-                                      <span>❌</span>
+                                      <span>âŒ</span>
                                       <span>Occupied</span>
                                     </div>
                                     <div className="text-[9px] font-semibold text-[#64748B]">Available:</div>
@@ -2730,7 +2741,7 @@ export default function LectureSchedule() {
                                           }}
                                           className="text-left px-1.5 py-0.5 bg-green-50 text-green-700 hover:bg-green-100 rounded text-[9px] font-bold border border-green-200 transition-colors"
                                         >
-                                          ✓ {av}
+                                          âœ“ {av}
                                         </button>
                                       ))}
                                     </div>
@@ -2757,7 +2768,7 @@ export default function LectureSchedule() {
                                   <optgroup label="Selected Subject Teachers">
                                     {teachers.filter(t => selectedTeacherIds.includes(t._id)).map(t => (
                                       <option key={`sel-${t._id}`} value={t._id}>
-                                        ★ {t.name}
+                                        â˜… {t.name}
                                       </option>
                                     ))}
                                   </optgroup>
@@ -3874,3 +3885,4 @@ export default function LectureSchedule() {
     </div>
   );
 }
+

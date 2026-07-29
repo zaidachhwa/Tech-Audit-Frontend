@@ -49,7 +49,7 @@ const usePushNotifications = () => {
         // Get VAPID public key from env
         const publicVapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
         if (!publicVapidKey) {
-          console.error("VITE_VAPID_PUBLIC_KEY is missing in environment variables");
+          console.warn("VITE_VAPID_PUBLIC_KEY is missing in environment variables. Push notifications are disabled.");
           return;
         }
 
