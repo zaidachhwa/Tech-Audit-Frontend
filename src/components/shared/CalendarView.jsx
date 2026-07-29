@@ -16,7 +16,8 @@ import {
   Plus,
   Layers,
   Sparkles,
-  ArrowRightLeft
+  ArrowRightLeft,
+  MapPin
 } from "lucide-react";
 
 export default function CalendarView({
@@ -25,6 +26,7 @@ export default function CalendarView({
   userId,
   onSelectLecture,
   onTransferLecture,
+  onChangeVenue,
   onAddLectureOnDate,
   onUpdateLectureStatus
 }) {
@@ -152,7 +154,7 @@ export default function CalendarView({
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
       const pDay = prevMonthLastDay - i;
       const pDate = new Date(year, month - 1, pDay);
-      const dateStr = pDate.toISOString().split("T")[0];
+      const dateStr = `${pDate.getFullYear()}-${String(pDate.getMonth() + 1).padStart(2, "0")}-${String(pDate.getDate()).padStart(2, "0")}`;
       days.push({
         date: pDate,
         dateStr,
@@ -163,7 +165,8 @@ export default function CalendarView({
     }
 
     // Current month days
-    const todayStr = new Date().toISOString().split("T")[0];
+    const _today = new Date();
+    const todayStr = `${_today.getFullYear()}-${String(_today.getMonth() + 1).padStart(2, "0")}-${String(_today.getDate()).padStart(2, "0")}`;
     for (let d = 1; d <= totalDays; d++) {
       const cDate = new Date(year, month, d);
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -181,7 +184,7 @@ export default function CalendarView({
     const remainingCells = totalCells - days.length;
     for (let n = 1; n <= remainingCells; n++) {
       const nDate = new Date(year, month + 1, n);
-      const dateStr = nDate.toISOString().split("T")[0];
+      const dateStr = `${nDate.getFullYear()}-${String(nDate.getMonth() + 1).padStart(2, "0")}-${String(nDate.getDate()).padStart(2, "0")}`;
       days.push({
         date: nDate,
         dateStr,
@@ -733,6 +736,17 @@ export default function CalendarView({
                     className="flex-1 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 shadow-xs whitespace-nowrap"
                   >
                     <ArrowRightLeft size={14} /> Switch Teacher
+                  </button>
+                )}
+                {onChangeVenue && activeLectureModal.status !== "Done" && (
+                  <button
+                    onClick={() => {
+                      onChangeVenue(activeLectureModal);
+                      setActiveLectureModal(null);
+                    }}
+                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 shadow-xs whitespace-nowrap"
+                  >
+                    <MapPin size={14} /> Change Venue
                   </button>
                 )}
                 <button
