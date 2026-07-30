@@ -45,6 +45,12 @@ export default function AdminBatchDetail() {
     name: "",
     email: "",
     phoneNo: "",
+    fatherName: "",
+    fatherPhone: "",
+    fatherEmail: "",
+    motherName: "",
+    motherPhone: "",
+    motherEmail: "",
     customFields: {}
   });
   const [customFieldsSchema, setCustomFieldsSchema] = useState([]);
@@ -129,12 +135,12 @@ export default function AdminBatchDetail() {
   };
 
   const downloadExcelTemplate = () => {
-    const headers = ["name", "email", "phone"];
+    const headers = ["Student Name", "Contact No", "Student Email", "Father name", "Father Contact no", "Father email id", "Mother Name", "Mother Contact no", "Mother email id"];
     customFieldsSchema.forEach(f => headers.push(f.name));
 
     const rows = [
-      ["John Doe", "john.doe@example.com", "9876543210"],
-      ["Jane Smith", "jane.smith@example.com", ""]
+      ["John Doe", "9876543210", "john.doe@example.com", "Richard Doe", "9876543210", "richard@example.com", "Jane Doe", "9876543210", "jane@example.com"],
+      ["Jane Smith", "", "jane.smith@example.com", "Adam Smith", "9876543211", "adam@example.com", "Eve Smith", "9876543211", "eve@example.com"]
     ];
     // Pad the example rows with empty values for custom fields
     rows.forEach(r => {
@@ -612,7 +618,7 @@ export default function AdminBatchDetail() {
       {/* Manual Add Student Modal */}
       {showManualAddModal && batch && (
         <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border border-slate-100">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-100">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-blue-50 text-[#2563EB] rounded-lg">
@@ -673,6 +679,86 @@ export default function AdminBatchDetail() {
                     onChange={(e) => setManualForm({ ...manualForm, phoneNo: e.target.value })}
                     className="w-full pl-9 pr-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
                   />
+                </div>
+              </div>
+
+              {/* Father's Info */}
+              <div className="pt-2 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Father's Information (Mandatory)</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">Father Name *</label>
+                    <input
+                      required
+                      type="text"
+                      value={manualForm.fatherName}
+                      onChange={(e) => setManualForm({ ...manualForm, fatherName: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">Father Contact *</label>
+                      <input
+                        required
+                        type="text"
+                        pattern="[0-9+\s\-]+"
+                        value={manualForm.fatherPhone}
+                        onChange={(e) => setManualForm({ ...manualForm, fatherPhone: e.target.value })}
+                        className="w-full px-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">Father Email *</label>
+                      <input
+                        required
+                        type="email"
+                        value={manualForm.fatherEmail}
+                        onChange={(e) => setManualForm({ ...manualForm, fatherEmail: e.target.value })}
+                        className="w-full px-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mother's Info */}
+              <div className="pt-2 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Mother's Information (Mandatory)</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">Mother Name *</label>
+                    <input
+                      required
+                      type="text"
+                      value={manualForm.motherName}
+                      onChange={(e) => setManualForm({ ...manualForm, motherName: e.target.value })}
+                      className="w-full px-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">Mother Contact *</label>
+                      <input
+                        required
+                        type="text"
+                        pattern="[0-9+\s\-]+"
+                        value={manualForm.motherPhone}
+                        onChange={(e) => setManualForm({ ...manualForm, motherPhone: e.target.value })}
+                        className="w-full px-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#1B2B4B] uppercase tracking-wider mb-1.5">Mother Email *</label>
+                      <input
+                        required
+                        type="email"
+                        value={manualForm.motherEmail}
+                        onChange={(e) => setManualForm({ ...manualForm, motherEmail: e.target.value })}
+                        className="w-full px-3.5 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

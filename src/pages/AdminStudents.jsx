@@ -49,8 +49,12 @@ export default function AdminStudents() {
     password: "",
     batch_name: "",
     batch_no: "",
-    parentEmail: "",
-    parentPhoneNo: "",
+    fatherName: "",
+    fatherPhone: "",
+    fatherEmail: "",
+    motherName: "",
+    motherPhone: "",
+    motherEmail: "",
   });
 
   // Bulk Import States
@@ -62,6 +66,7 @@ export default function AdminStudents() {
   const [batchesList, setBatchesList] = useState([]);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const [customFieldsSchema, setCustomFieldsSchema] = useState([]);
 
   // Fetch courses list for dropdown
   const fetchCoursesList = async () => {
@@ -83,9 +88,22 @@ export default function AdminStudents() {
     }
   };
 
+  const fetchCustomFields = async () => {
+    try {
+      const res = await API.get("/settings");
+      const fieldsSetting = res.data.find(s => s.key === "student_custom_fields");
+      if (fieldsSetting && Array.isArray(fieldsSetting.value)) {
+        setCustomFieldsSchema(fieldsSetting.value);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (showImport) {
       fetchCoursesList();
+      fetchCustomFields();
       setImportFile(null);
       setImportCourse("");
       setImportBatch("");
@@ -123,10 +141,12 @@ export default function AdminStudents() {
   };
 
   const downloadTemplate = () => {
-    const headers = ["name", "email", "phone"];
+    const headers = ["Student Name", "Contact No", "Student Email", "Father name", "Father Contact no", "Father email id", "Mother Name", "Mother Contact no", "Mother email id"];
+    customFieldsSchema.forEach(f => headers.push(f.name));
+    
     const rows = [
-      ["Aayush Sharma", "aayush.sharma@example.com", "9876543210"],
-      ["Riya Verma", "riya.verma@example.com", "9876543211"]
+      ["Aayush Sharma", "9876543210", "aayush@example.com", "Raj Sharma", "9876543210", "raj@example.com", "Seema Sharma", "9876543210", "seema@example.com", ...customFieldsSchema.map(() => "")],
+      ["Riya Verma", "9876543211", "riya@example.com", "Anil Verma", "9876543211", "anil@example.com", "Kavita Verma", "9876543211", "kavita@example.com", ...customFieldsSchema.map(() => "")]
     ];
     const csvContent = "data:text/csv;charset=utf-8," 
       + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -221,8 +241,12 @@ export default function AdminStudents() {
       password: "",
       batch_name: student.batch_name,
       batch_no: student.batch_no,
-      parentEmail: student.parentEmail || "",
-      parentPhoneNo: student.parentPhoneNo || "",
+      fatherName: student.fatherName || "",
+      fatherPhone: student.fatherPhone || "",
+      fatherEmail: student.fatherEmail || "",
+      motherName: student.motherName || "",
+      motherPhone: student.motherPhone || "",
+      motherEmail: student.motherEmail || "",
     });
     setShowEdit(true);
   };
@@ -266,8 +290,8 @@ export default function AdminStudents() {
       toast.success("Student updated successfully");
       setShowEdit(false);
       fetchStudents();
-    } catch {
-      toast.error("Failed to update student");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update student");
     }
   };
 
@@ -279,8 +303,8 @@ export default function AdminStudents() {
       setShowCreate(false);
       setForm({ name: "", email: "", password: "", batch_name: "", batch_no: "", parentEmail: "", parentPhoneNo: "" });
       fetchStudents();
-    } catch {
-      toast.error("Failed to create student");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to create student");
     }
   };
 
@@ -386,6 +410,7 @@ export default function AdminStudents() {
             <tr>
               <th className="px-6 py-3.5 text-left font-bold">Student</th>
               <th className="px-6 py-3.5 text-left font-bold">Email</th>
+              <th className="px-6 py-3.5 text-left font-bold">Parents</th>
               <th className="px-6 py-3.5 text-left font-bold">Batch</th>
               <th className="px-6 py-3.5 text-left font-bold">Status</th>
               <th className="px-6 py-3.5 text-right font-bold">Actions</th>
@@ -415,6 +440,14 @@ export default function AdminStudents() {
                   </td>
 
                   <td className="px-6 py-4 text-[#64748B] text-[13px] truncate max-w-[200px]">{s.email}</td>
+
+                  <td className="px-6 py-4 text-[#64748B] text-[12px]">
+                    <div className="flex flex-col gap-0.5">
+                      {s.fatherName && <span className="truncate max-w-[150px]">F: {s.fatherName}</span>}
+                      {s.motherName && <span className="truncate max-w-[150px]">M: {s.motherName}</span>}
+                      {!s.fatherName && !s.motherName && <span className="italic text-slate-400">Not Provided</span>}
+                    </div>
+                  </td>
 
                   <td className="px-6 py-4 text-[#64748B] text-[13px] font-medium">
                     {s.batch_name} #{s.batch_no}
@@ -504,6 +537,14 @@ export default function AdminStudents() {
                 <div className="flex justify-between">
                   <span className="text-slate-400 font-medium">Batch:</span>
                   <span className="font-semibold text-slate-700">{s.batch_name} #{s.batch_no}</span>
+                </div>
+                <div className="flex justify-between items-start border-t border-slate-50 pt-1.5 mt-1.5">
+                  <span className="text-slate-400 font-medium">Parents:</span>
+                  <div className="flex flex-col items-end text-[11px] font-semibold text-slate-700">
+                    {s.fatherName && <span className="truncate max-w-[150px]">F: {s.fatherName}</span>}
+                    {s.motherName && <span className="truncate max-w-[150px]">M: {s.motherName}</span>}
+                    {!s.fatherName && !s.motherName && <span className="italic text-slate-400">Not Provided</span>}
+                  </div>
                 </div>
               </div>
 
@@ -611,7 +652,7 @@ export default function AdminStudents() {
       {/* Create Student Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-8 max-w-md w-full">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-[18px] font-bold text-[#1B2B4B]">Add Student</h2>
               <button onClick={() => setShowCreate(false)} className="text-[#94A3B8]">
@@ -642,25 +683,84 @@ export default function AdminStudents() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Parent's Email (Optional)</label>
-                <input
-                  type="email"
-                  value={form.parentEmail}
-                  onChange={(e) => setForm({ ...form, parentEmail: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
-                />
+              {/* Father's Info */}
+              <div className="pt-2 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Father's Information (Mandatory)</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Father Name *</label>
+                    <input
+                      required
+                      type="text"
+                      value={form.fatherName}
+                      onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Father Contact *</label>
+                      <input
+                        required
+                        type="text"
+                        pattern="[0-9+\s\-]+"
+                        value={form.fatherPhone}
+                        onChange={(e) => setForm({ ...form, fatherPhone: e.target.value })}
+                        className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Father Email *</label>
+                      <input
+                        required
+                        type="email"
+                        value={form.fatherEmail}
+                        onChange={(e) => setForm({ ...form, fatherEmail: e.target.value })}
+                        className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Parent's Phone No (WhatsApp)</label>
-                <input
-                  type="text"
-                  placeholder="+919876543210"
-                  value={form.parentPhoneNo}
-                  onChange={(e) => setForm({ ...form, parentPhoneNo: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
-                />
+              {/* Mother's Info */}
+              <div className="pt-2 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Mother's Information (Mandatory)</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Mother Name *</label>
+                    <input
+                      required
+                      type="text"
+                      value={form.motherName}
+                      onChange={(e) => setForm({ ...form, motherName: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Mother Contact *</label>
+                      <input
+                        required
+                        type="text"
+                        pattern="[0-9+\s\-]+"
+                        value={form.motherPhone}
+                        onChange={(e) => setForm({ ...form, motherPhone: e.target.value })}
+                        className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Mother Email *</label>
+                      <input
+                        required
+                        type="email"
+                        value={form.motherEmail}
+                        onChange={(e) => setForm({ ...form, motherEmail: e.target.value })}
+                        className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -722,7 +822,7 @@ export default function AdminStudents() {
       {/* Edit Student Modal */}
       {showEdit && editStudent && (
         <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-8 max-w-md w-full">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-[18px] font-bold text-[#1B2B4B]">Edit Student</h2>
               <button onClick={() => setShowEdit(false)} className="text-[#94A3B8]">
@@ -752,25 +852,84 @@ export default function AdminStudents() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Parent's Email (Optional)</label>
-                <input
-                  type="email"
-                  value={form.parentEmail}
-                  onChange={(e) => setForm({ ...form, parentEmail: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
-                />
+              {/* Father's Info */}
+              <div className="pt-2 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Father's Information (Mandatory)</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Father Name *</label>
+                    <input
+                      required
+                      type="text"
+                      value={form.fatherName}
+                      onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Father Contact *</label>
+                      <input
+                        required
+                        type="text"
+                        pattern="[0-9+\s\-]+"
+                        value={form.fatherPhone}
+                        onChange={(e) => setForm({ ...form, fatherPhone: e.target.value })}
+                        className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Father Email *</label>
+                      <input
+                        required
+                        type="email"
+                        value={form.fatherEmail}
+                        onChange={(e) => setForm({ ...form, fatherEmail: e.target.value })}
+                        className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Parent's Phone No (WhatsApp)</label>
-                <input
-                  type="text"
-                  placeholder="+919876543210"
-                  value={form.parentPhoneNo}
-                  onChange={(e) => setForm({ ...form, parentPhoneNo: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
-                />
+              {/* Mother's Info */}
+              <div className="pt-2 border-t border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Mother's Information (Mandatory)</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Mother Name *</label>
+                    <input
+                      required
+                      type="text"
+                      value={form.motherName}
+                      onChange={(e) => setForm({ ...form, motherName: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Mother Contact *</label>
+                      <input
+                        required
+                        type="text"
+                        pattern="[0-9+\s\-]+"
+                        value={form.motherPhone}
+                        onChange={(e) => setForm({ ...form, motherPhone: e.target.value })}
+                        className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Mother Email *</label>
+                      <input
+                        required
+                        type="email"
+                        value={form.motherEmail}
+                        onChange={(e) => setForm({ ...form, motherEmail: e.target.value })}
+                        className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div>

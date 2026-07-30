@@ -45,8 +45,8 @@ export async function fileToCleanCSV(file) {
         // Validate headers (first non-empty row)
         const headers = nonEmpty[0].map((h) => String(h).trim().toLowerCase());
         const missingFields = [];
-        if (!headers.includes("name")) missingFields.push("name");
-        if (!headers.includes("email")) missingFields.push("email");
+        if (!headers.includes("name") && !headers.includes("student name")) missingFields.push("Student Name");
+        if (!headers.includes("email") && !headers.includes("student email")) missingFields.push("Student Email");
 
         if (missingFields.length > 0) {
           const found = nonEmpty[0].map((h) => String(h).trim()).filter(Boolean);
@@ -54,7 +54,7 @@ export async function fileToCleanCSV(file) {
             new Error(
               `Missing required columns: "${missingFields.join('", "')}". ` +
               `Columns found in your file: "${found.join('", "') || "none"}". ` +
-              `Please rename your columns to match: name, email, phone (optional).`
+              `Please use the provided Template.`
             )
           );
         }
