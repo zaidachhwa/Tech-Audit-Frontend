@@ -87,6 +87,11 @@ export const teacherSidebarItems = [
     path: "/teacher/add-reports",
   },
   {
+    name: "Performance Reports",
+    icon: TrendingUp,
+    path: "/teacher/performance-reports",
+  },
+  {
     name: "Drafts",
     icon: FileText,
     path: "/teacher/drafts",

@@ -30,6 +30,8 @@ import StudentProjectsView from './components/admin/StudentProjectsView';
 import AdminSyllabusManagement from './components/admin/AdminSyllabusManagement';
 import AllReports from './components/admin/AllReports';
 import AddReport2 from './components/admin/AddReport2';
+import TeacherPerformanceReports from './pages/TeacherPerformanceReports';
+import AdminPerformanceReports from './pages/AdminPerformanceReports';
 import Drafts from './components/admin/Drafts';
 import AdminStudents from './pages/AdminStudents';
 import AdminBatches from './pages/AdminBatches';
@@ -120,7 +122,8 @@ export default function App() {
           <Route path="project-tracking/batch/:batchId"     element={<AdminBatchDetail />} />
           <Route path="project-tracking/student/:studentId" element={<StudentProjectsView />} />
           <Route path="add-reports"        element={<AddReport2 />} />
-          <Route path="assign-task"        element={<AssignTask />} />
+          <Route path="performance-reports" element={<AdminPerformanceReports />} />
+          <Route path="all-reports"        element={<AllReports />} />
           <Route path="lms"                element={<LMSManagement />} />
           <Route path="syllabus"           element={<AdminSyllabusManagement />} />
           <Route path="all-reports"        element={<AllReports />} />
@@ -157,6 +160,7 @@ export default function App() {
           <Route path="assign-syllabus"    element={<AssignSyllabus />} />
           <Route path="assign-syllabus/:batchId" element={<AssignSyllabusDetail />} />
           <Route path="add-reports"        element={<AddReport2 />} />
+          <Route path="performance-reports" element={<TeacherPerformanceReports />} />
           <Route path="drafts"             element={<Drafts />} />
           <Route path="student-management" element={<TeacherStudents />} />
           <Route path="student management" element={<TeacherStudents />} />

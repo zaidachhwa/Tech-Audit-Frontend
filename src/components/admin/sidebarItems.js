@@ -73,6 +73,11 @@ export const adminSidebarItems = [
     icon: Notebook,
   },
   {
+    name: "Performance Reports",
+    path: "/admin/performance-reports",
+    icon: BarChart3,
+  },
+  {
     name: "Drafts",
     path: "/admin/drafts",
     icon: FileText,
