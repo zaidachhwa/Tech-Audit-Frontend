@@ -48,6 +48,8 @@ export default function TeacherStudents() {
     password: "",
     batch_name: "",
     batch_no: "",
+    parentEmail: "",
+    parentPhoneNo: "",
   });
 
   // Bulk Import States
@@ -218,6 +220,8 @@ export default function TeacherStudents() {
       password: "",
       batch_name: student.batch_name,
       batch_no: student.batch_no,
+      parentEmail: student.parentEmail || "",
+      parentPhoneNo: student.parentPhoneNo || "",
     });
     setShowEdit(true);
   };
@@ -272,7 +276,7 @@ export default function TeacherStudents() {
       await API.post("/students/register", form);
       toast.success("Student created successfully");
       setShowCreate(false);
-      setForm({ name: "", email: "", password: "", batch_name: "", batch_no: "" });
+      setForm({ name: "", email: "", password: "", batch_name: "", batch_no: "", parentEmail: "", parentPhoneNo: "" });
       fetchStudents();
     } catch {
       toast.error("Failed to create student");
@@ -638,6 +642,27 @@ export default function TeacherStudents() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Parent's Email (Optional)</label>
+                <input
+                  type="email"
+                  value={form.parentEmail}
+                  onChange={(e) => setForm({ ...form, parentEmail: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Parent's Phone No (WhatsApp)</label>
+                <input
+                  type="text"
+                  placeholder="+919876543210"
+                  value={form.parentPhoneNo}
+                  onChange={(e) => setForm({ ...form, parentPhoneNo: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Password</label>
                 <input
                   required
@@ -723,6 +748,27 @@ export default function TeacherStudents() {
                   type="email"
                   value={form.email}
                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg bg-[#F8FAFC] text-[#64748B]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Parent's Email (Optional)</label>
+                <input
+                  type="email"
+                  value={form.parentEmail}
+                  onChange={(e) => setForm({ ...form, parentEmail: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Parent's Phone No (WhatsApp)</label>
+                <input
+                  type="text"
+                  placeholder="+919876543210"
+                  value={form.parentPhoneNo}
+                  onChange={(e) => setForm({ ...form, parentPhoneNo: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
                 />
               </div>
 
