@@ -8,7 +8,8 @@ export default function TransferLectureModal({
   onClose,
   lecture,
   teachers,
-  onTransferSuccess
+  onTransferSuccess,
+  onConflict
 }) {
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
   const [reason, setReason] = useState("");
@@ -51,7 +52,12 @@ export default function TransferLectureModal({
     } catch (err) {
       console.error(err);
       if (err.response?.status === 409) {
-        toast.error(err.response?.data?.message || "Conflict: Teacher already has a lecture at this time.");
+        if (onConflict && err.response?.data?.conflictDetails) {
+          onConflict(err.response.data.message, err.response.data.conflictDetails);
+          onClose();
+        } else {
+          toast.error(err.response?.data?.message || "Conflict: Teacher already has a lecture at this time.");
+        }
       } else {
         toast.error(err.response?.data?.message || "Failed to transfer lecture.");
       }

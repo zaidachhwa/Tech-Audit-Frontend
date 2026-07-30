@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import CalendarView from "../components/shared/CalendarView";
 import DownloadScheduleModal from "../components/shared/DownloadScheduleModal";
 import TransferLectureModal from "../components/shared/TransferLectureModal";
+import TeacherConflictModal from "../components/shared/TeacherConflictModal";
 import {
   CalendarDays,
   Plus,
@@ -29,7 +30,8 @@ import {
   Check,
   UploadCloud,
   X,
-  ArrowRightLeft
+  ArrowRightLeft,
+  MapPin
 } from "lucide-react";
 
 export default function LectureSchedule() {
@@ -99,6 +101,14 @@ export default function LectureSchedule() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [submittingHW, setSubmittingHW] = useState(false);
 
+  // Venue Change Modal states
+  const [showVenueModal, setShowVenueModal] = useState(false);
+  const [venueModalLecture, setVenueModalLecture] = useState(null);
+  const [venueModalOccupied, setVenueModalOccupied] = useState([]);
+  const [venueModalSelectedVenue, setVenueModalSelectedVenue] = useState("");
+  const [venueModalReason, setVenueModalReason] = useState("");
+  const [venueModalLoading, setVenueModalLoading] = useState(false);
+
   // Submissions Tracker Center states (Admin/Teacher)
   const [isViewingSubmissionsCenter, setIsViewingSubmissionsCenter] = useState(false);
   const [trackerCourse, setTrackerCourse] = useState("");
@@ -120,6 +130,11 @@ export default function LectureSchedule() {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [activeTransferLecture, setActiveTransferLecture] = useState(null);
 
+  // Teacher Conflict Modal states
+  const [showTeacherConflictModal, setShowTeacherConflictModal] = useState(false);
+  const [teacherConflictDetails, setTeacherConflictDetails] = useState(null);
+  const [teacherConflictMessage, setTeacherConflictMessage] = useState("");
+
   const handlePreviewFile = (fileName, fileUrl) => {
     if (!fileUrl) return toast.error("No file URL available for preview");
     setPreviewFileName(fileName);
@@ -130,6 +145,68 @@ export default function LectureSchedule() {
   const handleTransferLecture = (lecture) => {
     setActiveTransferLecture(lecture);
     setIsTransferModalOpen(true);
+  };
+
+  const handleDeleteLecture = async (scheduleId, lectureId) => {
+    try {
+      const res = await API.delete(`/schedules/${scheduleId}/lectures/${lectureId}`);
+      toast.success(res.data?.message || "Lecture deleted successfully.");
+      fetchSchedules();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete lecture.");
+    }
+  };
+
+  const handleChangeVenueClick = async (lecture) => {
+    setVenueModalLecture(lecture);
+    setShowVenueModal(true);
+    setVenueModalSelectedVenue("");
+    setVenueModalReason("");
+    setVenueModalOccupied([]);
+    
+    // Check availability
+    if (!lecture.date || !lecture.time_slot) {
+        return toast.error("Lecture must have a date and time slot to check venue availability.");
+    }
+
+    try {
+      const res = await API.post("/schedules/venues/availability", {
+        date: lecture.date,
+        time_slot: lecture.time_slot,
+        currentLectureId: lecture._id || lecture.lectureId
+      });
+      setVenueModalOccupied(res.data.occupiedVenues || []);
+    } catch (err) {
+      console.error("Failed to check venue availability", err);
+      toast.error("Failed to fetch venue availability.");
+    }
+  };
+
+  const submitVenueChange = async () => {
+    if (!venueModalSelectedVenue) {
+      return toast.error("Please select an available venue.");
+    }
+    
+    // Ensure scheduleId exists
+    const schedId = venueModalLecture.scheduleId || (selectedSchedule && selectedSchedule._id);
+    if (!schedId) {
+      return toast.error("Schedule ID not found.");
+    }
+
+    setVenueModalLoading(true);
+    try {
+      await API.post(`/schedules/${schedId}/lectures/${venueModalLecture._id || venueModalLecture.lectureId}/venue`, {
+        newVenue: venueModalSelectedVenue,
+        reason: venueModalReason
+      });
+      toast.success("Lecture venue updated successfully.");
+      setShowVenueModal(false);
+      fetchSchedules(); // Refresh to update everything everywhere
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update venue.");
+    } finally {
+      setVenueModalLoading(false);
+    }
   };
 
   // Delete predefined subject template
@@ -975,7 +1052,13 @@ export default function LectureSchedule() {
       setLectureConflicts({});
       fetchSchedules();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save schedule.");
+      if (err.response?.status === 409 && err.response?.data?.conflictDetails) {
+        setTeacherConflictMessage(err.response.data.message);
+        setTeacherConflictDetails(err.response.data.conflictDetails);
+        setShowTeacherConflictModal(true);
+      } else {
+        toast.error(err.response?.data?.message || "Failed to save schedule.");
+      }
     }
   };
 
@@ -993,7 +1076,7 @@ export default function LectureSchedule() {
       .filter(l => l.date && l.time_slot);
 
     if (lecturesToCheck.length === 0) {
-      toast("No lectures with both date and time slot set — nothing to check.", { icon: "ℹ️" });
+      toast("No lectures with both date and time slot set â€” nothing to check.", { icon: "â„¹ï¸" });
       return;
     }
 
@@ -1867,6 +1950,8 @@ export default function LectureSchedule() {
               role={role}
               userId={user?.id}
               onTransferLecture={handleTransferLecture}
+              onChangeVenue={handleChangeVenueClick}
+              onDeleteLecture={handleDeleteLecture}
               onSelectLecture={(evt) => {
                 const targetSch = schedules.find(s => String(s._id) === String(evt.scheduleId));
                 if (targetSch) handleOpenEdit(targetSch);
@@ -2472,7 +2557,7 @@ export default function LectureSchedule() {
                         ? rowConflicts.map(c =>
                             c.type === "venue"
                               ? "This venue is already assigned during the selected time. Please choose another available venue."
-                              : `${c.type === "batch" ? "🔴 Batch" : "🟠 Teacher"} conflict: "${c.conflictWith.subject}" (${c.conflictWith.batchName} #${c.conflictWith.batchNo}) at ${c.conflictWith.existingTimeSlot}`
+                              : `${c.type === "batch" ? "ðŸ”´ Batch" : "ðŸŸ  Teacher"} conflict: "${c.conflictWith.subject}" (${c.conflictWith.batchName} #${c.conflictWith.batchNo}) at ${c.conflictWith.existingTimeSlot}`
                           ).join("\n")
                         : "";
 
@@ -2589,7 +2674,7 @@ export default function LectureSchedule() {
                                     className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded text-xs focus:outline-none focus:border-[#2563EB] bg-white cursor-pointer"
                                     placeholder="Start"
                                   />
-                                  <span className="text-[10px] text-[#94A3B8] font-bold">–</span>
+                                  <span className="text-[10px] text-[#94A3B8] font-bold">â€“</span>
                                   <input
                                     type="time"
                                     value={lecture.time_slot && lecture.time_slot.includes("-") ? (lecture.time_slot.split("-")[1]?.trim() || "") : ""}
@@ -2608,14 +2693,14 @@ export default function LectureSchedule() {
                                 </div>
                                 {lectureConflicts[index]?.length > 0 && (
                                   <div className="text-[10px] text-red-600 font-bold flex items-center gap-1">
-                                    <span>⚠️</span>
+                                    <span>âš ï¸</span>
                                     <span>{lectureConflicts[index].map(c => c.type === "batch" ? "Batch" : "Teacher").join(" & ")} Conflict</span>
                                   </div>
                                 )}
                               </div>
                             ) : (
                               <span className="text-xs font-semibold text-[#475569]">
-                                {lecture.time_slot || "–"}
+                                {lecture.time_slot || "â€“"}
                               </span>
                             )}
                           </td>
@@ -2642,7 +2727,7 @@ export default function LectureSchedule() {
                                 {lectureConflicts[index]?.some(c => c.type === "venue") && (
                                   <div className="mt-1 space-y-1">
                                     <div className="text-[10px] text-red-600 font-bold flex items-center gap-1">
-                                      <span>❌</span>
+                                      <span>âŒ</span>
                                       <span>Occupied</span>
                                     </div>
                                     <div className="text-[9px] font-semibold text-[#64748B]">Available:</div>
@@ -2656,7 +2741,7 @@ export default function LectureSchedule() {
                                           }}
                                           className="text-left px-1.5 py-0.5 bg-green-50 text-green-700 hover:bg-green-100 rounded text-[9px] font-bold border border-green-200 transition-colors"
                                         >
-                                          ✓ {av}
+                                          âœ“ {av}
                                         </button>
                                       ))}
                                     </div>
@@ -2683,7 +2768,7 @@ export default function LectureSchedule() {
                                   <optgroup label="Selected Subject Teachers">
                                     {teachers.filter(t => selectedTeacherIds.includes(t._id)).map(t => (
                                       <option key={`sel-${t._id}`} value={t._id}>
-                                        ★ {t.name}
+                                        â˜… {t.name}
                                       </option>
                                     ))}
                                   </optgroup>
@@ -2705,18 +2790,32 @@ export default function LectureSchedule() {
                                   </span>
                                 )}
                                 {(role === "admin" || role === "teacher") && lecture._id && lecture.status !== "Done" && (
-                                  <button
-                                    onClick={() => handleTransferLecture({
-                                      ...lecture,
-                                      scheduleId: selectedSchedule._id,
-                                      teacherId: typeof lecture.teacher === "object" ? lecture.teacher?._id : lecture.teacher,
-                                      teacherName: typeof lecture.teacher === "object" ? lecture.teacher?.name : teachers.find(t => t._id === lecture.teacher)?.name,
-                                      batchName: selectedSchedule.batch?.batch_name
-                                    })}
-                                    className="w-full mt-1 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white py-1 px-2 rounded text-[10px] font-bold transition cursor-pointer flex items-center justify-center gap-1 shadow-xs whitespace-nowrap"
-                                  >
-                                    <ArrowRightLeft size={10} /> Switch Teacher
-                                  </button>
+                                  <div className="flex flex-col gap-1 mt-1">
+                                    <button
+                                      onClick={() => handleTransferLecture({
+                                        ...lecture,
+                                        scheduleId: selectedSchedule._id,
+                                        teacherId: typeof lecture.teacher === "object" ? lecture.teacher?._id : lecture.teacher,
+                                        teacherName: typeof lecture.teacher === "object" ? lecture.teacher?.name : teachers.find(t => t._id === lecture.teacher)?.name,
+                                        batchName: selectedSchedule.batch?.batch_name
+                                      })}
+                                      className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED] text-white py-1 px-2 rounded text-[10px] font-bold transition cursor-pointer flex items-center justify-center gap-1 shadow-xs whitespace-nowrap"
+                                    >
+                                      <ArrowRightLeft size={10} /> Switch Teacher
+                                    </button>
+                                    <button
+                                      onClick={() => handleChangeVenueClick({
+                                        ...lecture,
+                                        scheduleId: selectedSchedule._id,
+                                        teacherId: typeof lecture.teacher === "object" ? lecture.teacher?._id : lecture.teacher,
+                                        teacherName: typeof lecture.teacher === "object" ? lecture.teacher?.name : teachers.find(t => t._id === lecture.teacher)?.name,
+                                        batchName: selectedSchedule.batch?.batch_name
+                                      })}
+                                      className="w-full bg-amber-500 hover:bg-amber-600 text-white py-1 px-2 rounded text-[10px] font-bold transition cursor-pointer flex items-center justify-center gap-1 shadow-xs whitespace-nowrap"
+                                    >
+                                      <MapPin size={10} /> Change Venue
+                                    </button>
+                                  </div>
                                 )}
                               </div>
                             )}
@@ -3654,8 +3753,136 @@ export default function LectureSchedule() {
         lecture={activeTransferLecture}
         teachers={teachers}
         onTransferSuccess={fetchSchedules}
+        onConflict={(message, details) => {
+          setTeacherConflictMessage(message);
+          setTeacherConflictDetails(details);
+          setShowTeacherConflictModal(true);
+        }}
       />
 
+      {/* Change Venue Modal */}
+      {showVenueModal && venueModalLecture && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-4 border-b border-[#E2E8F0] bg-[#FAFBFC]">
+              <h3 className="font-bold text-[#1E293B] flex items-center gap-2">
+                <MapPin size={18} className="text-amber-500" />
+                Change Lecture Venue
+              </h3>
+              <button
+                onClick={() => setShowVenueModal(false)}
+                className="text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] p-1.5 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto space-y-4">
+              {/* Read Only Info */}
+              <div className="bg-[#F8FAFC] rounded-lg p-3 text-xs text-[#475569] space-y-1.5 border border-[#E2E8F0]">
+                <p><span className="font-bold">Subject:</span> {venueModalLecture.title || venueModalLecture.subject || "Unknown"}</p>
+                <p><span className="font-bold">Batch:</span> {venueModalLecture.batchName || selectedSchedule?.batch?.batch_name || "Unknown Batch"}</p>
+                <p><span className="font-bold">Teacher:</span> {venueModalLecture.teacherName || (typeof venueModalLecture.teacher === 'object' ? venueModalLecture.teacher?.name : teachers.find(t => t._id === venueModalLecture.teacher)?.name) || "Unknown Teacher"}</p>
+                <p><span className="font-bold">Date & Time:</span> {venueModalLecture.date ? new Date(venueModalLecture.date).toLocaleDateString() : "TBD"} | {venueModalLecture.time_slot}</p>
+                <p><span className="font-bold">Current Venue:</span> {venueModalLecture.venue || "None"}</p>
+              </div>
+
+              {/* Venue Selection */}
+              <div>
+                <label className="block text-xs font-bold text-[#475569] mb-2 uppercase tracking-wide">
+                  Select New Venue
+                </label>
+                <div className="space-y-2">
+                  {["Workspace 5", "Workspace 6", "Conference Room 1", "Conference Room 2", "Conference Room 3"].map(v => {
+                    const occupiedData = venueModalOccupied.find(occ => occ.venue === v);
+                    const isOccupied = !!occupiedData;
+                    const isCurrent = v === venueModalLecture.venue;
+                    
+                    return (
+                      <div
+                        key={v}
+                        onClick={() => !isOccupied && !isCurrent && setVenueModalSelectedVenue(v)}
+                        className={`p-3 rounded-lg border ${
+                          isCurrent ? "bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed" :
+                          isOccupied ? "bg-red-50 border-red-200 opacity-60 cursor-not-allowed" :
+                          venueModalSelectedVenue === v ? "bg-amber-50 border-amber-500 ring-1 ring-amber-500 cursor-pointer" :
+                          "bg-white border-[#E2E8F0] hover:border-amber-300 cursor-pointer"
+                        } transition-all`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            {isCurrent ? <MapPin size={16} className="text-gray-400" /> :
+                             isOccupied ? <AlertCircle size={16} className="text-red-500" /> :
+                             <CheckCircle size={16} className="text-emerald-500" />}
+                            <span className={`font-bold text-sm ${isOccupied ? 'text-red-700' : isCurrent ? 'text-gray-500' : 'text-[#1E293B]'}`}>{v}</span>
+                          </div>
+                          {!isCurrent && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isOccupied ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"
+                            }`}>
+                              {isOccupied ? "Already booked" : "Available"}
+                            </span>
+                          )}
+                          {isCurrent && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
+                              Current Venue
+                            </span>
+                          )}
+                        </div>
+                        {isOccupied && (
+                          <div className="mt-2 text-[10px] text-red-600 pl-6 space-y-0.5">
+                            <p><span className="font-semibold">Subject:</span> {occupiedData.subject}</p>
+                            <p><span className="font-semibold">Teacher:</span> {occupiedData.teacherName}</p>
+                            <p><span className="font-semibold">Time:</span> {occupiedData.time_slot}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="block text-xs font-bold text-[#475569] mb-1.5 uppercase tracking-wide">
+                  Reason for Change
+                </label>
+                <textarea
+                  value={venueModalReason}
+                  onChange={(e) => setVenueModalReason(e.target.value)}
+                  placeholder="E.g., Venue unavailable due to maintenance"
+                  className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-amber-500 text-xs text-[#1B2B4B] min-h-[60px]"
+                ></textarea>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-[#E2E8F0] bg-[#FAFBFC] flex justify-end gap-2">
+              <button
+                onClick={() => setShowVenueModal(false)}
+                className="px-4 py-2 bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] rounded-lg text-xs font-bold transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitVenueChange}
+                disabled={venueModalLoading || !venueModalSelectedVenue}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {venueModalLoading ? <RefreshCw size={14} className="animate-spin" /> : <MapPin size={14} />}
+                Update Venue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <TeacherConflictModal 
+        isOpen={showTeacherConflictModal} 
+        onClose={() => setShowTeacherConflictModal(false)} 
+        conflictDetails={teacherConflictDetails} 
+        message={teacherConflictMessage} 
+      />
     </div>
   );
 }
+

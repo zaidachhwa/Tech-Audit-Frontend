@@ -57,6 +57,7 @@ export default defineConfig({
               networkTimeoutSeconds: 10,
               expiration: { maxEntries: 50, maxAgeSeconds: 300 },
               cacheableResponse: { statuses: [0, 200] },
+              matchOptions: { ignoreVary: true }
             },
           },
         ],
