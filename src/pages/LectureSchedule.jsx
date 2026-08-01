@@ -919,16 +919,18 @@ export default function LectureSchedule() {
       return;
     }
 
-    // Validation: Ensure all lectures have at least one note added
-    const missingNotesIndex = lectures.findIndex(l => {
-      const hasShared = Array.isArray(l.notes_shared) ? l.notes_shared.length > 0 : !!l.notes_shared?.fileUrl;
-      const hasTeacher = Array.isArray(l.notes_teacher) ? l.notes_teacher.length > 0 : !!l.notes_teacher?.fileUrl;
-      return !hasShared && !hasTeacher;
-    });
+    // Validation: Ensure all lectures have at least one note added (Only for Teachers)
+    if (role === "teacher") {
+      const missingNotesIndex = lectures.findIndex(l => {
+        const hasShared = Array.isArray(l.notes_shared) ? l.notes_shared.length > 0 : !!l.notes_shared?.fileUrl;
+        const hasTeacher = Array.isArray(l.notes_teacher) ? l.notes_teacher.length > 0 : !!l.notes_teacher?.fileUrl;
+        return !hasShared && !hasTeacher;
+      });
 
-    if (missingNotesIndex !== -1) {
-      toast.error(`Please add notes for "${lectures[missingNotesIndex].title || `Lecture ${missingNotesIndex + 1}`}" before saving the schedule.`);
-      return;
+      if (missingNotesIndex !== -1) {
+        toast.error("Lecture Notes are required before scheduling a lecture. Please add notes to continue.");
+        return;
+      }
     }
 
     const finalTeacherId = teacherId || (selectedTeacherIds.length > 0 ? selectedTeacherIds[0] : (role === "teacher" ? user?.id : ""));
