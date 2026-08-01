@@ -1485,6 +1485,37 @@ export default function LectureSchedule() {
     }
   };
 
+  // Admin/Teacher: Delete Notes
+  const handleDeleteNote = async (type) => {
+    if (!window.confirm(`Are you sure you want to delete ${type === 'notes_teacher' ? 'Teacher Notes' : 'Shared Notes'}?`)) return;
+
+    try {
+      setSavingNotes(true);
+      const res = await API.delete(`/schedules/${selectedSchedule._id}/lectures/${activeNotesLecture._id}/notes/${type}`);
+      
+      const list = [...lectures];
+      list[notesIndex] = {
+        ...list[notesIndex],
+        notes_shared: res.data.lecture?.notes_shared || { fileName: "", fileUrl: "" },
+        notes_teacher: res.data.lecture?.notes_teacher || { fileName: "", fileUrl: "" }
+      };
+      setLectures(list);
+      
+      // Also update the activeNotesLecture so the modal UI updates immediately
+      setActiveNotesLecture({
+        ...activeNotesLecture,
+        notes_shared: res.data.lecture?.notes_shared || { fileName: "", fileUrl: "" },
+        notes_teacher: res.data.lecture?.notes_teacher || { fileName: "", fileUrl: "" }
+      });
+      
+      toast.success("Notes deleted successfully!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete notes.");
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
   // Student: Convert selected file to base64
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -3175,12 +3206,22 @@ export default function LectureSchedule() {
                             <p className="text-[10px] text-[#64748B]">For Students & Teachers</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDownloadFile(note.fileName, note.fileUrl)}
-                          className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
-                        >
-                          <Download size={13} /> Download
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDownloadFile(note.fileName, note.fileUrl)}
+                            className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                          >
+                            <Download size={13} /> Download
+                          </button>
+                          {role !== "student" && (
+                            <button
+                              onClick={() => handleDeleteNote("notes_shared")}
+                              className="bg-white border border-[#E2E8F0] hover:bg-red-50 text-red-500 p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))
                   ) : activeNotesLecture.notes_shared?.fileUrl ? (
@@ -3192,12 +3233,22 @@ export default function LectureSchedule() {
                           <p className="text-[10px] text-[#64748B]">For Students & Teachers</p>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDownloadFile(activeNotesLecture.notes_shared.fileName, activeNotesLecture.notes_shared.fileUrl)}
-                        className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
-                      >
-                        <Download size={13} /> Download
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDownloadFile(activeNotesLecture.notes_shared.fileName, activeNotesLecture.notes_shared.fileUrl)}
+                          className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                        >
+                          <Download size={13} /> Download
+                        </button>
+                        {role !== "student" && (
+                          <button
+                            onClick={() => handleDeleteNote("notes_shared")}
+                            className="bg-white border border-[#E2E8F0] hover:bg-red-50 text-red-500 p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                          >
+                            <Trash2 size={13} /> Delete
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     role === "student" && (
@@ -3220,12 +3271,20 @@ export default function LectureSchedule() {
                               <p className="text-[10px] text-[#64748B]">Teacher Notes Only</p>
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleDownloadFile(note.fileName, note.fileUrl)}
-                            className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
-                          >
-                            <Download size={13} /> Download
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleDownloadFile(note.fileName, note.fileUrl)}
+                              className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                            >
+                              <Download size={13} /> Download
+                            </button>
+                            <button
+                              onClick={() => handleDeleteNote("notes_teacher", note.fileName)}
+                              className="bg-white border border-[#E2E8F0] hover:bg-red-50 text-red-500 p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          </div>
                         </div>
                       ))
                     ) : activeNotesLecture.notes_teacher?.fileUrl ? (
@@ -3237,12 +3296,20 @@ export default function LectureSchedule() {
                             <p className="text-[10px] text-[#64748B]">Teacher Notes Only</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDownloadFile(activeNotesLecture.notes_teacher.fileName, activeNotesLecture.notes_teacher.fileUrl)}
-                          className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
-                        >
-                          <Download size={13} /> Download
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDownloadFile(activeNotesLecture.notes_teacher.fileName, activeNotesLecture.notes_teacher.fileUrl)}
+                            className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#475569] p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                          >
+                            <Download size={13} /> Download
+                          </button>
+                          <button
+                            onClick={() => handleDeleteNote("notes_teacher")}
+                            className="bg-white border border-[#E2E8F0] hover:bg-red-50 text-red-500 p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                          >
+                            <Trash2 size={13} /> Delete
+                          </button>
+                        </div>
                       </div>
                     ) : null
                   )}
