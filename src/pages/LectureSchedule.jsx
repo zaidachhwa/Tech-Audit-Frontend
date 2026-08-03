@@ -2405,22 +2405,22 @@ export default function LectureSchedule() {
                           Limit Lectures ▾
                         </button>
                         {singleLecDropdownOpen && (
-                          <div className="absolute top-full mt-1 left-0 w-full bg-white border border-[#E2E8F0] shadow-lg rounded-lg z-50 overflow-hidden">
-                            {[1, 2, 3, 4, 5].map((num) => (
+                          <div className="absolute top-full mt-1 left-0 w-full bg-white border border-[#E2E8F0] shadow-lg rounded-lg z-50 overflow-y-auto max-h-60">
+                            {lectures.map((lec, index) => (
                                 <div
-                                  key={num}
-                                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs text-[#1B2B4B] border-b border-[#F1F5F9] last:border-0 text-center font-bold"
+                                  key={lec._id || index}
+                                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs text-[#1B2B4B] border-b border-[#F1F5F9] last:border-0 font-bold"
                                   onClick={() => {
                                     if (lectures.length === 0) {
                                       toast.info("Please load lectures first by clicking the Reload button.");
                                     } else {
-                                      setLectures(prev => prev.slice(0, num));
-                                      toast.success(`Kept ${num} lecture${num > 1 ? 's' : ''}.`);
+                                      setLectures([lec]);
+                                      toast.success(`Selected specific lecture: ${lec.title}`);
                                     }
                                     setSingleLecDropdownOpen(false);
                                   }}
                                 >
-                                  Keep {num} Lecture{num > 1 ? 's' : ''}
+                                  {lec.title}{lec.description ? ` - ${lec.description}` : ''}
                                 </div>
                             ))}
                           </div>
