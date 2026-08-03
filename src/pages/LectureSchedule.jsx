@@ -618,17 +618,6 @@ export default function LectureSchedule() {
     if (e) e.preventDefault();
     if (!selectedTemplateId) return toast.error("Select a Subject first");
 
-    if (startDate && frequency !== "custom") {
-      const [year, month, day] = startDate.split('-').map(Number);
-      const selectedDate = new Date(year, month - 1, day);
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      if (selectedDate < today) {
-        toast.error("Cannot schedule lectures for a past date.\nPlease select today or a future date.");
-        return;
-      }
-    }
-
     fetchAndLoadSubject(selectedTemplateId, startDate, frequency, singleLectureIndex);
   };
 
@@ -654,17 +643,6 @@ export default function LectureSchedule() {
     if (!startDate && frequency !== "custom") {
       toast.error("Please select a start date.");
       return;
-    }
-
-    if (startDate && frequency !== "custom") {
-      const [year, month, day] = startDate.split('-').map(Number);
-      const selectedDate = new Date(year, month - 1, day);
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      if (selectedDate < today) {
-        toast.error("Cannot schedule lectures for a past date.\nPlease select today or a future date.");
-        return;
-      }
     }
 
     const generated = [];
@@ -785,33 +763,9 @@ export default function LectureSchedule() {
 
     // Past Date/Time Validation
     if (field === "date" && value) {
-      const [year, month, day] = value.split('-').map(Number);
-      const selectedDate = new Date(year, month - 1, day);
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      if (selectedDate < today) {
-        toast.error("Cannot schedule lectures for a past date.\nPlease select today or a future date.");
-        return;
-      }
+      updated[index].date = value;
     } else if (field === "time_slot" && value) {
-      const rowDate = updated[index].date;
-      if (rowDate) {
-        const [year, month, day] = rowDate.split('-').map(Number);
-        const selectedDate = new Date(year, month - 1, day);
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        if (selectedDate.getTime() === today.getTime()) {
-          const startStr = value.includes('-') ? value.split('-')[0].trim() : value.trim();
-          if (startStr && startStr.includes(':')) {
-            const [hours, minutes] = startStr.split(':').map(Number);
-            const lecTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
-            if (lecTime < now) {
-              toast.error("Cannot schedule lectures in the past. Please select a future time.");
-              return;
-            }
-          }
-        }
-      }
+      updated[index].time_slot = value;
     }
 
     if (field === "isSaturdayLecture") {
@@ -968,27 +922,6 @@ export default function LectureSchedule() {
         }
       }
 
-      if (isNewOrChanged) {
-        const [year, month, day] = l.date.split('-').map(Number);
-        const lecDate = new Date(year, month - 1, day);
-
-        if (lecDate < today) {
-          toast.error(`Cannot schedule lectures for a past date (Row ${i + 1}). Please select today or a future date.`);
-          return;
-        }
-
-        if (lecDate.getTime() === today.getTime() && l.time_slot) {
-          const startStr = l.time_slot.includes('-') ? l.time_slot.split('-')[0].trim() : l.time_slot.trim();
-          if (startStr && startStr.includes(':')) {
-            const [hours, minutes] = startStr.split(':').map(Number);
-            const lecTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
-            if (lecTime < now) {
-              toast.error(`Cannot schedule lectures in the past (Row ${i + 1}). Please select a future time.`);
-              return;
-            }
-          }
-        }
-      }
     }
 
     // Block save if there are unresolved conflicts
@@ -2416,17 +2349,6 @@ export default function LectureSchedule() {
                       value={frequency === "custom" ? "" : startDate}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val) {
-                          const [year, month, day] = val.split('-').map(Number);
-                          const selectedDate = new Date(year, month - 1, day);
-                          const now = new Date();
-                          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                          if (selectedDate < today) {
-                            toast.error("Cannot schedule lectures for a past date.\nPlease select today or a future date.");
-                            return;
-                          }
-                        }
-
                         let formatted = val;
                         if (val) {
                           const d = new Date(val);
