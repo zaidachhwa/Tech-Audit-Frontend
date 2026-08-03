@@ -55,6 +55,7 @@ export default function LectureSchedule() {
   const [teacherId, setTeacherId] = useState("");
   const [selectedTeacherIds, setSelectedTeacherIds] = useState([]);
   const [teacherDropdownOpen, setTeacherDropdownOpen] = useState(false);
+  const [singleLecDropdownOpen, setSingleLecDropdownOpen] = useState(false);
   const [numLectures, setNumLectures] = useState("");
   const [startDate, setStartDate] = useState("");
   const [frequency, setFrequency] = useState("once a week");
@@ -163,10 +164,10 @@ export default function LectureSchedule() {
     setVenueModalSelectedVenue("");
     setVenueModalReason("");
     setVenueModalOccupied([]);
-    
+
     // Check availability
     if (!lecture.date || !lecture.time_slot) {
-        return toast.error("Lecture must have a date and time slot to check venue availability.");
+      return toast.error("Lecture must have a date and time slot to check venue availability.");
     }
 
     try {
@@ -186,7 +187,7 @@ export default function LectureSchedule() {
     if (!venueModalSelectedVenue) {
       return toast.error("Please select an available venue.");
     }
-    
+
     // Ensure scheduleId exists
     const schedId = venueModalLecture.scheduleId || (selectedSchedule && selectedSchedule._id);
     if (!schedId) {
@@ -456,7 +457,7 @@ export default function LectureSchedule() {
   };
 
   // Load predefined template lectures into the grid automatically
-  const loadTemplateLectures = (tmpl, overrideStartDate = startDate, overrideFreq = frequency, overrideTeachers = selectedTeacherIds) => {
+  const loadTemplateLectures = (tmpl, overrideStartDate = startDate, overrideFreq = frequency, overrideTeachers = selectedTeacherIds, singleLectureIndex = null) => {
     if (!tmpl) return;
 
     let lastCalculatedDate = overrideStartDate ? new Date(overrideStartDate) : new Date();
@@ -487,9 +488,14 @@ export default function LectureSchedule() {
       }));
     }
 
+    if (singleLectureIndex !== null && rawLectures[singleLectureIndex]) {
+      rawLectures = [rawLectures[singleLectureIndex]];
+    }
+
     const loadedLectures = rawLectures.map((l, i) => {
+      const originalIndex = singleLectureIndex !== null ? singleLectureIndex : i;
       const isSatLec = (typeof l === "object" && l.isSaturdayLecture) || false;
-      const titleStr = typeof l === "object" ? (l.title || l.subject || `Lecture ${i + 1}`) : String(l);
+      const titleStr = typeof l === "object" ? (l.title || l.subject || `Lecture ${originalIndex + 1}`) : String(l);
       const descStr = typeof l === "object" ? (l.description || "") : "";
 
       let nextDate = null;
@@ -555,7 +561,7 @@ export default function LectureSchedule() {
     toast.success(`Loaded ${loadedLectures.length} lectures for "${tmpl.subject || tmpl.name || tmpl.title || "Subject"}"!`);
   };
 
-  const fetchAndLoadSubject = async (subjectId, overrideStartDate = startDate, overrideFreq = frequency) => {
+  const fetchAndLoadSubject = async (subjectId, overrideStartDate = startDate, overrideFreq = frequency, singleLectureIndex = null) => {
     if (!subjectId) {
       toast.error("Please select a subject template first.");
       return;
@@ -602,13 +608,13 @@ export default function LectureSchedule() {
         return;
       }
 
-      loadTemplateLectures(tmpl, overrideStartDate, overrideFreq);
+      loadTemplateLectures(tmpl, overrideStartDate, overrideFreq, selectedTeacherIds, singleLectureIndex);
     } catch (err) {
       toast.error("Failed to fetch subject lectures");
     }
   };
 
-  const handleLoadSubjectTemplate = (e) => {
+  const handleLoadSubjectTemplate = (e, singleLectureIndex = null) => {
     if (e) e.preventDefault();
     if (!selectedTemplateId) return toast.error("Select a Subject first");
 
@@ -623,12 +629,12 @@ export default function LectureSchedule() {
       }
     }
 
-    fetchAndLoadSubject(selectedTemplateId);
+    fetchAndLoadSubject(selectedTemplateId, startDate, frequency, singleLectureIndex);
   };
 
   // Generate blank rows
-  const handleGenerateSchedule = (e) => {
-    e.preventDefault();
+  const handleGenerateSchedule = (e, isSingle = false) => {
+    if (e) e.preventDefault();
     if (!subject.trim()) {
       toast.error("Subject name is required.");
       return;
@@ -641,7 +647,7 @@ export default function LectureSchedule() {
       toast.error("Please select a Teacher.");
       return;
     }
-    if (!numLectures || numLectures <= 0) {
+    if (!isSingle && (!numLectures || numLectures <= 0)) {
       toast.error("Please enter a valid number of lectures.");
       return;
     }
@@ -662,8 +668,9 @@ export default function LectureSchedule() {
     }
 
     const generated = [];
+    const count = isSingle ? 1 : numLectures;
 
-    for (let i = 0; i < numLectures; i++) {
+    for (let i = 0; i < count; i++) {
       let nextDate = null;
       if (frequency !== "custom" && frequency !== "manual") {
         nextDate = getDateForLectureIndex(startDate, i, frequency);
@@ -946,7 +953,7 @@ export default function LectureSchedule() {
     for (let i = 0; i < lectures.length; i++) {
       const l = lectures[i];
       if (!l.date) continue;
-      
+
       let isNewOrChanged = true;
       if (l._id && !String(l._id).startsWith("temp-")) {
         const oldLec = selectedSchedule?.lectures?.find(ol => String(ol._id) === String(l._id));
@@ -1492,7 +1499,7 @@ export default function LectureSchedule() {
     try {
       setSavingNotes(true);
       const res = await API.delete(`/schedules/${selectedSchedule._id}/lectures/${activeNotesLecture._id}/notes/${type}`);
-      
+
       const list = [...lectures];
       list[notesIndex] = {
         ...list[notesIndex],
@@ -1500,14 +1507,14 @@ export default function LectureSchedule() {
         notes_teacher: res.data.lecture?.notes_teacher || { fileName: "", fileUrl: "" }
       };
       setLectures(list);
-      
+
       // Also update the activeNotesLecture so the modal UI updates immediately
       setActiveNotesLecture({
         ...activeNotesLecture,
         notes_shared: res.data.lecture?.notes_shared || { fileName: "", fileUrl: "" },
         notes_teacher: res.data.lecture?.notes_teacher || { fileName: "", fileUrl: "" }
       });
-      
+
       toast.success("Notes deleted successfully!");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete notes.");
@@ -1650,17 +1657,15 @@ export default function LectureSchedule() {
               <div className="flex items-center bg-[#E2E8F0] p-0.5 rounded-lg text-xs font-bold shrink-0">
                 <button
                   onClick={() => setScheduleViewMode("calendar")}
-                  className={`px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-md transition cursor-pointer flex items-center gap-1 lg:gap-1.5 whitespace-nowrap ${
-                    scheduleViewMode === "calendar" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
-                  }`}
+                  className={`px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-md transition cursor-pointer flex items-center gap-1 lg:gap-1.5 whitespace-nowrap ${scheduleViewMode === "calendar" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
+                    }`}
                 >
                   <CalendarDays size={15} /> Calendar View
                 </button>
                 <button
                   onClick={() => setScheduleViewMode("grid")}
-                  className={`px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-md transition cursor-pointer flex items-center gap-1 lg:gap-1.5 whitespace-nowrap ${
-                    scheduleViewMode === "grid" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
-                  }`}
+                  className={`px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-md transition cursor-pointer flex items-center gap-1 lg:gap-1.5 whitespace-nowrap ${scheduleViewMode === "grid" ? "bg-white text-[#2563EB] shadow-xs" : "text-[#64748B]"
+                    }`}
                 >
                   <ListTodo size={15} /> Course Cards
                 </button>
@@ -1923,8 +1928,8 @@ export default function LectureSchedule() {
                                     <button
                                       onClick={() => handleTrackerToggleReview(sub._id)}
                                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm cursor-pointer ${sub.status === "reviewed"
-                                          ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200"
-                                          : "bg-[#10B981] hover:bg-[#059669] text-white border border-[#10B981]"
+                                        ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200"
+                                        : "bg-[#10B981] hover:bg-[#059669] text-white border border-[#10B981]"
                                         }`}
                                     >
                                       {sub.status === "reviewed" ? "Mark Pending" : "Mark Reviewed"}
@@ -2123,7 +2128,7 @@ export default function LectureSchedule() {
                         onClick={() => handleOpenEdit(schedule)}
                         className="w-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#1B2B4B] py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
                       >
-                        {schedule.isFromSyllabusTracker 
+                        {schedule.isFromSyllabusTracker
                           ? (role === "student" ? "View Lectures" : "View Syllabus Tracker Lectures")
                           : (role === "student" ? "View Lectures" : "View / Edit Schedule")} <ChevronRight size={13} />
                       </button>
@@ -2322,18 +2327,18 @@ export default function LectureSchedule() {
                   {/* Batch Select */}
                   <div className="min-w-0 w-full relative" onMouseLeave={() => setBatchDropdownOpen(false)}>
                     <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Assign Batch *</label>
-                    <div 
+                    <div
                       className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs text-[#1B2B4B] font-medium cursor-pointer flex justify-between items-center"
                       onClick={() => setBatchDropdownOpen(!batchDropdownOpen)}
                     >
                       <span className="truncate">
-                        {selectedBatchIds.length === 0 
-                          ? "-- Select Batch --" 
-                          : selectedBatchIds.length === 1 
+                        {selectedBatchIds.length === 0
+                          ? "-- Select Batch --"
+                          : selectedBatchIds.length === 1
                             ? (() => {
-                                const b = batches.find(b => String(b._id) === String(selectedBatchIds[0]));
-                                return b ? `${b.batch_name} #${b.batch_no}` : "-- Select Batch --";
-                              })()
+                              const b = batches.find(b => String(b._id) === String(selectedBatchIds[0]));
+                              return b ? `${b.batch_name} #${b.batch_no}` : "-- Select Batch --";
+                            })()
                             : `${selectedBatchIds.length} batches selected`}
                       </span>
                       <ChevronDown size={14} className="text-[#64748B]" />
@@ -2355,7 +2360,7 @@ export default function LectureSchedule() {
                                   newSelected = selectedBatchIds.filter(id => id !== b._id);
                                 }
                                 setSelectedBatchIds(newSelected);
-                                
+
                                 if (checked && newSelected.length === 1 && subject) {
                                   const existing = schedules.find(s => {
                                     const matchSubj = (s.subject || "").trim().toLowerCase() === subject.trim().toLowerCase();
@@ -2461,14 +2466,44 @@ export default function LectureSchedule() {
 
                 <div className="flex justify-between items-center pt-2">
                   {selectedTemplateId ? (
-                    <div className="flex-1 pr-4">
+                    <div className="flex gap-4 w-full">
                       <button
                         type="button"
                         onClick={handleLoadSubjectTemplate}
-                        className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer w-full justify-center"
+                        className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer justify-center"
                       >
                         Reload Predefined Subject Lectures
                       </button>
+                      <div className="flex-1 relative">
+                        <button
+                          type="button"
+                          onClick={() => setSingleLecDropdownOpen(!singleLecDropdownOpen)}
+                          className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer justify-center"
+                        >
+                          Limit Lectures ▾
+                        </button>
+                        {singleLecDropdownOpen && (
+                          <div className="absolute top-full mt-1 left-0 w-full bg-white border border-[#E2E8F0] shadow-lg rounded-lg z-50 overflow-hidden">
+                            {[1, 2, 3, 4, 5].map((num) => (
+                                <div
+                                  key={num}
+                                  className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs text-[#1B2B4B] border-b border-[#F1F5F9] last:border-0 text-center font-bold"
+                                  onClick={() => {
+                                    if (lectures.length === 0) {
+                                      toast.info("Please load lectures first by clicking the Reload button.");
+                                    } else {
+                                      setLectures(prev => prev.slice(0, num));
+                                      toast.success(`Kept ${num} lecture${num > 1 ? 's' : ''}.`);
+                                    }
+                                    setSingleLecDropdownOpen(false);
+                                  }}
+                                >
+                                  Keep {num} Lecture{num > 1 ? 's' : ''}
+                                </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -2488,12 +2523,21 @@ export default function LectureSchedule() {
                   )}
 
                   {!selectedTemplateId && (
-                    <button
-                      type="submit"
-                      className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      Generate Schedule Rows
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        Generate Schedule Rows
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleGenerateSchedule(e, true)}
+                        className="bg-[#3B82F6] hover:bg-[#2563EB] text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        Schedule One Lecture
+                      </button>
+                    </div>
                   )}
                 </div>
               </form>
@@ -2588,26 +2632,25 @@ export default function LectureSchedule() {
                       const hasConflict = rowConflicts.length > 0;
                       const conflictTip = hasConflict
                         ? rowConflicts.map(c =>
-                            c.type === "venue"
-                              ? "This venue is already assigned during the selected time. Please choose another available venue."
-                              : `${c.type === "batch" ? "ðŸ”´ Batch" : "ðŸŸ  Teacher"} conflict: "${c.conflictWith.subject}" (${c.conflictWith.batchName} #${c.conflictWith.batchNo}) at ${c.conflictWith.existingTimeSlot}`
-                          ).join("\n")
+                          c.type === "venue"
+                            ? "This venue is already assigned during the selected time. Please choose another available venue."
+                            : `${c.type === "batch" ? "ðŸ”´ Batch" : "ðŸŸ  Teacher"} conflict: "${c.conflictWith.subject}" (${c.conflictWith.batchName} #${c.conflictWith.batchNo}) at ${c.conflictWith.existingTimeSlot}`
+                        ).join("\n")
                         : "";
 
                       return (
                         <tr
                           key={lecture._id || index}
-                          className={`hover:bg-[#F8FAFC]/50 transition-colors ${
-                            hasConflict ? "bg-red-50 border-l-4 border-l-red-500" : ""
-                          }`}
+                          className={`hover:bg-[#F8FAFC]/50 transition-colors ${hasConflict ? "bg-red-50 border-l-4 border-l-red-500" : ""
+                            }`}
                           title={conflictTip}
                         >
 
                           {/* # Index Badge */}
                           <td className="px-5 py-3.5 text-center">
                             <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-colors ${isDone
-                                ? "bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0]"
-                                : "bg-[#F1F5F9] text-[#475569]"
+                              ? "bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0]"
+                              : "bg-[#F1F5F9] text-[#475569]"
                               }`}>
                               {index + 1}
                             </span>
@@ -2663,7 +2706,7 @@ export default function LectureSchedule() {
                                   onChange={(e) => {
                                     handleCellChange(index, "date", e.target.value);
                                     // Clear conflict for this row when date changes
-                                    setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                    setLectureConflicts(prev => { const n = { ...prev }; delete n[index]; return n; });
                                   }}
                                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg text-xs font-medium focus:outline-none focus:border-[#2563EB] shadow-sm bg-white"
                                 />
@@ -2702,7 +2745,7 @@ export default function LectureSchedule() {
                                         : "";
                                       const newSlot = endVal ? `${startVal}-${endVal}` : startVal;
                                       handleCellChange(index, "time_slot", newSlot);
-                                      setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                      setLectureConflicts(prev => { const n = { ...prev }; delete n[index]; return n; });
                                     }}
                                     className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded text-xs focus:outline-none focus:border-[#2563EB] bg-white cursor-pointer"
                                     placeholder="Start"
@@ -2718,7 +2761,7 @@ export default function LectureSchedule() {
                                         : "";
                                       const newSlot = startVal ? `${startVal}-${endVal}` : endVal;
                                       handleCellChange(index, "time_slot", newSlot);
-                                      setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                      setLectureConflicts(prev => { const n = { ...prev }; delete n[index]; return n; });
                                     }}
                                     className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded text-xs focus:outline-none focus:border-[#2563EB] bg-white cursor-pointer"
                                     placeholder="End"
@@ -2746,7 +2789,7 @@ export default function LectureSchedule() {
                                   value={lecture.venue || ""}
                                   onChange={(e) => {
                                     handleCellChange(index, "venue", e.target.value);
-                                    setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                    setLectureConflicts(prev => { const n = { ...prev }; delete n[index]; return n; });
                                   }}
                                   className="w-full px-2.5 py-1.5 border border-[#E2E8F0] rounded-lg text-xs font-semibold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer bg-white"
                                 >
@@ -2770,7 +2813,7 @@ export default function LectureSchedule() {
                                           key={av}
                                           onClick={() => {
                                             handleCellChange(index, "venue", av);
-                                            setLectureConflicts(prev => { const n = {...prev}; delete n[index]; return n; });
+                                            setLectureConflicts(prev => { const n = { ...prev }; delete n[index]; return n; });
                                           }}
                                           className="text-left px-1.5 py-0.5 bg-green-50 text-green-700 hover:bg-green-100 rounded text-[9px] font-bold border border-green-200 transition-colors"
                                         >
@@ -2861,11 +2904,10 @@ export default function LectureSchedule() {
                                 <button
                                   onClick={() => openNotesModal(lecture, index)}
                                   disabled={!(Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl)}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                    (Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl)
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${(Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl)
                                       ? "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7] cursor-pointer"
                                       : "bg-[#F8FAFC] text-[#94A3B8] border border-[#E2E8F0] cursor-not-allowed opacity-60"
-                                  }`}
+                                    }`}
                                 >
                                   <FileText size={13} />
                                   {(Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl) ? "View Notes" : "No Notes"}
@@ -2879,8 +2921,8 @@ export default function LectureSchedule() {
                               <button
                                 onClick={() => openNotesModal(lecture, index)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${(Array.isArray(lecture.notes_shared) ? lecture.notes_shared.length > 0 : lecture.notes_shared?.fileUrl) || (Array.isArray(lecture.notes_teacher) ? lecture.notes_teacher.length > 0 : lecture.notes_teacher?.fileUrl)
-                                    ? "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7]"
-                                    : "bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
+                                  ? "bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] hover:bg-[#DCFCE7]"
+                                  : "bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
                                   }`}
                               >
                                 <FileText size={13} />
@@ -2889,14 +2931,14 @@ export default function LectureSchedule() {
                             )}
                           </td>
 
-                           {/* Homework Action Column */}
+                          {/* Homework Action Column */}
                           <td className="px-4 py-3.5 min-w-[120px]">
                             {role === "student" ? (
                               <button
                                 onClick={() => openHomeworkModal(lecture, index)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${hasHW
-                                    ? "bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE] hover:bg-[#E0E7FF]"
-                                    : "bg-[#F8FAFC] text-[#94A3B8] border border-[#E2E8F0] cursor-not-allowed opacity-60"
+                                  ? "bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE] hover:bg-[#E0E7FF]"
+                                  : "bg-[#F8FAFC] text-[#94A3B8] border border-[#E2E8F0] cursor-not-allowed opacity-60"
                                   }`}
                                 disabled={!hasHW}
                               >
@@ -2907,8 +2949,8 @@ export default function LectureSchedule() {
                               <button
                                 onClick={() => openHomeworkModal(lecture, index)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${hasHW
-                                    ? "bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE] hover:bg-[#E0E7FF]"
-                                    : "bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
+                                  ? "bg-[#EEF2FF] text-[#4F46E5] border border-[#C7D2FE] hover:bg-[#E0E7FF]"
+                                  : "bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
                                   }`}
                               >
                                 <BookOpen size={13} />
@@ -2927,10 +2969,10 @@ export default function LectureSchedule() {
                                 value={lecture.status}
                                 onChange={(e) => handleCellChange(index, "status", e.target.value)}
                                 className={`w-full px-3 py-1.5 border rounded-lg text-xs font-semibold shadow-sm focus:outline-none focus:border-[#2563EB] cursor-pointer ${lecture.status === "Done"
-                                    ? "bg-[#ECFDF5] border-[#A7F3D0] text-[#047857]"
-                                    : lecture.status === "Scheduled"
-                                      ? "bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
-                                      : "bg-white border-[#E2E8F0] text-[#475569]"
+                                  ? "bg-[#ECFDF5] border-[#A7F3D0] text-[#047857]"
+                                  : lecture.status === "Scheduled"
+                                    ? "bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
+                                    : "bg-white border-[#E2E8F0] text-[#475569]"
                                   }`}
                               >
                                 <option value="Planned">Planned</option>
@@ -2939,10 +2981,10 @@ export default function LectureSchedule() {
                               </select>
                             ) : (
                               <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${lecture.status === "Done"
-                                  ? "bg-[#D1FAE5] border-[#A7F3D0] text-[#065F46]"
-                                  : lecture.status === "Scheduled"
-                                    ? "bg-[#DBEAFE] border-[#BFDBFE] text-[#1E40AF]"
-                                    : "bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]"
+                                ? "bg-[#D1FAE5] border-[#A7F3D0] text-[#065F46]"
+                                : lecture.status === "Scheduled"
+                                  ? "bg-[#DBEAFE] border-[#BFDBFE] text-[#1E40AF]"
+                                  : "bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]"
                                 }`}>
                                 {lecture.status}
                               </span>
@@ -3109,7 +3151,7 @@ export default function LectureSchedule() {
                         <div className="mt-2 space-y-1">
                           {notesSharedFiles.map((f, i) => (
                             <div key={i} className="flex justify-between items-center text-[10px] bg-white border border-[#E2E8F0] p-1.5 rounded">
-                              <span className="truncate">{f.name} ({(f.size/1024/1024).toFixed(2)}MB)</span>
+                              <span className="truncate">{f.name} ({(f.size / 1024 / 1024).toFixed(2)}MB)</span>
                               <button onClick={() => setNotesSharedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500 hover:text-red-700">X</button>
                             </div>
                           ))}
@@ -3156,7 +3198,7 @@ export default function LectureSchedule() {
                         <div className="mt-2 space-y-1">
                           {notesTeacherFiles.map((f, i) => (
                             <div key={i} className="flex justify-between items-center text-[10px] bg-white border border-[#E2E8F0] p-1.5 rounded">
-                              <span className="truncate">{f.name} ({(f.size/1024/1024).toFixed(2)}MB)</span>
+                              <span className="truncate">{f.name} ({(f.size / 1024 / 1024).toFixed(2)}MB)</span>
                               <button onClick={() => setNotesTeacherFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500 hover:text-red-700">X</button>
                             </div>
                           ))}
@@ -3441,11 +3483,10 @@ export default function LectureSchedule() {
                                 </strong>
                                 <span className="text-[10px] text-[#64748B]">{sub.student?.email || ""}</span>
                               </div>
-                              <span className={`inline-flex px-2.5 py-1 rounded-full text-[9px] font-bold border uppercase tracking-wider shrink-0 ${
-                                sub.status === "reviewed"
+                              <span className={`inline-flex px-2.5 py-1 rounded-full text-[9px] font-bold border uppercase tracking-wider shrink-0 ${sub.status === "reviewed"
                                   ? "bg-[#D1FAE5] border-[#A7F3D0] text-[#065F46]"
                                   : "bg-[#FFF7ED] border-[#FED7AA] text-[#C2410C]"
-                              }`}>
+                                }`}>
                                 {sub.status}
                               </span>
                             </div>
@@ -3473,11 +3514,10 @@ export default function LectureSchedule() {
                                 </button>
                                 <button
                                   onClick={() => handleToggleReview(sub._id)}
-                                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-all cursor-pointer ${
-                                    sub.status === "reviewed"
+                                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-all cursor-pointer ${sub.status === "reviewed"
                                       ? "bg-white border border-[#CBD5E1] text-[#475569] hover:bg-[#F8FAFC]"
                                       : "bg-[#10B981] hover:bg-[#059669] text-white"
-                                  }`}
+                                    }`}
                                 >
                                   {sub.status === "reviewed" ? "Re-open" : "Mark Reviewed"}
                                 </button>
@@ -3729,20 +3769,20 @@ export default function LectureSchedule() {
             <div className="flex-1 bg-[#F8FAFC] overflow-auto p-6 flex items-center justify-center min-h-0">
               {(() => {
                 const lowerName = previewFileName.toLowerCase();
-                const isImage = 
-                  lowerName.endsWith(".png") || 
-                  lowerName.endsWith(".jpg") || 
-                  lowerName.endsWith(".jpeg") || 
-                  lowerName.endsWith(".gif") || 
-                  lowerName.endsWith(".webp") || 
+                const isImage =
+                  lowerName.endsWith(".png") ||
+                  lowerName.endsWith(".jpg") ||
+                  lowerName.endsWith(".jpeg") ||
+                  lowerName.endsWith(".gif") ||
+                  lowerName.endsWith(".webp") ||
                   lowerName.endsWith(".svg") ||
                   previewFileUrl.startsWith("data:image/");
-                  
-                const isPdf = 
+
+                const isPdf =
                   lowerName.endsWith(".pdf") ||
                   previewFileUrl.startsWith("data:application/pdf");
-                  
-                const isText = 
+
+                const isText =
                   lowerName.endsWith(".txt") ||
                   lowerName.endsWith(".json") ||
                   lowerName.endsWith(".js") ||
@@ -3752,19 +3792,19 @@ export default function LectureSchedule() {
 
                 if (isImage) {
                   return (
-                    <img 
-                      src={previewFileUrl} 
-                      alt={previewFileName} 
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-sm border border-[#E2E8F0] bg-white" 
+                    <img
+                      src={previewFileUrl}
+                      alt={previewFileName}
+                      className="max-w-full max-h-full object-contain rounded-lg shadow-sm border border-[#E2E8F0] bg-white"
                     />
                   );
                 }
 
                 if (isPdf) {
                   return (
-                    <iframe 
-                      src={previewFileUrl} 
-                      title={previewFileName} 
+                    <iframe
+                      src={previewFileUrl}
+                      title={previewFileName}
                       className="w-full h-full border border-[#E2E8F0] rounded-lg bg-white"
                     />
                   );
@@ -3783,7 +3823,7 @@ export default function LectureSchedule() {
                   } else {
                     textContent = previewFileUrl;
                   }
-                  
+
                   return (
                     <pre className="w-full h-full p-4 bg-white border border-[#E2E8F0] rounded-lg overflow-auto text-xs text-[#334155] font-mono leading-relaxed whitespace-pre-wrap text-left">
                       {textContent}
@@ -3845,7 +3885,7 @@ export default function LectureSchedule() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-4 overflow-y-auto space-y-4">
               {/* Read Only Info */}
               <div className="bg-[#F8FAFC] rounded-lg p-3 text-xs text-[#475569] space-y-1.5 border border-[#E2E8F0]">
@@ -3866,29 +3906,27 @@ export default function LectureSchedule() {
                     const occupiedData = venueModalOccupied.find(occ => occ.venue === v);
                     const isOccupied = !!occupiedData;
                     const isCurrent = v === venueModalLecture.venue;
-                    
+
                     return (
                       <div
                         key={v}
                         onClick={() => !isOccupied && !isCurrent && setVenueModalSelectedVenue(v)}
-                        className={`p-3 rounded-lg border ${
-                          isCurrent ? "bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed" :
-                          isOccupied ? "bg-red-50 border-red-200 opacity-60 cursor-not-allowed" :
-                          venueModalSelectedVenue === v ? "bg-amber-50 border-amber-500 ring-1 ring-amber-500 cursor-pointer" :
-                          "bg-white border-[#E2E8F0] hover:border-amber-300 cursor-pointer"
-                        } transition-all`}
+                        className={`p-3 rounded-lg border ${isCurrent ? "bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed" :
+                            isOccupied ? "bg-red-50 border-red-200 opacity-60 cursor-not-allowed" :
+                              venueModalSelectedVenue === v ? "bg-amber-50 border-amber-500 ring-1 ring-amber-500 cursor-pointer" :
+                                "bg-white border-[#E2E8F0] hover:border-amber-300 cursor-pointer"
+                          } transition-all`}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-2">
                             {isCurrent ? <MapPin size={16} className="text-gray-400" /> :
-                             isOccupied ? <AlertCircle size={16} className="text-red-500" /> :
-                             <CheckCircle size={16} className="text-emerald-500" />}
+                              isOccupied ? <AlertCircle size={16} className="text-red-500" /> :
+                                <CheckCircle size={16} className="text-emerald-500" />}
                             <span className={`font-bold text-sm ${isOccupied ? 'text-red-700' : isCurrent ? 'text-gray-500' : 'text-[#1E293B]'}`}>{v}</span>
                           </div>
                           {!isCurrent && (
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              isOccupied ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"
-                            }`}>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isOccupied ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"
+                              }`}>
                               {isOccupied ? "Already booked" : "Available"}
                             </span>
                           )}
@@ -3945,11 +3983,11 @@ export default function LectureSchedule() {
         </div>
       )}
 
-      <TeacherConflictModal 
-        isOpen={showTeacherConflictModal} 
-        onClose={() => setShowTeacherConflictModal(false)} 
-        conflictDetails={teacherConflictDetails} 
-        message={teacherConflictMessage} 
+      <TeacherConflictModal
+        isOpen={showTeacherConflictModal}
+        onClose={() => setShowTeacherConflictModal(false)}
+        conflictDetails={teacherConflictDetails}
+        message={teacherConflictMessage}
       />
     </div>
   );
