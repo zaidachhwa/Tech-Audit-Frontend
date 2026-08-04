@@ -156,8 +156,11 @@ export default function AdminDashboard() {
 
   const fetchPendingSubjects = async () => {
     try {
-      const res = await API.get("/subjects");
-      const pending = (res.data || []).filter(t => t.status === "pending");
+      const res = await API.get("/subjects?type=scheduling");
+      // getSubjectTemplates returns a plain array; normalize defensively
+      const data = res.data;
+      const list = Array.isArray(data) ? data : (data?.subjects || data?.syllabi || []);
+      const pending = list.filter(t => t.status === "pending");
       setPendingSubjects(pending);
     } catch (err) {
       console.error("Failed to load pending subjects", err);

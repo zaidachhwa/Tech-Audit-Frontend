@@ -549,7 +549,8 @@ export default function CalendarView({
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {(role === "admin" || (role === "teacher" && String(userId) === String(activeLectureModal.teacherId))) && (
+                {(role === "admin" || (role === "teacher" && String(userId) === String(activeLectureModal.teacherId))) &&
+                  !String(activeLectureModal.scheduleId || "").startsWith("batch_syllabus_") && (
                   <button
                     onClick={() => setDeleteConfirmLecture(activeLectureModal)}
                     className="p-1 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition cursor-pointer"
