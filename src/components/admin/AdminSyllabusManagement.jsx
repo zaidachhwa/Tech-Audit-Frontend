@@ -377,6 +377,20 @@ export default function AdminSyllabusManagement() {
     }
   };
 
+  const handleMarkTopicComplete = async (topic) => {
+    try {
+      await API.put(`/syllabus/topic/${topic._id}`, {
+        ...topic,
+        completionStatus: "Completed"
+      });
+      toast.success("Topic marked as completed!");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Failed to mark topic as complete");
+    }
+  };
+
   const handleDeleteSyllabus = async (syllabusId) => {
     if (!window.confirm("Are you sure you want to delete this syllabus? This action cannot be undone.")) return;
 
@@ -596,7 +610,22 @@ export default function AdminSyllabusManagement() {
         </div>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3 flex-wrap">
-            <StatusBadge status={topic.completionStatus} />
+            <div className="flex items-center gap-2">
+              <StatusBadge status={topic.completionStatus} />
+              {topic.completionStatus !== "Completed" && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMarkTopicComplete(topic);
+                  }}
+                  className="text-[10px] px-2 py-1 rounded font-bold bg-[#ECFDF5] text-[#065F46] border border-[#D1FAE5] hover:bg-[#D1FAE5] transition flex items-center gap-1 shadow-sm"
+                  title="Mark as Complete"
+                >
+                  <CheckCircle2 size={12} />
+                  Mark Complete
+                </button>
+              )}
+            </div>
             
             <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
               <span className="text-[10px] font-bold uppercase">{topic.lectureType || "Normal"}</span>
