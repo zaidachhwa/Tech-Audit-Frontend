@@ -8,7 +8,7 @@ const S = {
   pageSubtitle: { fontSize: 13, color: "#64748B", marginBottom: 20 },
   card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
   sectionHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: "0.5px solid #E2E8F0" },
-  sectionHeaderRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 12, borderBottom: "0.5px solid #E2E8F0" },
+  sectionHeaderRow: { display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 12, borderBottom: "0.5px solid #E2E8F0" },
   dot: { width: 8, height: 8, borderRadius: "50%", background: "#2563EB", flexShrink: 0 },
   sectionTitle: { fontSize: 13, fontWeight: 500, color: "#1B2B4B" },
   label: { fontSize: 11, fontWeight: 600, color: "#64748B", marginBottom: 5, display: "block", textTransform: "uppercase", letterSpacing: "0.06em" },
@@ -22,7 +22,7 @@ const S = {
   statCard: { background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: 15, display: "flex", flexDirection: "column", gap: 5 },
   statValue: { fontSize: 24, fontWeight: 700, color: "#0F172A" },
   statLabel: { fontSize: 11, color: "#64748B", textTransform: "uppercase" },
-  historyRow: { padding: "10px 0", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center" }
+  historyRow: { padding: "10px 0", borderBottom: "1px solid #E2E8F0", display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "space-between", alignItems: "center" }
 };
 
 export default function PerformanceReportShared() {
