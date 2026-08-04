@@ -233,7 +233,7 @@ export default function AdminStudents() {
     } catch {}
   };
 
-  const handleEditClick = (student) => {
+  const handleEditClick = async (student) => {
     setEditStudent(student);
     setForm({
       name: student.name,
@@ -249,6 +249,28 @@ export default function AdminStudents() {
       motherEmail: student.motherEmail || "",
     });
     setShowEdit(true);
+
+    try {
+      const res = await API.get(`/students/${student._id}`);
+      const fullStudent = res.data?.student || res.data;
+      if (fullStudent) {
+        setForm((prev) => ({
+          ...prev,
+          name: fullStudent.name || prev.name,
+          email: fullStudent.email || prev.email,
+          batch_name: fullStudent.batch_name || prev.batch_name,
+          batch_no: fullStudent.batch_no || prev.batch_no,
+          fatherName: fullStudent.fatherName || "",
+          fatherPhone: fullStudent.fatherPhone || "",
+          fatherEmail: fullStudent.fatherEmail || "",
+          motherName: fullStudent.motherName || "",
+          motherPhone: fullStudent.motherPhone || "",
+          motherEmail: fullStudent.motherEmail || "",
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch full student details", err);
+    }
   };
 
   const handleDelete = async () => {
@@ -283,8 +305,8 @@ export default function AdminStudents() {
     e.preventDefault();
     if (!editStudent) return;
     try {
-      const updateData = { name: form.name, batch_name: form.batch_name, batch_no: form.batch_no };
-      if (form.password) updateData.password = form.password;
+      const updateData = { ...form };
+      if (!updateData.password) delete updateData.password;
       
       await API.patch(`/students/update/${editStudent._id}`, updateData);
       toast.success("Student updated successfully");
@@ -443,8 +465,8 @@ export default function AdminStudents() {
 
                   <td className="px-6 py-4 text-[#64748B] text-[12px]">
                     <div className="flex flex-col gap-0.5">
-                      {s.fatherName && <span className="truncate max-w-[150px]">F: {s.fatherName}</span>}
-                      {s.motherName && <span className="truncate max-w-[150px]">M: {s.motherName}</span>}
+                      {s.fatherName && <span className="truncate max-w-[150px]">Father: {s.fatherName}</span>}
+                      {s.motherName && <span className="truncate max-w-[150px]">Mother: {s.motherName}</span>}
                       {!s.fatherName && !s.motherName && <span className="italic text-slate-400">Not Provided</span>}
                     </div>
                   </td>
@@ -541,8 +563,8 @@ export default function AdminStudents() {
                 <div className="flex justify-between items-start border-t border-slate-50 pt-1.5 mt-1.5">
                   <span className="text-slate-400 font-medium">Parents:</span>
                   <div className="flex flex-col items-end text-[11px] font-semibold text-slate-700">
-                    {s.fatherName && <span className="truncate max-w-[150px]">F: {s.fatherName}</span>}
-                    {s.motherName && <span className="truncate max-w-[150px]">M: {s.motherName}</span>}
+                    {s.fatherName && <span className="truncate max-w-[150px]">Father: {s.fatherName}</span>}
+                    {s.motherName && <span className="truncate max-w-[150px]">Mother: {s.motherName}</span>}
                     {!s.fatherName && !s.motherName && <span className="italic text-slate-400">Not Provided</span>}
                   </div>
                 </div>
