@@ -39,6 +39,7 @@ export default function AdminStudentAttendance() {
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   // Edit modal
   const [editRecord, setEditRecord] = useState(null);
@@ -106,14 +107,68 @@ export default function AdminStudentAttendance() {
     }
   };
 
-  // Client-side search filter
+  const handleApproveLate = async (id) => {
+    try {
+      const res = await API.put(`/attendance/student/approve-late/${id}`);
+      toast.success(res.data.message || "Late attendance approved!");
+      // Update locally
+      setRecords(records.map(r => r._id === id ? res.data.record : r));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to approve late attendance");
+    }
+  };
+
+  const handleRejectLate = async (id) => {
+    try {
+      const res = await API.put(`/attendance/student/reject-late/${id}`);
+      toast.success(res.data.message || "Late attendance rejected!");
+      // Update locally
+      setRecords(records.map(r => r._id === id ? res.data.record : r));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to reject late attendance");
+    }
+  };
+
+  const getDerivedStatus = (r) => {
+    let derivedStatus = "Absent";
+    let derivedAppStatus = r.lateApprovalStatus || "None";
+
+    if (r.attendanceStatus === "Late") {
+      derivedStatus = "Late";
+    } else if (r.attendanceStatus === "Present") {
+      derivedStatus = "Present";
+    } else if (r.status !== "NOT_PUNCHED" && r.punchInTime) {
+      // Retroactive check for old records
+      const pin = new Date(r.punchInTime);
+      const istTimeStr = pin.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit' });
+      if (istTimeStr > "09:10") {
+        derivedStatus = "Late";
+        derivedAppStatus = "Pending";
+      } else {
+        derivedStatus = "Present";
+      }
+    }
+
+    return { derivedStatus, derivedAppStatus };
+  };
+
+  // Client-side search & status filter
   const filtered = records.filter((r) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    const name = (r.student?.name || "").toLowerCase();
-    const email = (r.student?.email || "").toLowerCase();
-    const roll = (r.student?.rollNo || "").toLowerCase();
-    return name.includes(q) || email.includes(q) || roll.includes(q);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const name = (r.student?.name || "").toLowerCase();
+      const email = (r.student?.email || "").toLowerCase();
+      const roll = (r.student?.rollNo || "").toLowerCase();
+      if (!name.includes(q) && !email.includes(q) && !roll.includes(q)) return false;
+    }
+    
+    const { derivedStatus } = getDerivedStatus(r);
+
+    if (statusFilter === "P" && derivedStatus !== "Present") return false;
+    if (statusFilter === "L" && derivedStatus !== "Late") return false;
+    if (statusFilter === "A" && derivedStatus !== "Absent") return false;
+
+    return true;
   });
 
   // Quick filter helpers
@@ -243,6 +298,27 @@ export default function AdminStudentAttendance() {
           fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer"
         }}>Clear</button>
 
+        <div style={{ display: "flex", gap: 4, background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
+          {["ALL", "P", "L", "A"].map(filter => (
+            <button
+              key={filter}
+              onClick={() => setStatusFilter(filter)}
+              style={{
+                padding: "4px 10px",
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+                border: "none",
+                background: statusFilter === filter ? "#0F3C8A" : "transparent",
+                color: statusFilter === filter ? "#fff" : "#475569",
+              }}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
         <div style={{ marginLeft: "auto", position: "relative" }}>
           <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
           <input
@@ -304,9 +380,12 @@ export default function AdminStudentAttendance() {
                   const isExpanded = expandedRow === idx;
                   const hasLectures = rec.lectureAttendance?.length > 0;
                   const hasEdits = rec.editHistory?.length > 0;
+                  
+                  const { derivedStatus, derivedAppStatus } = getDerivedStatus(rec);
+
                   return (
                     <Fragment key={rec._id || idx}>
-                      <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <tr style={{ borderBottom: "1px solid #f1f5f9", background: derivedStatus === "Late" && derivedAppStatus === "Pending" ? "rgba(254,226,226,0.5)" : "transparent" }}>
                         <td style={{ padding: "10px 12px" }}>
                           <div style={{ fontWeight: 700, color: "#1e293b", fontSize: 12 }}>{rec.student?.name || "Unknown"}</div>
                           <div style={{ fontSize: 10, color: "#94a3b8" }}>{rec.student?.rollNo || rec.student?.email || ""}</div>
@@ -321,10 +400,10 @@ export default function AdminStudentAttendance() {
                         <td style={{ padding: "10px 12px" }}>
                           <span style={{
                             padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 700, textTransform: "uppercase",
-                            background: rec.status === "PUNCHED_OUT" ? "rgba(34,197,94,0.1)" : rec.status === "PUNCHED_IN" ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)",
-                            color: rec.status === "PUNCHED_OUT" ? "#059669" : rec.status === "PUNCHED_IN" ? "#d97706" : "#dc2626",
+                            background: derivedStatus === "Late" ? "rgba(239,68,68,0.1)" : derivedStatus === "Present" ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)",
+                            color: derivedStatus === "Late" ? "#dc2626" : derivedStatus === "Present" ? "#059669" : "#d97706",
                           }}>
-                            {rec.status === "PUNCHED_OUT" ? "Complete" : rec.status === "PUNCHED_IN" ? "Active" : "Missing"}
+                            {derivedStatus === "Late" ? "LATE" : derivedStatus === "Present" ? "PRESENT" : "ABSENT"}
                           </span>
                           {hasEdits && (
                             <span title="Edited by admin" style={{ marginLeft: 6, display: "inline-flex" }}>
@@ -334,13 +413,35 @@ export default function AdminStudentAttendance() {
                         </td>
 
                         <td style={{ padding: "10px 12px" }}>
-                          <button onClick={() => openEdit(rec)} style={{
-                            display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
-                            border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer",
-                            fontSize: 11, fontWeight: 700, color: "#475569"
-                          }}>
-                            <Edit3 size={12} /> Edit
-                          </button>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {rec.status !== "NOT_PUNCHED" && (
+                              <button onClick={() => openEdit(rec)} style={{
+                                display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
+                                border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer",
+                                fontSize: 11, fontWeight: 700, color: "#475569"
+                              }}>
+                                <Edit3 size={12} /> Edit
+                              </button>
+                            )}
+                            {derivedStatus === "Late" && derivedAppStatus === "Pending" && (
+                              <>
+                                <button onClick={() => handleApproveLate(rec._id)} style={{
+                                  display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
+                                  border: "1px solid #bbf7d0", background: "#f0fdf4", cursor: "pointer",
+                                  fontSize: 11, fontWeight: 700, color: "#166534"
+                                }}>
+                                  <CheckCircle2 size={12} /> Approve
+                                </button>
+                                <button onClick={() => handleRejectLate(rec._id)} style={{
+                                  display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
+                                  border: "1px solid #fecaca", background: "#fef2f2", cursor: "pointer",
+                                  fontSize: 11, fontWeight: 700, color: "#991b1b"
+                                }}>
+                                  <XCircle size={12} /> Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                         <td style={{ padding: "10px 12px" }}>
                           {hasLectures && (

@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, Fragment } from "react";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
 import {
-  Search, Filter, ChevronDown, ChevronUp, CheckCircle2, XCircle,
-  RefreshCw, Clock, Calendar, Download
+  Fingerprint, Search, Filter, ChevronDown, ChevronUp, CheckCircle2, XCircle,
+  RefreshCw, Edit3, X, Clock, Calendar, Users, LogIn, LogOut, Save, AlertTriangle, Download, Camera
 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -21,6 +21,12 @@ function calcHours(pi, po) {
   const d = new Date(po) - new Date(pi);
   return `${Math.floor(d / 3600000)}h ${Math.floor((d % 3600000) / 60000)}m`;
 }
+function toInputDT(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function TeacherStudentAttendance() {
   const [records, setRecords] = useState([]);
@@ -33,10 +39,21 @@ export default function TeacherStudentAttendance() {
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  // Edit modal
+  const [editRecord, setEditRecord] = useState(null);
+  const [editPunchIn, setEditPunchIn] = useState("");
+  const [editPunchOut, setEditPunchOut] = useState("");
+  const [editReason, setEditReason] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Image Modal
+  // Image modal state removed
 
   const fetchBatches = async () => {
     try {
-      const res = await API.get("/batches"); // Teachers should only see their assigned batches ideally, but API logic is handled in backend or we fetch what's available
+      const res = await API.get("/batches");
       setBatches(res.data.batches || res.data || []);
     } catch (err) {
       console.error(err);
@@ -62,14 +79,96 @@ export default function TeacherStudentAttendance() {
   useEffect(() => { fetchBatches(); }, []);
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
-  // Client-side search filter
+  const openEdit = (rec) => {
+    setEditRecord(rec);
+    setEditPunchIn(toInputDT(rec.punchInTime));
+    setEditPunchOut(toInputDT(rec.punchOutTime));
+    setEditReason("");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editReason.trim()) {
+      toast.error("Please provide a reason for the edit.");
+      return;
+    }
+    try {
+      setSaving(true);
+      const body = { reason: editReason.trim() };
+      if (editPunchIn) body.punchInTime = new Date(editPunchIn).toISOString();
+      if (editPunchOut) body.punchOutTime = new Date(editPunchOut).toISOString();
+      const res = await API.patch(`/attendance/student/${editRecord._id}/edit`, body);
+      toast.success(res.data.message || "Updated successfully");
+      setEditRecord(null);
+      fetchRecords();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApproveLate = async (id) => {
+    try {
+      const res = await API.put(`/attendance/student/approve-late/${id}`);
+      toast.success(res.data.message || "Late attendance approved!");
+      // Update locally
+      setRecords(records.map(r => r._id === id ? res.data.record : r));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to approve late attendance");
+    }
+  };
+
+  const handleRejectLate = async (id) => {
+    try {
+      const res = await API.put(`/attendance/student/reject-late/${id}`);
+      toast.success(res.data.message || "Late attendance rejected!");
+      // Update locally
+      setRecords(records.map(r => r._id === id ? res.data.record : r));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to reject late attendance");
+    }
+  };
+
+  const getDerivedStatus = (r) => {
+    let derivedStatus = "Absent";
+    let derivedAppStatus = r.lateApprovalStatus || "None";
+
+    if (r.attendanceStatus === "Late") {
+      derivedStatus = "Late";
+    } else if (r.attendanceStatus === "Present") {
+      derivedStatus = "Present";
+    } else if (r.status !== "NOT_PUNCHED" && r.punchInTime) {
+      // Retroactive check for old records
+      const pin = new Date(r.punchInTime);
+      const istTimeStr = pin.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit' });
+      if (istTimeStr > "09:10") {
+        derivedStatus = "Late";
+        derivedAppStatus = "Pending";
+      } else {
+        derivedStatus = "Present";
+      }
+    }
+
+    return { derivedStatus, derivedAppStatus };
+  };
+
+  // Client-side search & status filter
   const filtered = records.filter((r) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    const name = (r.student?.name || "").toLowerCase();
-    const email = (r.student?.email || "").toLowerCase();
-    const roll = (r.student?.rollNo || "").toLowerCase();
-    return name.includes(q) || email.includes(q) || roll.includes(q);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const name = (r.student?.name || "").toLowerCase();
+      const email = (r.student?.email || "").toLowerCase();
+      const roll = (r.student?.rollNo || "").toLowerCase();
+      if (!name.includes(q) && !email.includes(q) && !roll.includes(q)) return false;
+    }
+    
+    const { derivedStatus } = getDerivedStatus(r);
+
+    if (statusFilter === "P" && derivedStatus !== "Present") return false;
+    if (statusFilter === "L" && derivedStatus !== "Late") return false;
+    if (statusFilter === "A" && derivedStatus !== "Absent") return false;
+
+    return true;
   });
 
   // Quick filter helpers
@@ -134,9 +233,9 @@ export default function TeacherStudentAttendance() {
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 5, height: 28, background: "#0F3C8A", borderRadius: 4 }} />
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e293b", margin: 0 }}>Student Attendance Logs</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ background: "#2563eb", color: "#fff", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>TEACHER</span>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0f172a" }}>Student Attendance</h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={downloadPDF} disabled={filtered.length === 0} style={{
@@ -199,6 +298,27 @@ export default function TeacherStudentAttendance() {
           fontSize: 11, fontWeight: 700, color: "#dc2626", cursor: "pointer"
         }}>Clear</button>
 
+        <div style={{ display: "flex", gap: 4, background: "#f1f5f9", padding: 4, borderRadius: 8 }}>
+          {["ALL", "P", "L", "A"].map(filter => (
+            <button
+              key={filter}
+              onClick={() => setStatusFilter(filter)}
+              style={{
+                padding: "4px 10px",
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+                border: "none",
+                background: statusFilter === filter ? "#0F3C8A" : "transparent",
+                color: statusFilter === filter ? "#fff" : "#475569",
+              }}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
         <div style={{ marginLeft: "auto", position: "relative" }}>
           <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
           <input
@@ -247,7 +367,7 @@ export default function TeacherStudentAttendance() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  {["Student", "Batch", "Date", "Punch In", "Punch Out", "Hours", "Status", ""].map((h, i) => (
+                  {["Student", "Batch", "Date", "Punch In", "Punch Out", "Hours", "Status", "Actions", ""].map((h, i) => (
                     <th key={i} style={{
                       padding: "10px 12px", textAlign: "left", fontWeight: 700, color: "#64748b",
                       fontSize: 10, textTransform: "uppercase", letterSpacing: 1, borderBottom: "1px solid #f1f5f9"
@@ -259,9 +379,13 @@ export default function TeacherStudentAttendance() {
                 {filtered.map((rec, idx) => {
                   const isExpanded = expandedRow === idx;
                   const hasLectures = rec.lectureAttendance?.length > 0;
+                  const hasEdits = rec.editHistory?.length > 0;
+                  
+                  const { derivedStatus, derivedAppStatus } = getDerivedStatus(rec);
+
                   return (
                     <Fragment key={rec._id || idx}>
-                      <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <tr style={{ borderBottom: "1px solid #f1f5f9", background: derivedStatus === "Late" && derivedAppStatus === "Pending" ? "rgba(254,226,226,0.5)" : "transparent" }}>
                         <td style={{ padding: "10px 12px" }}>
                           <div style={{ fontWeight: 700, color: "#1e293b", fontSize: 12 }}>{rec.student?.name || "Unknown"}</div>
                           <div style={{ fontSize: 10, color: "#94a3b8" }}>{rec.student?.rollNo || rec.student?.email || ""}</div>
@@ -276,11 +400,48 @@ export default function TeacherStudentAttendance() {
                         <td style={{ padding: "10px 12px" }}>
                           <span style={{
                             padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 700, textTransform: "uppercase",
-                            background: rec.status === "PUNCHED_OUT" ? "rgba(34,197,94,0.1)" : rec.status === "PUNCHED_IN" ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)",
-                            color: rec.status === "PUNCHED_OUT" ? "#059669" : rec.status === "PUNCHED_IN" ? "#d97706" : "#dc2626",
+                            background: derivedStatus === "Late" ? "rgba(239,68,68,0.1)" : derivedStatus === "Present" ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)",
+                            color: derivedStatus === "Late" ? "#dc2626" : derivedStatus === "Present" ? "#059669" : "#d97706",
                           }}>
-                            {rec.status === "PUNCHED_OUT" ? "Complete" : rec.status === "PUNCHED_IN" ? "Active" : "Missing"}
+                            {derivedStatus === "Late" ? "LATE" : derivedStatus === "Present" ? "PRESENT" : "ABSENT"}
                           </span>
+                          {hasEdits && (
+                            <span title="Edited by admin" style={{ marginLeft: 6, display: "inline-flex" }}>
+                              <AlertTriangle size={12} style={{ color: "#f59e0b" }} />
+                            </span>
+                          )}
+                        </td>
+
+                        <td style={{ padding: "10px 12px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {rec.status !== "NOT_PUNCHED" && (
+                              <button onClick={() => openEdit(rec)} style={{
+                                display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
+                                border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer",
+                                fontSize: 11, fontWeight: 700, color: "#475569"
+                              }}>
+                                <Edit3 size={12} /> Edit
+                              </button>
+                            )}
+                            {derivedStatus === "Late" && derivedAppStatus === "Pending" && (
+                              <>
+                                <button onClick={() => handleApproveLate(rec._id)} style={{
+                                  display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
+                                  border: "1px solid #bbf7d0", background: "#f0fdf4", cursor: "pointer",
+                                  fontSize: 11, fontWeight: 700, color: "#166534"
+                                }}>
+                                  <CheckCircle2 size={12} /> Approve
+                                </button>
+                                <button onClick={() => handleRejectLate(rec._id)} style={{
+                                  display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
+                                  border: "1px solid #fecaca", background: "#fef2f2", cursor: "pointer",
+                                  fontSize: 11, fontWeight: 700, color: "#991b1b"
+                                }}>
+                                  <XCircle size={12} /> Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                         <td style={{ padding: "10px 12px" }}>
                           {hasLectures && (
@@ -294,7 +455,7 @@ export default function TeacherStudentAttendance() {
                       </tr>
                       {isExpanded && hasLectures && (
                         <tr>
-                          <td colSpan={8} style={{ padding: 0 }}>
+                          <td colSpan={9} style={{ padding: 0 }}>
                             <div style={{ background: "#f8fafc", padding: "12px 20px 12px 44px" }}>
                               <p style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
                                 Lecture Attendance Breakdown
@@ -330,6 +491,87 @@ export default function TeacherStudentAttendance() {
           </div>
         )}
       </div>
+
+      {/* ── EDIT MODAL ── */}
+      {editRecord && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex",
+          alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 20
+        }} onClick={() => setEditRecord(null)}>
+          <div style={{
+            background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480, padding: 28,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.2)"
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1e293b", margin: 0 }}>Edit Punch Time</h3>
+              <button onClick={() => setEditRecord(null)} style={{ border: "none", background: "transparent", cursor: "pointer" }}>
+                <X size={18} color="#94a3b8" />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: 16, padding: "12px 14px", background: "#f8fafc", borderRadius: 10 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", margin: "0 0 4px" }}>{editRecord.student?.name || "Student"}</p>
+              <p style={{ fontSize: 11, color: "#64748b", margin: 0 }}>
+                {editRecord.batch?.batch_name || ""} — {formatDate(editRecord.date)}
+              </p>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>
+                <LogIn size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> Punch In Time
+              </label>
+              <input
+                type="datetime-local"
+                value={editPunchIn}
+                onChange={e => setEditPunchIn(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, fontWeight: 600, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>
+                <LogOut size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> Punch Out Time
+              </label>
+              <input
+                type="datetime-local"
+                value={editPunchOut}
+                onChange={e => setEditPunchOut(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, fontWeight: 600, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>
+                Reason for Edit *
+              </label>
+              <textarea
+                rows={3}
+                value={editReason}
+                onChange={e => setEditReason(e.target.value)}
+                placeholder="Why are you editing this record?"
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, fontWeight: 600, resize: "vertical", boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => setEditRecord(null)} style={{
+                padding: "10px 20px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff",
+                fontSize: 13, fontWeight: 700, color: "#64748b", cursor: "pointer"
+              }}>Cancel</button>
+              <button onClick={handleSaveEdit} disabled={saving} style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "10px 24px", borderRadius: 8,
+                border: "none", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff",
+                fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.7 : 1,
+                boxShadow: "0 2px 10px rgba(37,99,235,0.3)"
+              }}>
+                <Save size={14} /> {saving ? "Saving..." : "Save & Recalculate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }

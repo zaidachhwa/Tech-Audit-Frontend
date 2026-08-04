@@ -111,30 +111,64 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
   };
 
   // Edit flow
-  const openEdit = (s) => {
+  const openEdit = async (s) => {
     setEditing(s);
     setEditForm({
       name: s.name || "",
       email: s.email || "",
+      password: "",
       batch_name: s.batch_name || "",
       batch_no: s.batch_no || "",
+      phoneNo: "",
+      fatherName: "",
+      fatherPhone: "",
+      fatherEmail: "",
+      motherName: "",
+      motherPhone: "",
+      motherEmail: "",
+      isActive: s.isActive ?? false
     });
+    
+    try {
+      setEditLoading(true);
+      const res = await API.get(`/students/${s._id}`);
+      const fullStudent = res.data?.student || res.data;
+      if (fullStudent) {
+        setEditForm({
+          name: fullStudent.name || "",
+          email: fullStudent.email || "",
+          password: "",
+          batch_name: fullStudent.batch_name || "",
+          batch_no: fullStudent.batch_no || "",
+          phoneNo: fullStudent.phoneNo || "",
+          fatherName: fullStudent.fatherName || "",
+          fatherPhone: fullStudent.fatherPhone || "",
+          fatherEmail: fullStudent.fatherEmail || "",
+          motherName: fullStudent.motherName || "",
+          motherPhone: fullStudent.motherPhone || "",
+          motherEmail: fullStudent.motherEmail || "",
+          isActive: fullStudent.isActive
+        });
+      }
+    } catch (err) {
+      toast.error("Failed to fetch complete student details");
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const submitEdit = async () => {
     try {
       setEditLoading(true);
-      await API.patch(`/students/update/${editing._id}`, {
-        name: editForm.name,
-        email: editForm.email,
-        batch_name: editForm.batch_name,
-        batch_no: Number(editForm.batch_no),
-      });
+      const payload = { ...editForm, batch_no: Number(editForm.batch_no) };
+      if (!payload.password) delete payload.password;
+
+      await API.patch(`/students/update/${editing._id}`, payload);
       toast.success("Student updated");
       setStudents((prev) =>
         prev.map((p) =>
           p._id === editing._id
-            ? { ...p, ...editForm, batch_no: Number(editForm.batch_no) }
+            ? { ...p, ...payload }
             : p
         )
       );
@@ -306,7 +340,7 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 overflow-y-auto max-h-[70vh] pr-2">
               <input
                 value={editForm.name}
                 onChange={(e) =>
@@ -323,6 +357,21 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
                 className="w-full p-3 rounded-xl border"
                 placeholder="Email"
               />
+              <div className="flex gap-2">
+                <input
+                  value={editForm.phoneNo}
+                  onChange={(e) => setEditForm({ ...editForm, phoneNo: e.target.value })}
+                  className="flex-1 p-3 rounded-xl border"
+                  placeholder="Student Contact"
+                />
+                <input
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  className="flex-1 p-3 rounded-xl border"
+                  placeholder="New Password (optional)"
+                />
+              </div>
               <div className="flex gap-2">
                 <input
                   value={editForm.batch_name}
@@ -342,6 +391,55 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
                   placeholder="No"
                 />
               </div>
+              <div className="flex gap-2">
+                <input
+                  value={editForm.fatherName}
+                  onChange={(e) => setEditForm({ ...editForm, fatherName: e.target.value })}
+                  className="flex-1 p-3 rounded-xl border"
+                  placeholder="Father Name"
+                />
+                <input
+                  value={editForm.fatherPhone}
+                  onChange={(e) => setEditForm({ ...editForm, fatherPhone: e.target.value })}
+                  className="flex-1 p-3 rounded-xl border"
+                  placeholder="Father Contact"
+                />
+              </div>
+              <input
+                value={editForm.fatherEmail}
+                onChange={(e) => setEditForm({ ...editForm, fatherEmail: e.target.value })}
+                className="w-full p-3 rounded-xl border"
+                placeholder="Father Email"
+              />
+              <div className="flex gap-2">
+                <input
+                  value={editForm.motherName}
+                  onChange={(e) => setEditForm({ ...editForm, motherName: e.target.value })}
+                  className="flex-1 p-3 rounded-xl border"
+                  placeholder="Mother Name"
+                />
+                <input
+                  value={editForm.motherPhone}
+                  onChange={(e) => setEditForm({ ...editForm, motherPhone: e.target.value })}
+                  className="flex-1 p-3 rounded-xl border"
+                  placeholder="Mother Contact"
+                />
+              </div>
+              <input
+                value={editForm.motherEmail}
+                onChange={(e) => setEditForm({ ...editForm, motherEmail: e.target.value })}
+                className="w-full p-3 rounded-xl border"
+                placeholder="Mother Email"
+              />
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer mt-2">
+                <input
+                  type="checkbox"
+                  checked={editForm.isActive}
+                  onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                Status (Active / Approved)
+              </label>
 
               <div className="flex gap-3 mt-4">
                 <button
