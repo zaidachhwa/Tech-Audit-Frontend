@@ -99,7 +99,7 @@ export default function StudentLogin() {
           <img
             src="/logo.png"
             alt="Nexcore Institute of Technology"
-            style={{ width: "90px", height: "90px", objectFit: "cover", marginBottom: "16px" }}
+            className="h-28 w-28 mx-auto mb-6 drop-shadow-md hover:scale-105 transition-transform duration-300"
           />
 
           {/* Brand Labels */}
