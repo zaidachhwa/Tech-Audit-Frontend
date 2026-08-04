@@ -109,7 +109,7 @@ export default function DashboardLayout({
           <img
             src="/logo.png"
             alt="NIT logo"
-            className="h-32 w-32 object-cover mb-2 transition-transform duration-300 hover:scale-105"
+            className={`${isCollapsed ? "h-14 w-14" : "h-32 w-32"} object-contain mb-2 transition-all duration-300 hover:scale-105`}
           />
           {!isCollapsed && (
             <>
