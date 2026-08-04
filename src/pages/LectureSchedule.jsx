@@ -2211,7 +2211,7 @@ export default function LectureSchedule() {
                 <BookOpen size={16} className="text-[#2563EB]" /> Configuration Setup
               </h2>
               <form onSubmit={handleGenerateSchedule} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-5 items-start">
 
                   {/* Subject */}
                   <div className="col-span-1 md:col-span-2 lg:col-span-1 min-w-0 w-full">
@@ -2339,51 +2339,7 @@ export default function LectureSchedule() {
                     </select>
                   </div>
 
-                  {/* Start Date */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Start Date</label>
-                    <input
-                      type="date"
-                      required={frequency !== "custom"}
-                      disabled={frequency === "custom"}
-                      value={frequency === "custom" ? "" : startDate}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        let formatted = val;
-                        if (val) {
-                          const d = new Date(val);
-                          if (!isNaN(d.getTime())) {
-                            const adjusted = adjustDateSkippingWeekends(d);
-                            formatted = formatDateForInput(adjusted);
-                          }
-                        }
-                        setStartDate(formatted);
-                        updateLectureDates(formatted, frequency);
-                      }}
-                      className={`w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium ${frequency === "custom" ? "opacity-50 cursor-not-allowed" : ""}`}
-                    />
-                  </div>
 
-                  {/* Frequency */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#475569] uppercase mb-1.5">Interval Frequency</label>
-                    <select
-                      value={frequency}
-                      onChange={(e) => {
-                        const newFreq = e.target.value;
-                        setFrequency(newFreq);
-                        updateLectureDates(startDate, newFreq);
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB] text-xs text-[#1B2B4B] font-medium"
-                    >
-                      <option value="once a week">Once a week</option>
-                      <option value="twice a week">Twice a week</option>
-                      <option value="thrice a week">Thrice a week</option>
-                      <option value="4 times a week">4 times a week</option>
-                      <option value="5 days a week">5 days a week</option>
-                      <option value="custom">Custom Dates (Leave Blank)</option>
-                    </select>
-                  </div>
                 </div>
 
                 <div className="flex justify-between items-center pt-2">
@@ -2672,7 +2628,6 @@ export default function LectureSchedule() {
                                     className="w-full px-2 py-1.5 border border-[#E2E8F0] rounded text-xs focus:outline-none focus:border-[#2563EB] bg-white cursor-pointer"
                                     placeholder="Start"
                                   />
-                                  <span className="text-[10px] text-[#94A3B8] font-bold">â€“</span>
                                   <input
                                     type="time"
                                     value={lecture.time_slot && lecture.time_slot.includes("-") ? (lecture.time_slot.split("-")[1]?.trim() || "") : ""}
@@ -2691,14 +2646,13 @@ export default function LectureSchedule() {
                                 </div>
                                 {lectureConflicts[index]?.length > 0 && (
                                   <div className="text-[10px] text-red-600 font-bold flex items-center gap-1">
-                                    <span>âš ï¸</span>
                                     <span>{lectureConflicts[index].map(c => c.type === "batch" ? "Batch" : "Teacher").join(" & ")} Conflict</span>
                                   </div>
                                 )}
                               </div>
                             ) : (
                               <span className="text-xs font-semibold text-[#475569]">
-                                {lecture.time_slot || "â€“"}
+                                {lecture.time_slot || " "}
                               </span>
                             )}
                           </td>
@@ -2725,7 +2679,6 @@ export default function LectureSchedule() {
                                 {lectureConflicts[index]?.some(c => c.type === "venue") && (
                                   <div className="mt-1 space-y-1">
                                     <div className="text-[10px] text-red-600 font-bold flex items-center gap-1">
-                                      <span>âŒ</span>
                                       <span>Occupied</span>
                                     </div>
                                     <div className="text-[9px] font-semibold text-[#64748B]">Available:</div>
@@ -2739,7 +2692,7 @@ export default function LectureSchedule() {
                                           }}
                                           className="text-left px-1.5 py-0.5 bg-green-50 text-green-700 hover:bg-green-100 rounded text-[9px] font-bold border border-green-200 transition-colors"
                                         >
-                                          âœ“ {av}
+                                           {av}
                                         </button>
                                       ))}
                                     </div>
@@ -2766,7 +2719,7 @@ export default function LectureSchedule() {
                                   <optgroup label="Selected Subject Teachers">
                                     {teachers.filter(t => selectedTeacherIds.includes(t._id)).map(t => (
                                       <option key={`sel-${t._id}`} value={t._id}>
-                                        â˜… {t.name}
+                                      {t.name}
                                       </option>
                                     ))}
                                   </optgroup>
