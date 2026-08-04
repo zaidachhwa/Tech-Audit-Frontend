@@ -343,7 +343,8 @@ export default function LectureSchedule() {
       fetchAndLoadSubject(
         prefill.syllabusId,
         prefill.date || startDate,
-        frequency
+        frequency,
+        prefill.topicTitle
       );
     }
 
@@ -488,8 +489,16 @@ export default function LectureSchedule() {
       }));
     }
 
-    if (singleLectureIndex !== null && rawLectures[singleLectureIndex]) {
-      rawLectures = [rawLectures[singleLectureIndex]];
+    if (singleLectureIndex !== null) {
+      if (typeof singleLectureIndex === "number" && rawLectures[singleLectureIndex]) {
+        rawLectures = [rawLectures[singleLectureIndex]];
+      } else if (typeof singleLectureIndex === "string") {
+        const foundIndex = rawLectures.findIndex(l => (typeof l === "object" ? (l.title || l.subject) : String(l)) === singleLectureIndex);
+        if (foundIndex !== -1) {
+          singleLectureIndex = foundIndex;
+          rawLectures = [rawLectures[foundIndex]];
+        }
+      }
     }
 
     const loadedLectures = rawLectures.map((l, i) => {
