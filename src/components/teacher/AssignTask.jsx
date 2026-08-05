@@ -89,6 +89,7 @@ export default function AssignTask() {
   // Load submissions for review
   const fetchSubmissions = () => {
     setReviewLoading(true);
+    setSubmissions([]); // Clear previous state to prevent stale data display
     // V2 spec: GET /api/homework/pending or GET /api/homework
     API.get("/homework")
       .then((res) => {
@@ -104,7 +105,7 @@ export default function AssignTask() {
                 homeworkTitle: hw.title,
                 homeworkDescription: hw.description,
                 dueDate: hw.dueDate,
-                subjectName: hw.subject?.subject || "Subject",
+                subjectName: hw.lecture?.syllabus?.subject || hw.subject?.subject || "Subject",
                 homeworkId: hw._id
               });
             });
@@ -227,22 +228,34 @@ export default function AssignTask() {
           <p className="text-sm text-[#64748B]">Assign homework and review student submissions.</p>
         </div>
 
-        {/* Tab Selector */}
-        <div className="flex bg-[#E2E8F0] p-1 rounded-xl">
-          <button
-            onClick={() => setActiveTab("assign")}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "assign" ? "bg-white text-[#1B2B4B] shadow-sm" : "text-gray-600"
-              }`}
-          >
-            Assign Homework
-          </button>
-          <button
-            onClick={() => setActiveTab("review")}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "review" ? "bg-white text-[#1B2B4B] shadow-sm" : "text-gray-600"
-              }`}
-          >
-            Review Submissions
-          </button>
+        {/* Tab Selector & Actions */}
+        <div className="flex items-center gap-2">
+          {activeTab === "review" && (
+            <button
+              onClick={fetchSubmissions}
+              disabled={reviewLoading}
+              title="Refresh submissions"
+              className="p-2 bg-white border border-[#E2E8F0] rounded-xl text-gray-600 hover:text-blue-600 hover:border-blue-200 transition shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw size={15} className={reviewLoading ? "animate-spin text-blue-600" : ""} />
+            </button>
+          )}
+          <div className="flex bg-[#E2E8F0] p-1 rounded-xl">
+            <button
+              onClick={() => setActiveTab("assign")}
+              className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "assign" ? "bg-white text-[#1B2B4B] shadow-sm" : "text-gray-600"
+                }`}
+            >
+              Assign Homework
+            </button>
+            <button
+              onClick={() => setActiveTab("review")}
+              className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "review" ? "bg-white text-[#1B2B4B] shadow-sm" : "text-gray-600"
+                }`}
+            >
+              Review Submissions
+            </button>
+          </div>
         </div>
       </div>
 

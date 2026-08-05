@@ -29,7 +29,6 @@ const usePushNotifications = () => {
       try {
         // Register service worker
         const registration = await navigator.serviceWorker.register("/sw.js");
-        console.log("Service Worker registered with scope:", registration.scope);
 
         // Check current notification permission
         let permission = Notification.permission;
@@ -84,8 +83,6 @@ const usePushNotifications = () => {
             },
           }
         );
-
-        console.log("Successfully subscribed to push notifications");
       } catch (error) {
         console.error("Error registering push notifications:", error);
       }
