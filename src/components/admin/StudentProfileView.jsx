@@ -539,6 +539,36 @@ export default function StudentProfileView() {
                   </div>
                 </div>
 
+                <div className="bg-slate-50 p-4 border border-slate-100 rounded-xl space-y-3">
+                  <h4 className="text-xs font-extrabold text-[#0F3C8A] uppercase tracking-wider">Parent & Guardian Information</h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between border-b border-slate-200/50 pb-1.5">
+                      <span className="text-slate-400">Father's Name:</span>
+                      <span className="text-slate-700 font-bold">{student.fatherName || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-200/50 pb-1.5">
+                      <span className="text-slate-400">Father's Contact:</span>
+                      <span className="text-slate-700 font-bold">{student.fatherPhone || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-200/50 pb-1.5">
+                      <span className="text-slate-400">Father's Email:</span>
+                      <span className="text-slate-700 font-bold">{student.fatherEmail || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-200/50 pb-1.5">
+                      <span className="text-slate-400">Mother's Name:</span>
+                      <span className="text-slate-700 font-bold">{student.motherName || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-200/50 pb-1.5">
+                      <span className="text-slate-400">Mother's Contact:</span>
+                      <span className="text-slate-700 font-bold">{student.motherPhone || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Mother's Email:</span>
+                      <span className="text-slate-700 font-bold">{student.motherEmail || "N/A"}</span>
+                    </div>
+                  </div>
+                </div>
+
                 {student.customFields && Object.keys(student.customFields).length > 0 && (
                   <div className="bg-slate-50 p-4 border border-slate-100 rounded-xl space-y-3">
                     <h4 className="text-xs font-extrabold text-[#0F3C8A] uppercase tracking-wider">Additional Information</h4>
