@@ -271,7 +271,7 @@ export default function CalendarView({
 
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden select-none font-sans">
-      {/* Ã¢â€â‚¬Ã¢â€â‚¬ TOOLBAR / CONTROLS Ã¢â€â‚¬Ã¢â€â‚¬ */}
+      {/* ── TOOLBAR / CONTROLS ── */}
       <div className="p-4 sm:p-5 border-b border-[#E2E8F0] bg-[#FAFBFC] flex flex-col gap-4">
         {/* Top Header Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -392,7 +392,7 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* Ã¢â€â‚¬Ã¢â€â‚¬ CALENDAR GRID Ã¢â€â‚¬Ã¢â€â‚¬ */}
+      {/* ── CALENDAR GRID ── */}
       <div>
         {/* Days Header */}
         <div className="grid grid-cols-7 border-b border-[#E2E8F0] bg-[#F8FAFC] text-center">
@@ -492,10 +492,10 @@ export default function CalendarView({
                           )}
                           {evt.venue && (
                             <span className="truncate max-w-[90px] text-purple-600 font-extrabold" title={`Venue: ${evt.venue}`}>
-                              Ã°Å¸â€œÂ {evt.venue}
+                              📍 {evt.venue}
                             </span>
                           )}
-                          {evt.homework?.title && <span title="Homework assigned">Ã°Å¸â€œÂ</span>}
+                          {evt.homework?.title && <span title="Homework assigned">📝</span>}
                           {evt.notes_shared?.fileUrl && <span title="Shared notes">📄</span>}
                         </div>
                         {evt.isTransferred && userId && (
@@ -531,7 +531,7 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* Ã¢â€â‚¬Ã¢â€â‚¬ LECTURE EVENT DETAIL MODAL Ã¢â€â‚¬Ã¢â€â‚¬ */}
+      {/* ── LECTURE EVENT DETAIL MODAL ── */}
       {activeLectureModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E2E8F0] space-y-4 animate-in fade-in zoom-in duration-200">
@@ -636,7 +636,7 @@ export default function CalendarView({
             {activeLectureModal.homework?.title && (
               <div className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg text-xs space-y-1">
                 <span className="block text-[9px] font-extrabold text-amber-800 uppercase">
-                  Ã°Å¸â€œÂ Homework Assignment
+                  📝 Homework Assignment
                 </span>
                 <p className="font-bold text-amber-950">{activeLectureModal.homework.title}</p>
                 {activeLectureModal.homework.description && (
