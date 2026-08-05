@@ -118,7 +118,7 @@ export default function AssignSyllabusDetail() {
       await API.post("/syllabus/assign-to-batch", {
         syllabusId: newSyllabusId,
         batchId: batchId,
-        dueDate: syllabusForm.dueDate
+        dueDate: syllabusForm.dueDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
       });
       
       toast.success("Syllabus created and assigned automatically!");
