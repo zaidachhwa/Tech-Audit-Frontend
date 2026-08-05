@@ -105,27 +105,27 @@ export default function DashboardLayout({
     return (
       <div className="h-full flex flex-col bg-white select-none">
         {/* LOGO & BRANDING SECTION */}
-        <div className="relative p-5 border-b border-slate-100 flex flex-col items-center shrink-0">
+        <div className="relative pt-2 pb-3 px-4 border-b border-slate-100 flex flex-col items-center shrink-0">
           <img
             src="/logo.png"
             alt="NIT logo"
-            className={`${isCollapsed ? "h-14 w-14" : "h-32 w-32"} object-contain mb-2 transition-all duration-300 hover:scale-105`}
+            className={`${isCollapsed ? "h-10 w-10" : "h-28 w-auto max-w-[170px] -mt-2 -mb-2 scale-110"} object-contain transition-all duration-300 hover:scale-115`}
           />
           {!isCollapsed && (
             <>
-              <h2 className="text-center font-extrabold text-[11px] tracking-tight text-slate-800 px-1 leading-snug uppercase">
+              <h2 className="text-center font-extrabold text-[11px] tracking-tight text-slate-800 px-1 leading-snug uppercase mt-0.5">
                 Nexcore Institute of Technology
               </h2>
               <span
                 style={{
-                  marginTop: 6,
+                  marginTop: 4,
                   background: badgeGradient,
                   color: "#fff",
                   fontSize: 9,
                   fontWeight: 800,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  padding: "3px 10px",
+                  padding: "2px 8px",
                   borderRadius: 99,
                 }}
               >
@@ -138,7 +138,7 @@ export default function DashboardLayout({
           {isMobileView && (
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+              className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
             >
               <X size={18} />
             </button>
@@ -147,7 +147,7 @@ export default function DashboardLayout({
 
         {/* User profile details box (hidden in collapsed view) */}
         {!isCollapsed && (
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+          <div className="py-2.5 px-3.5 border-b border-slate-100 bg-slate-50/50">
             <div className="flex items-center gap-3">
               <div
                 style={{
