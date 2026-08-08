@@ -37,6 +37,7 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
   const [newTopicName, setNewTopicName] = useState("");
   const [syllabusTopics, setSyllabusTopics] = useState([]);
   const [loadingTopics, setLoadingTopics] = useState(false);
+  const [topicFetchError, setTopicFetchError] = useState(false);
 
   // Live timer tick every 5 seconds to update time evaluation automatically
   useEffect(() => {
@@ -128,13 +129,22 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
   };
 
   const fetchTopicsForSubject = async (batchId, subject) => {
+    if (!batchId || !subject) return;
     try {
       setLoadingTopics(true);
-      const res = await API.get(`/syllabus/batch-subject-topics?batchId=${batchId}&subject=${encodeURIComponent(subject)}`);
+      setTopicFetchError(false);
+      const res = await API.get(
+        `/syllabus/batch-subject-topics?batchId=${batchId}&subject=${encodeURIComponent(subject)}`
+      );
       setSyllabusTopics(res.data?.topics || []);
     } catch (err) {
-      toast.error("Failed to load syllabus topics.");
-      setSyllabusTopics([]);
+      // 404 = genuinely no topics configured – not an API failure
+      if (err?.response?.status === 404) {
+        setSyllabusTopics([]);
+      } else {
+        setTopicFetchError(true);
+        setSyllabusTopics([]);
+      }
     } finally {
       setLoadingTopics(false);
     }
@@ -162,13 +172,13 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
     try {
       setSubmittingId("modal-save");
       const lec = selectedLectureForModal;
-      
+
       const payload = {
         title: newTitle.trim(),
         topicId: newTopicId || null,
         topicName: newTopicName || null,
       };
-      
+
       if (lec.scheduleId) {
         payload.scheduleId = lec.scheduleId;
         payload.lectureId = lec._id;
@@ -179,7 +189,7 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
       await API.patch("/punch/update-topic", payload);
       toast.success("Topic saved successfully");
       setShowTitleTopicModal(false);
-      
+
       // Update local state temporarily so we don't have to wait for fetch
       setLectures(prev => prev.map(l => {
         if (l._id === lec._id) {
@@ -190,7 +200,7 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
 
       // Immediately punch in using the modified lecture object
       handlePunchIn({ ...lec, title: newTitle.trim(), topicId: newTopicId, topicName: newTopicName });
-      
+
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to save topic");
     } finally {
@@ -375,10 +385,10 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
                       {!isTimeReached
                         ? "Punch In Disabled (Time Not Reached)"
                         : !inNotes.trim()
-                        ? "Enter Topic to Enable Punch In"
-                        : submittingId === lec._id
-                        ? "Punching In..."
-                        : "Punch In & Record Time"}
+                          ? "Enter Topic to Enable Punch In"
+                          : submittingId === lec._id
+                            ? "Punching In..."
+                            : "Punch In & Record Time"}
                     </button>
                   </div>
                 )}
@@ -446,8 +456,8 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
                       {!outNotes.trim()
                         ? "Enter Taught Topic to Enable Punch Out"
                         : submittingId === lec._id
-                        ? "Punching Out..."
-                        : "Punch Out & Complete Lecture"}
+                          ? "Punching Out..."
+                          : "Punch Out & Complete Lecture"}
                     </button>
                   </div>
                 )}
@@ -501,47 +511,65 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
             <p style={{ fontSize: "0.85rem", color: "#64748B", marginBottom: "16px" }}>
               Please provide a Title and select a Syllabus Topic for this lecture before punching in.
             </p>
-            
+
             <div style={{ marginBottom: "20px" }}>
               <label style={S.label}>Lecture Title <span style={{ color: "#EF4444" }}>*</span></label>
-              <input 
-                type="text" 
-                list="topic-options"
+              <input
+                type="text"
                 value={newTitle}
                 onChange={e => {
                   const val = e.target.value;
                   setNewTitle(val);
-                  
-                  // Auto-match topic if they selected/typed an exact existing syllabus topic
-                  const matchedTopic = syllabusTopics.find(t => (t.title || t.templateLecture?.title) === val);
-                  if (matchedTopic) {
-                    setNewTopicId(matchedTopic.templateLecture?._id || "");
-                    setNewTopicName(matchedTopic.title || matchedTopic.templateLecture?.title || "");
-                  } else {
-                    setNewTopicId("");
-                    setNewTopicName("");
-                  }
+                  // If cleared, also clear topic binding
+                  if (!val) { setNewTopicId(""); setNewTopicName(""); }
                 }}
                 style={S.input}
                 placeholder="Type or select lecture topic..."
+                autoComplete="off"
               />
-              <datalist id="topic-options">
-                {syllabusTopics.map(t => (
-                  <option key={t._id} value={t.title || t.templateLecture?.title} />
-                ))}
-              </datalist>
+              {/* Visible topic dropdown list */}
+              {syllabusTopics.length > 0 && (
+                <ul style={S.topicList}>
+                  {syllabusTopics
+                    .filter(t => {
+                      const label = (t.title || t.templateLecture?.title || "").toLowerCase();
+                      return !newTitle || label.includes(newTitle.toLowerCase());
+                    })
+                    .map(t => {
+                      const label = t.title || t.templateLecture?.title || "";
+                      return (
+                        <li
+                          key={t._id}
+                          style={{
+                            ...S.topicItem,
+                            background: newTitle === label ? "#EFF6FF" : "#fff",
+                          }}
+                          onClick={() => {
+                            setNewTitle(label);
+                            setNewTopicId(t.templateLecture?._id || t._id || "");
+                            setNewTopicName(label);
+                          }}
+                        >
+                          {label}
+                        </li>
+                      );
+                    })}
+                </ul>
+              )}
               {loadingTopics && <div style={{ fontSize: "0.8rem", color: "#64748B", marginTop: 4 }}>Loading syllabus topics...</div>}
+              {!loadingTopics && topicFetchError && <div style={{ fontSize: "0.8rem", color: "#EF4444", marginTop: 4 }}>Failed to load topics. Please try again.</div>}
+              {!loadingTopics && !topicFetchError && syllabusTopics.length === 0 && <div style={{ fontSize: "0.8rem", color: "#94A3B8", marginTop: 4 }}>No syllabus topics found. You may type a custom title.</div>}
             </div>
 
             <div style={S.modalActions}>
-              <button 
+              <button
                 onClick={() => setShowTitleTopicModal(false)}
                 style={S.cancelBtn}
                 disabled={submittingId === "modal-save"}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleSaveTitleTopic}
                 style={S.saveBtn}
                 disabled={submittingId === "modal-save" || !newTitle.trim()}
@@ -845,5 +873,80 @@ const S = {
     color: "#334155",
     marginTop: "2px",
     wordBreak: "break-word",
+  },
+  // ── Modal ──────────────────────────────────────────────
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "rgba(15,23,42,0.55)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: "14px",
+    padding: "28px 28px 24px",
+    width: "90%",
+    maxWidth: "460px",
+    boxShadow: "0 25px 50px rgba(0,0,0,0.18)",
+    maxHeight: "90vh",
+    overflowY: "auto",
+  },
+  input: {
+    width: "100%",
+    padding: "10px 12px",
+    border: "1.5px solid #CBD5E1",
+    borderRadius: "8px",
+    fontSize: "0.9rem",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+    outline: "none",
+  },
+  topicList: {
+    listStyle: "none",
+    margin: "4px 0 0 0",
+    padding: 0,
+    border: "1.5px solid #CBD5E1",
+    borderRadius: "8px",
+    maxHeight: "200px",
+    overflowY: "auto",
+    background: "#fff",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  },
+  topicItem: {
+    padding: "9px 14px",
+    fontSize: "0.88rem",
+    cursor: "pointer",
+    borderBottom: "1px solid #F1F5F9",
+    color: "#1E293B",
+    transition: "background 0.15s",
+  },
+  modalActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px",
+    marginTop: "20px",
+  },
+  cancelBtn: {
+    padding: "8px 18px",
+    backgroundColor: "#F1F5F9",
+    color: "#475569",
+    border: "none",
+    borderRadius: "8px",
+    fontWeight: "600",
+    fontSize: "0.88rem",
+    cursor: "pointer",
+  },
+  saveBtn: {
+    padding: "8px 18px",
+    backgroundColor: "#2563EB",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    fontWeight: "600",
+    fontSize: "0.88rem",
+    cursor: "pointer",
   },
 };
