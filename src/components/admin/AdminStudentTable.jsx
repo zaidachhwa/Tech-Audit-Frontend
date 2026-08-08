@@ -45,14 +45,14 @@ export default function AdminStudentTable({ onRefresh, batches = [] }) {
     fetchStudents();
   }, []);
 
-  const batchOptions = batches.map((b) => `${b.batch_name}#${b.batch_no}`);
+  const batchOptions = batches.map((b) => `${b.batch_name?.trim()}#${b.batch_no}`);
 
   const filtered = students
     .filter((s) => {
       const matchesSearch =
         s.name.toLowerCase().includes(search.toLowerCase()) ||
         s.email.toLowerCase().includes(search.toLowerCase());
-      const studentBatch = `${s.batch_name}#${s.batch_no}`;
+      const studentBatch = `${s.batch_name?.trim()}#${s.batch_no}`;
       const matchesBatch =
         batchFilter === "all" ? true : studentBatch === batchFilter;
       return matchesSearch && matchesBatch;

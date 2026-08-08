@@ -284,7 +284,7 @@ export default function AdminSyllabusManagement() {
         syllabusId: selectedSyllabus._id,
         batchIds: ids,
         notes: assignBatchForm.notes,
-        dueDate: assignBatchForm.dueDate,
+        dueDate: assignBatchForm.dueDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       });
       toast.success("Syllabus assigned to batches successfully!");
       setAssignBatchForm({ batchIds: [], notes: "", dueDate: "" });
@@ -380,7 +380,6 @@ export default function AdminSyllabusManagement() {
   const handleMarkTopicComplete = async (topic) => {
     try {
       await API.put(`/syllabus/topic/${topic._id}`, {
-        ...topic,
         completionStatus: "Completed"
       });
       toast.success("Topic marked as completed!");
@@ -1591,20 +1590,7 @@ export default function AdminSyllabusManagement() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                    Due Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={topicForm.dueDate}
-                    onChange={(e) => setTopicForm({...topicForm, dueDate: e.target.value})}
-                    required
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
-                  />
-                </div>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
                     Duration (mins) *
@@ -1855,30 +1841,7 @@ export default function AdminSyllabusManagement() {
                   }}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
-                  Due Date *
-                </label>
-                <input
-                  type="date"
-                  value={editTopicForm.dueDate}
-                  onChange={(e) => setEditTopicForm({...editTopicForm, dueDate: e.target.value})}
-                  required
-                  className="w-full px-3 py-2 rounded-lg outline-none text-sm transition"
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "1.5px solid #E2E8F0",
-                    borderRadius: "8px",
-                    color: "#1B2B4B",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#2563EB";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "#E2E8F0";
-                  }}
-                />
-              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
                   Lecture Type
@@ -2153,29 +2116,6 @@ export default function AdminSyllabusManagement() {
                     );
                   })}
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>
-                  Due Date
-                </label>
-                <input
-                  type="date"
-                  value={assignBatchForm.dueDate}
-                  onChange={(e) => setAssignBatchForm({ ...assignBatchForm, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg outline-none text-sm transition"
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "1.5px solid #E2E8F0",
-                    borderRadius: "8px",
-                    color: "#1B2B4B",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#2563EB";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "#E2E8F0";
-                  }}
-                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: "#1B2B4B", fontWeight: "600" }}>

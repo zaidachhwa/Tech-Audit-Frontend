@@ -109,10 +109,26 @@ export default function AdminStudentAttendance() {
 
   const handleApproveLate = async (id) => {
     try {
-      const res = await API.put(`/attendance/student/approve-late/${id}`);
-      toast.success(res.data.message || "Late attendance approved!");
-      // Update locally
-      setRecords(records.map(r => r._id === id ? res.data.record : r));
+      let res;
+      try {
+        res = await API.put(`/attendance/student/approve-late/${id}`);
+      } catch (err) {
+        if (err.response?.status === 404) {
+          res = await API.patch(`/attendance/student/${id}/edit`, {
+            attendanceStatus: "Present",
+            lateApprovalStatus: "Approved",
+            reason: "Approved late attendance"
+          });
+        } else {
+          throw err;
+        }
+      }
+      toast.success(res.data?.message || "Late attendance approved!");
+      if (res.data?.record) {
+        setRecords(records.map(r => r._id === id ? res.data.record : r));
+      } else {
+        fetchRecords();
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to approve late attendance");
     }
@@ -120,10 +136,26 @@ export default function AdminStudentAttendance() {
 
   const handleRejectLate = async (id) => {
     try {
-      const res = await API.put(`/attendance/student/reject-late/${id}`);
-      toast.success(res.data.message || "Late attendance rejected!");
-      // Update locally
-      setRecords(records.map(r => r._id === id ? res.data.record : r));
+      let res;
+      try {
+        res = await API.put(`/attendance/student/reject-late/${id}`);
+      } catch (err) {
+        if (err.response?.status === 404) {
+          res = await API.patch(`/attendance/student/${id}/edit`, {
+            attendanceStatus: "Late",
+            lateApprovalStatus: "Rejected",
+            reason: "Rejected late attendance"
+          });
+        } else {
+          throw err;
+        }
+      }
+      toast.success(res.data?.message || "Late attendance rejected!");
+      if (res.data?.record) {
+        setRecords(records.map(r => r._id === id ? res.data.record : r));
+      } else {
+        fetchRecords();
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to reject late attendance");
     }

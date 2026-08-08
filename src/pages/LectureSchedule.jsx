@@ -148,10 +148,34 @@ export default function LectureSchedule() {
     setIsTransferModalOpen(true);
   };
 
+  const performDeleteLecture = async (scheduleId, lectureId) => {
+    try {
+      await API.delete(`/schedules/${scheduleId}/lectures/${lectureId}`);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        // Fallback for live server where DELETE /:scheduleId/lectures/:lectureId is not yet deployed
+        const sch = schedules.find(s => String(s._id) === String(scheduleId));
+        if (sch && sch.lectures) {
+          const remainingLectures = sch.lectures.filter(l => String(l._id) !== String(lectureId));
+          if (remainingLectures.length === 0) {
+            await API.delete(`/schedules/delete/${scheduleId}`);
+          } else {
+            await API.put(`/schedules/update/${scheduleId}`, {
+              ...sch,
+              lectures: remainingLectures
+            });
+          }
+          return;
+        }
+      }
+      throw err;
+    }
+  };
+
   const handleDeleteLecture = async (scheduleId, lectureId) => {
     try {
-      const res = await API.delete(`/schedules/${scheduleId}/lectures/${lectureId}`);
-      toast.success(res.data?.message || "Lecture deleted successfully.");
+      await performDeleteLecture(scheduleId, lectureId);
+      toast.success("Lecture deleted successfully.");
       fetchSchedules();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete lecture.");
@@ -847,11 +871,42 @@ export default function LectureSchedule() {
     }
   };
 
-  // Delete single row from grid (Admin only)
-  const removeLectureRow = (index) => {
+  // Delete single row from grid (Admin/Teacher only)
+  const removeLectureRow = async (index) => {
+    const lecture = lectures[index];
     const updated = lectures.filter((_, i) => i !== index);
-    setLectures(updated);
+
+    // If this is an existing saved schedule and the lecture has a real DB _id,
+    // immediately delete it via the API so it disappears from the calendar too.
+    if (
+      selectedSchedule?._id &&
+      !String(selectedSchedule._id).startsWith("batch_syllabus_") &&
+      lecture._id &&
+      !String(lecture._id).startsWith("temp-")
+    ) {
+      if (!window.confirm("Delete this lecture? This cannot be undone.")) return;
+      try {
+        await performDeleteLecture(selectedSchedule._id, lecture._id);
+        toast.success("Lecture deleted successfully.");
+        setLectures(updated);
+        // If no lectures remain, the schedule is deleted — go back to list
+        if (updated.length === 0) {
+          setSelectedSchedule(null);
+          setIsCreating(false);
+          fetchSchedules();
+        } else {
+          // Refresh schedules in background to keep calendar in sync
+          fetchSchedules();
+        }
+      } catch (err) {
+        toast.error(err.response?.data?.message || "Failed to delete lecture.");
+      }
+    } else {
+      // Temp row (not yet saved) — just remove from local state
+      setLectures(updated);
+    }
   };
+
 
   // Save changes to database
   const saveSchedule = async () => {

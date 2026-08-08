@@ -345,7 +345,6 @@ export default function StudentAssignments() {
           return hw;
         });
 
-        console.log("[My Homework] Fetched:", data.length, "records", data);
         setHomeworkList(data);
       })
       .catch((err) => {

@@ -126,6 +126,7 @@ export default function App() {
           <Route path="all-reports"        element={<AllReports />} />
           <Route path="lms"                element={<LMSManagement />} />
           <Route path="syllabus"           element={<AdminSyllabusManagement />} />
+          <Route path="assign-task"        element={<AssignTask />} />
           <Route path="all-reports"        element={<AllReports />} />
           <Route path="drafts"             element={<Drafts />} />
           <Route path="analytics"          element={<AdminAnalytics />} />

@@ -96,7 +96,7 @@ export default function BatchAssignmentsPanel({ onActionComplete }) {
         syllabusId: assignForm.syllabusId,
         batchId: assignForm.batchId,
         notes: assignForm.notes,
-        dueDate: assignForm.dueDate,
+        dueDate: assignForm.dueDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       });
       toast.success("Syllabus assigned to batch successfully!");
       setShowAssignModal(false);

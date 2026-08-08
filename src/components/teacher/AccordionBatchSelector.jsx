@@ -33,9 +33,6 @@ export default function AccordionBatchSelector({
   const groupedBatches = groupBatchesByName(batches);
   const isLoading = loading;
 
-  console.log("AccordionBatchSelector received batches:", batches);
-  console.log("Grouped batches:", groupedBatches);
-
   const handleBatchNameClick = (batchName) => {
     onExpandedChange(expandedBatchName === batchName ? "" : batchName);
   };

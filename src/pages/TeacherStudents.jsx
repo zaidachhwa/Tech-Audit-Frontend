@@ -182,7 +182,6 @@ export default function TeacherStudents() {
         csvData
       });
 
-      console.log("IMPORT RESULT DATA:", res.data);
       setImportResult(res.data);
       if (res.data.successCount > 0) {
         toast.success(`Successfully imported ${res.data.successCount} students!`);

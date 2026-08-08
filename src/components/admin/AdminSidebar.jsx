@@ -38,21 +38,21 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
       >
         {/* LOGO & BRANDING SECTION */}
         {sidebarOpen ? (
-          <div className="p-5 border-b border-[#F1F5F9] relative flex flex-col items-center">
-            <img src="/logo.png" alt="Nexcore logo" className="h-32 w-32 object-cover mb-3" />
-            <h2 className="text-center font-extrabold text-xs tracking-tight text-[#0F3C8A] px-2 leading-snug uppercase">
+          <div className="pt-2 pb-3 px-4 border-b border-[#F1F5F9] relative flex flex-col items-center">
+            <img src="/logo.png" alt="Nexcore logo" className="h-28 w-auto max-w-[170px] -mt-2 -mb-2 scale-110 object-contain transition duration-200 hover:scale-115" />
+            <h2 className="text-center font-extrabold text-xs tracking-tight text-[#0F3C8A] px-2 leading-snug uppercase mt-0.5">
               Nexcore Institute of Technology
             </h2>
             <span
               style={{
-                marginTop: 6,
+                marginTop: 4,
                 background: "linear-gradient(90deg, #0F3C8A, #1E57C8)",
                 color: "#fff",
                 fontSize: 9,
                 fontWeight: 800,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                padding: "3px 10px",
+                padding: "2px 8px",
                 borderRadius: 99,
               }}
             >
@@ -60,7 +60,7 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
             </span>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition lg:hidden"
+              className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition lg:hidden"
             >
               <X size={18} />
             </button>

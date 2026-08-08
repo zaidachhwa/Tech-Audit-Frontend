@@ -73,7 +73,7 @@ export default function AdminTeachers() {
       toast.success("Teacher deleted");
       await fetchTeachers();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Delete failed");
     }
   };
@@ -85,7 +85,7 @@ export default function AdminTeachers() {
       toast.success("Status updated");
       await fetchTeachers();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Status update failed");
     }
   };
@@ -111,7 +111,7 @@ export default function AdminTeachers() {
       setForm({ name: "", email: "", password: "", subjects: [], phone: "" });
       await fetchTeachers();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error(error.response?.data?.message || "Create failed");
     }
   };
@@ -130,7 +130,7 @@ export default function AdminTeachers() {
       setShowEdit(false);
       await fetchTeachers();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error(error.response?.data?.message || "Update failed");
     }
   };
