@@ -371,9 +371,7 @@ export default function LectureSchedule() {
     const date = new Date(d);
     if (isNaN(date.getTime())) return null;
     const day = date.getDay();
-    if (day === 6) { // Saturday
-      date.setDate(date.getDate() + 2); // Sat -> Mon
-    } else if (day === 0) { // Sunday
+    if (day === 0) { // Sunday
       date.setDate(date.getDate() + 1); // Sun -> Mon
     }
     return date;
@@ -383,22 +381,17 @@ export default function LectureSchedule() {
     let offset = 0;
     for (let k = 0; k < index; k++) {
       if (freq === "once a week" || freq === "weekly") {
-        offset += 5;
+        offset += 6;
       } else if (freq === "bi-weekly") {
-        offset += 10;
+        offset += 12;
       } else if (freq === "every 2 days") {
         offset += 2;
       } else if (freq === "daily" || freq === "5 days a week") {
         offset += 1;
       } else if (freq === "twice a week") {
-        offset += (k % 2 === 0) ? 3 : 2;
+        offset += 3;
       } else if (freq === "thrice a week") {
-        const rem = k % 3;
-        if (rem === 0 || rem === 1) {
-          offset += 2;
-        } else {
-          offset += 1;
-        }
+        offset += 2;
       } else if (freq === "4 times a week") {
         const rem = k % 4;
         if (rem === 1) {
@@ -420,7 +413,7 @@ export default function LectureSchedule() {
     while (added < offset) {
       date.setDate(date.getDate() + 1);
       const day = date.getDay();
-      if (day !== 0 && day !== 6) {
+      if (day !== 0) { // Only skip Sunday
         added++;
       }
     }
@@ -665,7 +658,7 @@ export default function LectureSchedule() {
 
       generated.push({
         _id: `temp-${Date.now()}-${i}`,
-        title: `Lecture ${i + 1}`,
+        title: "",
         description: "",
         date: nextDate ? formatDateForInput(nextDate) : "",
         time_slot: "",
@@ -712,7 +705,7 @@ export default function LectureSchedule() {
 
     list.push({
       _id: `temp-${Date.now()}`,
-      title: `Lecture ${list.length + 1}`,
+      title: "",
       description: "",
       date: frequency === "custom" || !nextDate ? "" : formatDateForInput(nextDate),
       time_slot: list.length > 0 ? (list[list.length - 1].time_slot || "") : "",
@@ -749,7 +742,7 @@ export default function LectureSchedule() {
 
     list.push({
       _id: `temp-${Date.now()}`,
-      title: `Saturday Special Lecture`,
+      title: "",
       description: "",
       date: formatDateForInput(nextSaturday),
       status: "Planned",
@@ -782,28 +775,14 @@ export default function LectureSchedule() {
         ...updated[index],
         isSaturdayLecture: value
       };
-      // If Saturday is disabled and the date is a Saturday, shift it to Monday
-      if (!value && updated[index].date) {
-        const d = new Date(updated[index].date);
-        if (!isNaN(d.getTime()) && d.getDay() === 6) {
-          const adjusted = adjustDateSkippingWeekends(d);
-          updated[index].date = formatDateForInput(adjusted);
-        }
-      }
     } else if (field === "date") {
       let adjustedDate = value;
       if (value) {
         const d = new Date(value);
         if (!isNaN(d.getTime())) {
-          const isSaturday = d.getDay() === 6;
-          if (updated[index].isSaturdayLecture && isSaturday) {
-            // Keep Saturday
-            adjustedDate = value;
-          } else {
-            // Default shift weekend to Monday
-            const adjusted = adjustDateSkippingWeekends(d);
-            adjustedDate = formatDateForInput(adjusted);
-          }
+          // Adjust date skipping Sunday
+          const adjusted = adjustDateSkippingWeekends(d);
+          adjustedDate = formatDateForInput(adjusted);
         }
       }
 

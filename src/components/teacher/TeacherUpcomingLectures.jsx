@@ -29,6 +29,15 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
 
   const [submittingId, setSubmittingId] = useState(null);
 
+  // Title/Topic Modal State
+  const [showTitleTopicModal, setShowTitleTopicModal] = useState(false);
+  const [selectedLectureForModal, setSelectedLectureForModal] = useState(null);
+  const [newTitle, setNewTitle] = useState("");
+  const [newTopicId, setNewTopicId] = useState("");
+  const [newTopicName, setNewTopicName] = useState("");
+  const [syllabusTopics, setSyllabusTopics] = useState([]);
+  const [loadingTopics, setLoadingTopics] = useState(false);
+
   // Live timer tick every 5 seconds to update time evaluation automatically
   useEffect(() => {
     fetchUpcomingLectures();
@@ -113,6 +122,77 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
       if (onRefreshLogs) onRefreshLogs();
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to Punch In.");
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const fetchTopicsForSubject = async (batchId, subject) => {
+    try {
+      setLoadingTopics(true);
+      const res = await API.get(`/syllabus/batch-subject-topics?batchId=${batchId}&subject=${encodeURIComponent(subject)}`);
+      setSyllabusTopics(res.data?.topics || []);
+    } catch (err) {
+      toast.error("Failed to load syllabus topics.");
+      setSyllabusTopics([]);
+    } finally {
+      setLoadingTopics(false);
+    }
+  };
+
+  const interceptPunchIn = (lec) => {
+    if (!lec.title || !lec.title.trim() || lec.title === "Untitled Lecture") {
+      setSelectedLectureForModal(lec);
+      setNewTitle("");
+      setNewTopicId("");
+      setNewTopicName("");
+      setSyllabusTopics([]); // Clear previous topics
+      setShowTitleTopicModal(true);
+      if (lec.batch?._id && lec.subject) {
+        fetchTopicsForSubject(lec.batch._id, lec.subject);
+      }
+    } else {
+      handlePunchIn(lec);
+    }
+  };
+
+  const handleSaveTitleTopic = async () => {
+    if (!newTitle.trim()) return toast.error("Lecture Title is required");
+
+    try {
+      setSubmittingId("modal-save");
+      const lec = selectedLectureForModal;
+      
+      const payload = {
+        title: newTitle.trim(),
+        topicId: newTopicId || null,
+        topicName: newTopicName || null,
+      };
+      
+      if (lec.scheduleId) {
+        payload.scheduleId = lec.scheduleId;
+        payload.lectureId = lec._id;
+      } else if (lec.batchLectureId) {
+        payload.batchLectureId = lec.batchLectureId;
+      }
+
+      await API.patch("/punch/update-topic", payload);
+      toast.success("Topic saved successfully");
+      setShowTitleTopicModal(false);
+      
+      // Update local state temporarily so we don't have to wait for fetch
+      setLectures(prev => prev.map(l => {
+        if (l._id === lec._id) {
+          return { ...l, title: newTitle.trim(), topicId: newTopicId, topicName: newTopicName };
+        }
+        return l;
+      }));
+
+      // Immediately punch in using the modified lecture object
+      handlePunchIn({ ...lec, title: newTitle.trim(), topicId: newTopicId, topicName: newTopicName });
+      
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to save topic");
     } finally {
       setSubmittingId(null);
     }
@@ -203,7 +283,12 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
                 <div style={S.cardTop}>
                   <div>
                     <span style={S.subjectBadge}>{lec.subject}</span>
-                    <h4 style={S.lecTitle}>{lec.title}</h4>
+                    <h4 style={S.lecTitle}>{lec.title || "No Title Set"}</h4>
+                    {lec.topicName && (
+                      <div style={S.metaText}>
+                        🏷️ Topic: <strong>{lec.topicName}</strong>
+                      </div>
+                    )}
                     <div style={S.metaText}>
                       🎓 Batch: <strong>{lec.batch?.batch_name || "N/A"} ({lec.batch?.batch_no || ""})</strong>
                     </div>
@@ -278,7 +363,7 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
                     </div>
 
                     <button
-                      onClick={() => handlePunchIn(lec)}
+                      onClick={() => interceptPunchIn(lec)}
                       disabled={isPunchInBtnDisabled}
                       style={{
                         ...S.punchInBtn,
@@ -405,6 +490,66 @@ export default function TeacherUpcomingLectures({ onRefreshLogs }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* TITLE & TOPIC MODAL */}
+      {showTitleTopicModal && selectedLectureForModal && (
+        <div style={S.modalOverlay}>
+          <div style={S.modalContent}>
+            <h3 style={{ margin: "0 0 16px 0", fontSize: "1.1rem" }}>Set Lecture Title & Topic</h3>
+            <p style={{ fontSize: "0.85rem", color: "#64748B", marginBottom: "16px" }}>
+              Please provide a Title and select a Syllabus Topic for this lecture before punching in.
+            </p>
+            
+            <div style={{ marginBottom: "20px" }}>
+              <label style={S.label}>Lecture Title <span style={{ color: "#EF4444" }}>*</span></label>
+              <input 
+                type="text" 
+                list="topic-options"
+                value={newTitle}
+                onChange={e => {
+                  const val = e.target.value;
+                  setNewTitle(val);
+                  
+                  // Auto-match topic if they selected/typed an exact existing syllabus topic
+                  const matchedTopic = syllabusTopics.find(t => (t.title || t.templateLecture?.title) === val);
+                  if (matchedTopic) {
+                    setNewTopicId(matchedTopic.templateLecture?._id || "");
+                    setNewTopicName(matchedTopic.title || matchedTopic.templateLecture?.title || "");
+                  } else {
+                    setNewTopicId("");
+                    setNewTopicName("");
+                  }
+                }}
+                style={S.input}
+                placeholder="Type or select lecture topic..."
+              />
+              <datalist id="topic-options">
+                {syllabusTopics.map(t => (
+                  <option key={t._id} value={t.title || t.templateLecture?.title} />
+                ))}
+              </datalist>
+              {loadingTopics && <div style={{ fontSize: "0.8rem", color: "#64748B", marginTop: 4 }}>Loading syllabus topics...</div>}
+            </div>
+
+            <div style={S.modalActions}>
+              <button 
+                onClick={() => setShowTitleTopicModal(false)}
+                style={S.cancelBtn}
+                disabled={submittingId === "modal-save"}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveTitleTopic}
+                style={S.saveBtn}
+                disabled={submittingId === "modal-save" || !newTitle.trim()}
+              >
+                {submittingId === "modal-save" ? "Saving..." : "Save & Start Lecture"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
