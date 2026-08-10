@@ -63,6 +63,9 @@ export default function LectureSchedule() {
   // Conflict detection state
   const [lectureConflicts, setLectureConflicts] = useState({}); // { lectureIndex: [conflict, ...] }
   const [checkingConflicts, setCheckingConflicts] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [showCascadeModal, setShowCascadeModal] = useState(false);
+  const [cascadeContext, setCascadeContext] = useState(null);
 
   // Grid / Spreadsheet states
   const [lectures, setLectures] = useState([]);
@@ -807,22 +810,8 @@ export default function LectureSchedule() {
       // Cascade changes to all subsequent lectures if frequency is not custom,
       // but only if this is NOT a Saturday-independent lecture.
       if (adjustedDate && frequency !== "custom" && !updated[index].isSaturdayLecture) {
-        const shouldCascade = window.confirm("Would you like to shift the dates of all subsequent lectures accordingly?");
-        if (shouldCascade) {
-          let regularIndexOffset = 0;
-          for (let i = index + 1; i < updated.length; i++) {
-            if (updated[i].isSaturdayLecture) {
-              // Skip Saturday lectures from the cascade
-              continue;
-            }
-            regularIndexOffset++;
-            const nextDate = getDateForLectureIndex(adjustedDate, regularIndexOffset, frequency);
-            updated[i] = {
-              ...updated[i],
-              date: nextDate ? formatDateForInput(nextDate) : ""
-            };
-          }
-        }
+        setCascadeContext({ index, adjustedDate });
+        setShowCascadeModal(true);
       }
     } else {
       updated[index] = {
@@ -2498,6 +2487,25 @@ export default function LectureSchedule() {
 
           </div>
 
+          {/* TABLE TOOLBAR */}
+          {(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker && (
+            <div className="flex justify-end gap-2 mt-4 mb-4">
+              <button
+                onClick={addLectureRow}
+                className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus size={14} /> Add Lecture Row
+              </button>
+              <button
+                onClick={() => setShowClearModal(true)}
+                disabled={lectures.length === 0}
+                className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#64748B] px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Clear All Rows
+              </button>
+            </div>
+          )}
+
           {/* SPREADSHEET TABLE WORKSPACE */}
           <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
@@ -2915,12 +2923,7 @@ export default function LectureSchedule() {
             <div className="flex gap-2">
               {(role === "admin" || role === "teacher") && !selectedSchedule?.isFromSyllabusTracker && (
                 <>
-                  <button
-                    onClick={addLectureRow}
-                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus size={14} /> Add Lecture Row
-                  </button>
+
 
                   <button
                     onClick={addSaturdayLectureRow}
@@ -2939,19 +2942,7 @@ export default function LectureSchedule() {
                     {checkingConflicts ? "Checking..." : Object.keys(lectureConflicts).length > 0 ? `${Object.keys(lectureConflicts).length} Conflict(s) Found` : "Check Conflicts"}
                   </button>
 
-                  <button
-                    onClick={() => {
-                      if (window.confirm("Are you sure you want to clear the entire spreadsheet?")) {
-                        setLectures([]);
-                        setLectureConflicts({});
-                        toast.success("Spreadsheet cleared.");
-                      }
-                    }}
-                    disabled={lectures.length === 0}
-                    className="bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#64748B] px-4 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    Clear All Rows
-                  </button>
+
 
                 </>
               )}
@@ -2986,6 +2977,114 @@ export default function LectureSchedule() {
 
           </div>
 
+        </div>
+      )}
+
+      {/* CLEAR SPREADSHEET CONFIRMATION MODAL */}
+      {showClearModal && (
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E2E8F0] w-full max-w-sm rounded-2xl shadow-xl flex flex-col overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            <div className="p-6 text-center space-y-4">
+              <div className="mx-auto w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-2">
+                <AlertCircle size={24} />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#1B2B4B]">Clear Spreadsheet?</h3>
+              <p className="text-sm text-[#475569]">
+                Are you sure you want to clear the entire spreadsheet? All current lecture rows will be removed. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex border-t border-[#E2E8F0] divide-x divide-[#E2E8F0]">
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="flex-1 py-3 text-sm font-semibold text-[#64748B] hover:bg-[#F8FAFC] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setLectures([]);
+                  setLectureConflicts({});
+                  setShowClearModal(false);
+                  toast.success("Spreadsheet cleared.");
+                }}
+                className="flex-1 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CASCADE DATES CONFIRMATION MODAL */}
+      {showCascadeModal && (
+        <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E2E8F0] w-full max-w-sm rounded-2xl shadow-xl flex flex-col overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            <div className="p-6 text-center space-y-4">
+              <div className="mx-auto w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2">
+                <CalendarDays size={24} />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#1B2B4B]">Shift Subsequent Dates?</h3>
+              <p className="text-sm text-[#475569]">
+                Would you like to automatically shift the dates of all subsequent lectures to maintain your schedule frequency?
+              </p>
+            </div>
+            <div className="flex border-t border-[#E2E8F0] divide-x divide-[#E2E8F0]">
+              <button
+                onClick={() => {
+                  setShowCascadeModal(false);
+                  setCascadeContext(null);
+                }}
+                className="flex-1 py-3 text-sm font-semibold text-[#64748B] hover:bg-[#F8FAFC] transition-colors cursor-pointer"
+              >
+                No, Keep Them
+              </button>
+              <button
+                onClick={() => {
+                  if (!cascadeContext) return;
+                  const { index, adjustedDate } = cascadeContext;
+                  const list = [...lectures];
+                  let regularIndexOffset = 0;
+                  for (let i = index + 1; i < list.length; i++) {
+                    if (list[i].isSaturdayLecture) continue;
+                    regularIndexOffset++;
+                    const nextDate = getDateForLectureIndex(adjustedDate, regularIndexOffset, frequency);
+                    list[i] = {
+                      ...list[i],
+                      date: nextDate ? formatDateForInput(nextDate) : ""
+                    };
+                  }
+                  setLectures(list);
+
+                  // If it's a syllabus tracker lecture, save any changed lectures immediately!
+                  if (selectedSchedule?.isFromSyllabusTracker) {
+                    const savePromises = [];
+                    for (let i = index + 1; i < list.length; i++) {
+                      const oldLec = lectures[i];
+                      const newLec = list[i];
+                      if (!oldLec || oldLec.date !== newLec.date) {
+                        savePromises.push(
+                          API.put(`/schedules/batch-lecture/${newLec._id}`, {
+                            date: newLec.date || null,
+                            teacherId: typeof newLec.teacher === "object" ? (newLec.teacher?._id || null) : (newLec.teacher || null),
+                            status: newLec.status
+                          })
+                        );
+                      }
+                    }
+                    Promise.all(savePromises).catch(err => console.error(err));
+                  }
+
+                  setShowCascadeModal(false);
+                  setCascadeContext(null);
+                  toast.success("Subsequent dates shifted successfully.");
+                }}
+                className="flex-1 py-3 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+              >
+                Yes, Shift Dates
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
