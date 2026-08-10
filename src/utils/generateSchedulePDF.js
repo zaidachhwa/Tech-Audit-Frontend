@@ -12,12 +12,15 @@ export const generateSchedulePDF = async (schedules, filters, action = "download
   let allLectures = [];
 
   schedules.forEach((schedule) => {
+    const batches = schedule.batches?.length > 0 ? schedule.batches : (schedule.batch ? [schedule.batch] : []);
+    const batchIds = batches.map(b => String(b._id || b));
+    
     if (type === "batches") {
-      const bId = schedule.batch?._id || schedule.batch;
-      if (!selectedBatches.includes(bId)) return;
+      const hasSelectedBatch = batchIds.some(bId => selectedBatches.includes(bId));
+      if (!hasSelectedBatch) return;
     }
 
-    const batchName = schedule.batch?.batch_name || "Unknown Batch";
+    const batchName = batches.length > 0 ? batches.map(b => b.batch_name || "Unknown Batch").join(", ") : "Unknown Batch";
     const subjectName = schedule.subject || "Unknown Subject";
     
     (schedule.lectures || []).forEach((lecture) => {

@@ -974,45 +974,29 @@ export default function LectureSchedule() {
 
     try {
       if (isCreating) {
-        // Create new schedule for each selected batch
-        await Promise.all(
-          selectedBatchIds.map((bId) =>
-            API.post("/schedules/create", {
-              subject,
-              batch: bId,
-              teacher: finalTeacherId,
-              lectures: sanitizedLectures
-            })
-          )
-        );
-        if (role === "teacher") {
-          toast.success("Sent for approval!");
-        } else {
-          toast.success("Schedules successfully saved to database!");
-        }
-      } else {
-        // Update existing schedule for the first batch
-        await API.put(`/schedules/update/${selectedSchedule._id}`, {
+        // Create a single schedule for all selected batches
+        await API.post("/schedules/create", {
           subject,
-          batch: selectedBatchIds[0],
+          batchIds: selectedBatchIds,
+          batch: selectedBatchIds[0], // fallback
           teacher: finalTeacherId,
           lectures: sanitizedLectures
         });
 
-        // If other batches were selected in edit mode, create new schedules for them
-        if (selectedBatchIds.length > 1) {
-          const extraBatches = selectedBatchIds.slice(1);
-          await Promise.all(
-            extraBatches.map((bId) =>
-              API.post("/schedules/create", {
-                subject,
-                batch: bId,
-                teacher: finalTeacherId,
-                lectures: sanitizedLectures
-              })
-            )
-          );
+        if (role === "teacher") {
+          toast.success("Sent for approval!");
+        } else {
+          toast.success("Schedule successfully saved to database!");
         }
+      } else {
+        // Update existing schedule with all selected batches
+        await API.put(`/schedules/update/${selectedSchedule._id}`, {
+          subject,
+          batchIds: selectedBatchIds,
+          batch: selectedBatchIds[0], // fallback
+          teacher: finalTeacherId,
+          lectures: sanitizedLectures
+        });
 
         if (role === "teacher") {
           toast.success("Sent for approval!");
@@ -1175,7 +1159,13 @@ export default function LectureSchedule() {
   const handleOpenEdit = (schedule) => {
     setSelectedSchedule(schedule);
     setSubject(schedule.subject || "");
-    setSelectedBatchIds(schedule.batch?._id ? [schedule.batch._id] : (schedule.batch ? [schedule.batch] : []));
+    let bIds = [];
+    if (schedule.batches && schedule.batches.length > 0) {
+      bIds = schedule.batches.map(b => b._id || b);
+    } else if (schedule.batch) {
+      bIds = [schedule.batch._id || schedule.batch];
+    }
+    setSelectedBatchIds(bIds);
     const mainTeacher = schedule.teacher?._id || schedule.teacher || "";
     setTeacherId(mainTeacher);
     const teacherSet = new Set();

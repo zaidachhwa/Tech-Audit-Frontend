@@ -47,13 +47,13 @@ export default function CalendarView({
     const teacherMap = new Map();
 
     schedules.forEach((sch) => {
-      if (sch.batch) {
-        const bId = sch.batch._id || sch.batch;
-        const bName = sch.batch.batch_name
-          ? `${sch.batch.batch_name} #${sch.batch.batch_no || ""}`
-          : `Batch ${bId}`;
+      const batches = sch.batches?.length > 0 ? sch.batches : (sch.batch ? [sch.batch] : []);
+      batches.forEach(b => {
+        if (!b) return;
+        const bId = b._id || b;
+        const bName = b.batch_name ? `${b.batch_name} #${b.batch_no || ""}` : `Batch ${bId}`;
         batchMap.set(String(bId), bName);
-      }
+      });
       if (sch.teacher) {
         const tId = sch.teacher._id || sch.teacher;
         const tName = sch.teacher.name || "Teacher";
@@ -72,11 +72,10 @@ export default function CalendarView({
     const events = [];
 
     schedules.forEach((sch) => {
-      const batchId = String(sch.batch?._id || sch.batch || "");
+      const batches = sch.batches?.length > 0 ? sch.batches : (sch.batch ? [sch.batch] : []);
+      const batchIds = batches.map(b => String(b._id || b));
+      const batchName = batches.map(b => b.batch_name ? `${b.batch_name} #${b.batch_no || ""}` : "Batch").join(", ");
       const teacherId = String(sch.teacher?._id || sch.teacher || "");
-      const batchName = sch.batch?.batch_name
-        ? `${sch.batch.batch_name} #${sch.batch.batch_no || ""}`
-        : "Batch";
       const teacherName = sch.teacher?.name || "Teacher";
       const subjectName = sch.subject || "Syllabus";
 
@@ -92,7 +91,7 @@ export default function CalendarView({
           lectureIndex: index,
           scheduleId: sch._id,
           subject: subjectName,
-          batchId,
+          batchIds,
           batchName,
           teacherId: (typeof lec.teacher === "object" && lec.teacher?._id) ? String(lec.teacher._id) : teacherId,
           teacherName: lecTeacherName,
@@ -107,7 +106,7 @@ export default function CalendarView({
   // Filter events based on selected dropdown filters
   const filteredEvents = useMemo(() => {
     return allEvents.filter((evt) => {
-      if (selectedBatch !== "all" && evt.batchId !== selectedBatch) return false;
+      if (selectedBatch !== "all" && (!evt.batchIds || !evt.batchIds.includes(selectedBatch))) return false;
       if (selectedTeacher !== "all" && evt.teacherId !== selectedTeacher) return false;
       if (selectedStatus !== "all") {
         if (selectedStatus === "Done" && evt.status !== "Done") return false;
