@@ -459,7 +459,7 @@ export default function CalendarView({
                     const stBadge = getStatusBadge(evt.status);
                     return (
                       <div
-                        key={evt._id || evt.lectureIndex}
+                        key={`${evt.scheduleId}-${evt._id || evt.lectureIndex}`}
                         onClick={() => {
                           setActiveLectureModal(evt);
                         }}

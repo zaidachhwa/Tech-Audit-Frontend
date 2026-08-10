@@ -562,7 +562,7 @@ export default function LectureSchedule() {
       }
 
       return {
-        _id: `temp-${Date.now()}-${i}`,
+        _id: `temp-${Date.now()}-${i}-${Math.random().toString(36).slice(2)}`,
         title: titleStr,
         description: descStr,
         date: nextDate ? formatDateForInput(nextDate) : "",
@@ -618,21 +618,10 @@ export default function LectureSchedule() {
       const subjTitle = tmpl.subject || tmpl.name || tmpl.title || "Subject";
       setSubject(subjTitle);
 
-      // Check if an existing schedule already exists for this subject (and selected batch)!
-      const targetBatchId = selectedBatchIds[0];
-      const existing = schedules.find(s => {
-        const matchSubj = (s.subject || "").trim().toLowerCase() === subjTitle.trim().toLowerCase();
-        if (!matchSubj) return false;
-        if (!targetBatchId) return true;
-        const bId = s.batch?._id ? String(s.batch._id) : String(s.batch || "");
-        return bId === String(targetBatchId);
-      });
-
-      if (existing) {
-        handleOpenEdit(existing);
-        toast.info(`Loaded existing schedule with ${existing.lectures?.length || 0} lectures for "${subjTitle}"!`);
-        return;
-      }
+      // Note: We intentionally do NOT auto-redirect to an existing schedule here.
+      // Multiple lectures can be scheduled for the same subject on the same or different dates
+      // without conflicts (as long as batch/teacher/venue don't clash). Each save creates its
+      // own schedule document, so both lectures remain visible on the calendar.
 
       loadTemplateLectures(tmpl, overrideStartDate, overrideFreq, selectedTeacherIds, singleLectureIndex);
     } catch (err) {
@@ -681,7 +670,7 @@ export default function LectureSchedule() {
       }
 
       generated.push({
-        _id: `temp-${Date.now()}-${i}`,
+        _id: `temp-${Date.now()}-${i}-${Math.random().toString(36).slice(2)}`,
         title: "",
         description: "",
         date: nextDate ? formatDateForInput(nextDate) : "",
@@ -728,7 +717,7 @@ export default function LectureSchedule() {
     }
 
     list.push({
-      _id: `temp-${Date.now()}`,
+      _id: `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       title: "",
       description: "",
       date: frequency === "custom" || !nextDate ? "" : formatDateForInput(nextDate),
@@ -765,7 +754,7 @@ export default function LectureSchedule() {
     nextSaturday.setDate(nextSaturday.getDate() + daysUntilSaturday);
 
     list.push({
-      _id: `temp-${Date.now()}`,
+      _id: `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       title: "",
       description: "",
       date: formatDateForInput(nextSaturday),
