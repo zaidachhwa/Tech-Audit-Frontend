@@ -40,6 +40,7 @@ export default function CalendarView({
   const [activeLectureModal, setActiveLectureModal] = useState(null);
   const [deleteConfirmLecture, setDeleteConfirmLecture] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
+  const [activeDayLectures, setActiveDayLectures] = useState(null);
 
   // Extract list of unique batches & teachers for filters
   const filterOptions = useMemo(() => {
@@ -517,7 +518,7 @@ export default function CalendarView({
                   {/* Overflow tag */}
                   {dayEvents.length > 3 && (
                     <button
-                      onClick={() => setActiveLectureModal(dayEvents[0])}
+                      onClick={() => setActiveDayLectures({ dateStr: dObj.dateStr, events: dayEvents })}
                       className="w-full text-center text-[9px] font-extrabold text-[#2563EB] hover:underline bg-blue-50 rounded py-0.5 cursor-pointer"
                     >
                       +{dayEvents.length - 3} more lectures
@@ -529,6 +530,66 @@ export default function CalendarView({
           })}
         </div>
       </div>
+
+      {/* ── ALL DAY LECTURES MODAL ── */}
+      {activeDayLectures && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E2E8F0] space-y-4 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[85vh]">
+            <div className="flex justify-between items-center pb-3 border-b border-[#F1F5F9]">
+              <div>
+                <h3 className="text-lg font-extrabold text-[#0F172A]">Lectures on {new Date(activeDayLectures.dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</h3>
+                <p className="text-xs text-[#64748B] font-semibold">{activeDayLectures.events.length} lectures scheduled</p>
+              </div>
+              <button
+                onClick={() => setActiveDayLectures(null)}
+                className="text-[#94A3B8] hover:text-[#0F172A] hover:bg-[#F1F5F9] p-1.5 rounded-lg transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2 space-y-2 scrollbar-thin">
+              {activeDayLectures.events.map((evt) => {
+                const stBadge = getStatusBadge(evt.status);
+                return (
+                  <div
+                    key={`${evt.scheduleId}-${evt._id || evt.lectureIndex}`}
+                    onClick={() => {
+                      setActiveDayLectures(null);
+                      setActiveLectureModal(evt);
+                    }}
+                    style={{
+                      backgroundColor: stBadge.bg,
+                      color: stBadge.text,
+                      borderColor: stBadge.border,
+                    }}
+                    className="p-3 rounded-xl border text-xs cursor-pointer hover:shadow-md transition flex flex-col gap-1"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-extrabold text-sm truncate">{evt.subject}</span>
+                      {evt.time_slot && (
+                        <span className="opacity-80 shrink-0 font-bold bg-white/50 px-2 py-0.5 rounded text-[10px]">
+                          {evt.time_slot}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-slate-800 font-semibold">{evt.title}</span>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[10px] opacity-90 font-bold">
+                      <span className="text-[#475569]">{evt.batchName}</span>
+                      {evt.teacherName && (
+                        <span className="text-[#2563EB]">👤 {evt.teacherName}</span>
+                      )}
+                      {evt.venue && (
+                        <span className="text-purple-600">📍 {evt.venue}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── LECTURE EVENT DETAIL MODAL ── */}
       {activeLectureModal && (
