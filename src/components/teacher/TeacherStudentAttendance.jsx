@@ -93,7 +93,12 @@ export default function TeacherStudentAttendance() {
     }
     try {
       setSaving(true);
-      const body = { reason: editReason.trim() };
+      const body = { 
+        reason: editReason.trim(),
+        date: editRecord.date,
+        batch: editRecord.batch?._id || editRecord.batch,
+        student: editRecord.student?._id || editRecord.student
+      };
       if (editPunchIn) body.punchInTime = new Date(editPunchIn).toISOString();
       if (editPunchOut) body.punchOutTime = new Date(editPunchOut).toISOString();
       const res = await API.patch(`/attendance/student/${editRecord._id}/edit`, body);
@@ -446,7 +451,6 @@ export default function TeacherStudentAttendance() {
 
                         <td style={{ padding: "10px 12px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            {rec.status !== "NOT_PUNCHED" && (
                               <button onClick={() => openEdit(rec)} style={{
                                 display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
                                 border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer",
@@ -454,7 +458,6 @@ export default function TeacherStudentAttendance() {
                               }}>
                                 <Edit3 size={12} /> Edit
                               </button>
-                            )}
                             {derivedStatus === "Late" && derivedAppStatus === "Pending" && (
                               <>
                                 <button onClick={() => handleApproveLate(rec._id)} style={{
