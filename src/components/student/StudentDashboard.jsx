@@ -65,7 +65,6 @@ export default function StudentDashboard() {
 
   return (
     <div className="space-y-6">
-      <Toaster position="top-center" />
 
       {/* TOP HEADER */}
       <div className="flex items-center justify-between flex-wrap gap-4">

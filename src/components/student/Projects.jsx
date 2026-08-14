@@ -95,7 +95,6 @@ export default function Projects() {
 
   return (
     <div style={S.page}>
-      <Toaster position="top-right" />
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap'); @keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       {/* Header */}

@@ -86,7 +86,6 @@ export default function Reports() {
   return (
     <>
       <style>{style}</style>
-      <Toaster position="top-right" />
       <div className="rp-wrap" style={{ width: "100%", boxSizing: "border-box", overflowX: "hidden" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
 

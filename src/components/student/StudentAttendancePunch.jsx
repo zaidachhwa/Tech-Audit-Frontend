@@ -210,16 +210,15 @@ export default function StudentAttendancePunch() {
   })();
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
-      <Toaster position="top-center" />
+    <div className="max-w-4xl mx-auto px-4 pb-10 pt-4">
 
       {/* ── HEADER ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-2.5">
           <div style={{ width: 5, height: 28, background: "#0F3C8A", borderRadius: 4 }} />
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1e293b", margin: 0 }}>My Attendance</h1>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 m-0">My Attendance</h1>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="flex flex-wrap items-center gap-2.5">
           <button onClick={downloadPDF} disabled={monthRecords.length === 0} style={{
             display: "flex", alignItems: "center", gap: 6, padding: "8px 16px",
             border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer",
@@ -251,14 +250,14 @@ export default function StudentAttendancePunch() {
         <div style={{ position: "absolute", bottom: -30, left: -30, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
 
         {/* Live Clock */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, position: "relative", zIndex: 1 }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 relative z-10">
           <div>
-            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.5, margin: 0, marginBottom: 4 }}>
+            <p className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-1 m-0">
               {currentTime.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Clock size={20} style={{ color: "#60a5fa" }} />
-              <span style={{ fontSize: 28, fontWeight: 800, color: "#fff", fontVariantNumeric: "tabular-nums" }}>
+            <div className="flex items-center gap-2">
+              <Clock size={20} className="text-blue-400" />
+              <span className="text-2xl sm:text-3xl font-extrabold text-white tabular-nums">
                 {currentTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
               </span>
             </div>
@@ -267,37 +266,38 @@ export default function StudentAttendancePunch() {
             padding: "6px 14px", borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
             background: status === "PUNCHED_IN" ? "rgba(34,197,94,0.2)" : status === "PUNCHED_OUT" ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.1)",
             color: status === "PUNCHED_IN" ? "#4ade80" : status === "PUNCHED_OUT" ? "#a5b4fc" : "rgba(255,255,255,0.6)",
+            width: "fit-content"
           }}>
             {status === "PUNCHED_IN" ? "● Active" : status === "PUNCHED_OUT" ? "✓ Completed" : "Not Punched"}
           </div>
         </div>
 
         {/* Punch Times */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 24, position: "relative", zIndex: 1 }}>
-          <div style={{ flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              <LogIn size={14} style={{ color: "#4ade80" }} />
-              <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: 1 }}>Punch In</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6 relative z-10">
+          <div className="bg-white/10 rounded-xl p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <LogIn size={14} className="text-green-400" />
+              <span className="text-[10px] sm:text-xs font-bold text-white/50 uppercase tracking-widest">Punch In</span>
             </div>
-            <p style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>
+            <p className="text-base sm:text-lg font-extrabold text-white m-0">
               {todayRecord?.punchInTime ? formatTime(todayRecord.punchInTime) : "—"}
             </p>
           </div>
-          <div style={{ flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              <LogOut size={14} style={{ color: "#f87171" }} />
-              <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: 1 }}>Punch Out</span>
+          <div className="bg-white/10 rounded-xl p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <LogOut size={14} className="text-red-400" />
+              <span className="text-[10px] sm:text-xs font-bold text-white/50 uppercase tracking-widest">Punch Out</span>
             </div>
-            <p style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>
+            <p className="text-base sm:text-lg font-extrabold text-white m-0">
               {todayRecord?.punchOutTime ? formatTime(todayRecord.punchOutTime) : "—"}
             </p>
           </div>
-          <div style={{ flex: 1, background: "rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-              <Clock size={14} style={{ color: "#60a5fa" }} />
-              <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: 1 }}>Total Hours</span>
+          <div className="bg-white/10 rounded-xl p-3 sm:p-4 col-span-2 sm:col-span-1">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Clock size={14} className="text-blue-400" />
+              <span className="text-[10px] sm:text-xs font-bold text-white/50 uppercase tracking-widest">Total Hours</span>
             </div>
-            <p style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>
+            <p className="text-base sm:text-lg font-extrabold text-white m-0">
               {calcHours(todayRecord?.punchInTime, todayRecord?.punchOutTime)}
             </p>
           </div>
@@ -309,14 +309,13 @@ export default function StudentAttendancePunch() {
             <button
               onClick={() => handlePunchClick('in')}
               disabled={punching}
+              className="hover:opacity-90 active:scale-95"
               style={{
                 display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 48px",
                 background: "linear-gradient(135deg, #22c55e, #16a34a)", border: "none", borderRadius: 12,
-                color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 20px rgba(34,197,94,0.4)",
-                transition: "transform 0.15s, box-shadow 0.15s", opacity: punching ? 0.7 : 1
+                color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer",
+                transition: "opacity 0.15s, transform 0.15s", opacity: punching ? 0.7 : 1
               }}
-              onMouseEnter={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 6px 25px rgba(34,197,94,0.5)"; }}
-              onMouseLeave={e => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 4px 20px rgba(34,197,94,0.4)"; }}
             >
               <Fingerprint size={20} /> {punching ? "Punching In..." : "Punch In"}
             </button>
@@ -326,14 +325,13 @@ export default function StudentAttendancePunch() {
             <button
               onClick={() => handlePunchClick('out')}
               disabled={punching}
+              className="hover:opacity-90 active:scale-95"
               style={{
                 display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 48px",
                 background: "linear-gradient(135deg, #ef4444, #dc2626)", border: "none", borderRadius: 12,
-                color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 20px rgba(239,68,68,0.4)",
-                transition: "transform 0.15s, box-shadow 0.15s", opacity: punching ? 0.7 : 1
+                color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer",
+                transition: "opacity 0.15s, transform 0.15s", opacity: punching ? 0.7 : 1
               }}
-              onMouseEnter={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 6px 25px rgba(239,68,68,0.5)"; }}
-              onMouseLeave={e => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 4px 20px rgba(239,68,68,0.4)"; }}
             >
               <Fingerprint size={20} /> {punching ? "Punching Out..." : "Punch Out"}
             </button>
@@ -351,57 +349,54 @@ export default function StudentAttendancePunch() {
       </div>
 
       {/* ── STATS CARDS ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         {[
           { label: "Days Logged", value: totalDays, icon: Calendar, color: "#3b82f6", bg: "rgba(59,130,246,0.08)" },
           { label: "Full Days", value: punchedDays, icon: CheckCircle2, color: "#22c55e", bg: "rgba(34,197,94,0.08)" },
           { label: "Avg Hours/Day", value: avgHours, icon: Clock, color: "#8b5cf6", bg: "rgba(139,92,246,0.08)" },
         ].map((stat, i) => (
-          <div key={i} style={{
-            background: "#fff", borderRadius: 12, padding: "16px 18px", border: "1px solid #f1f5f9",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: stat.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div key={i} className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex items-center justify-between sm:block">
+            <div className="flex items-center gap-2 sm:mb-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: stat.bg }}>
                 <stat.icon size={16} style={{ color: stat.color }} />
               </div>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1 }}>{stat.label}</span>
+              <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
             </div>
-            <p style={{ fontSize: 22, fontWeight: 800, color: "#1e293b", margin: 0 }}>{stat.value}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-slate-800 m-0">{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* ── MONTH LOG ── */}
-      <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden" }}>
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden mb-6">
         {/* Month Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
-          <h2 style={{ fontSize: 15, fontWeight: 800, color: "#1e293b", margin: 0 }}>Attendance Log</h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button onClick={prevMonth} style={{ padding: 6, border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", display: "flex" }}>
-              <ChevronLeft size={16} color="#64748b" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 border-b border-slate-100 gap-3">
+          <h2 className="text-base sm:text-lg font-extrabold text-slate-800 m-0">Attendance Log</h2>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button onClick={prevMonth} className="p-1.5 border border-slate-200 rounded-md bg-white flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
+              <ChevronLeft size={16} className="text-slate-500" />
             </button>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#334155", minWidth: 130, textAlign: "center" }}>
+            <span className="text-sm font-bold text-slate-700 min-w-[130px] text-center">
               {MONTHS[viewMonth]} {viewYear}
             </span>
-            <button onClick={nextMonth} style={{ padding: 6, border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", cursor: "pointer", display: "flex" }}>
-              <ChevronRight size={16} color="#64748b" />
+            <button onClick={nextMonth} className="p-1.5 border border-slate-200 rounded-md bg-white flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
+              <ChevronRight size={16} className="text-slate-500" />
             </button>
           </div>
         </div>
 
         {/* Table */}
         {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Loading...</div>
+          <div className="p-10 text-center text-slate-400 text-sm">Loading...</div>
         ) : monthRecords.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>No attendance records for this month.</div>
+          <div className="p-10 text-center text-slate-400 text-sm">No attendance records for this month.</div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[550px] border-collapse text-[13px]">
               <thead>
-                <tr style={{ background: "#f8fafc" }}>
+                <tr className="bg-slate-50">
                   {["Date", "Punch In", "Punch Out", "Total Hours", "Status", ""].map((h, i) => (
-                    <th key={i} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, borderBottom: "1px solid #f1f5f9" }}>
+                    <th key={i} className="px-3.5 py-2.5 text-left font-bold text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-100">
                       {h}
                     </th>
                   ))}

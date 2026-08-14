@@ -867,10 +867,11 @@ export default function AdminStudents() {
               <div>
                 <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Email</label>
                 <input
-                  disabled
+                  required
                   type="email"
                   value={form.email}
-                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg bg-[#F8FAFC] text-[#64748B]"
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
                 />
               </div>
 
