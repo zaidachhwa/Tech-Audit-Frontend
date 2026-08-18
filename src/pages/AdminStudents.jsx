@@ -46,6 +46,7 @@ export default function AdminStudents() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phoneNo: "",
     password: "",
     batch_name: "",
     batch_no: "",
@@ -238,6 +239,7 @@ export default function AdminStudents() {
     setForm({
       name: student.name,
       email: student.email,
+      phoneNo: student.phoneNo || "",
       password: "",
       batch_name: student.batch_name,
       batch_no: student.batch_no,
@@ -258,6 +260,7 @@ export default function AdminStudents() {
           ...prev,
           name: fullStudent.name || prev.name,
           email: fullStudent.email || prev.email,
+          phoneNo: fullStudent.phoneNo || prev.phoneNo || "",
           batch_name: fullStudent.batch_name || prev.batch_name,
           batch_no: fullStudent.batch_no || prev.batch_no,
           fatherName: fullStudent.fatherName || "",
@@ -323,7 +326,7 @@ export default function AdminStudents() {
       await API.post("/students/register", form);
       toast.success("Student created successfully");
       setShowCreate(false);
-      setForm({ name: "", email: "", password: "", batch_name: "", batch_no: "", parentEmail: "", parentPhoneNo: "" });
+      setForm({ name: "", email: "", phoneNo: "", password: "", batch_name: "", batch_no: "", fatherName: "", fatherPhone: "", fatherEmail: "", motherName: "", motherPhone: "", motherEmail: "" });
       fetchStudents();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to create student");
@@ -461,7 +464,10 @@ export default function AdminStudents() {
                     </div>
                   </td>
 
-                  <td className="px-6 py-4 text-[#64748B] text-[13px] truncate max-w-[200px]">{s.email}</td>
+                  <td className="px-6 py-4 text-[#64748B] text-[13px] truncate max-w-[200px]">
+                    <div className="font-medium text-slate-700">{s.email}</div>
+                    {s.phoneNo && <div className="text-[11px] text-slate-400">{s.phoneNo}</div>}
+                  </td>
 
                   <td className="px-6 py-4 text-[#64748B] text-[12px]">
                     <div className="flex flex-col gap-0.5">
@@ -695,12 +701,24 @@ export default function AdminStudents() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Email</label>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Email *</label>
                 <input
                   required
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Student Phone Number</label>
+                <input
+                  type="text"
+                  pattern="[0-9+\s\-]+"
+                  placeholder="+91 9876543210"
+                  value={form.phoneNo}
+                  onChange={(e) => setForm({ ...form, phoneNo: e.target.value })}
                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
                 />
               </div>
@@ -865,12 +883,24 @@ export default function AdminStudents() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Email</label>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Email *</label>
                 <input
                   required
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Student Phone Number</label>
+                <input
+                  type="text"
+                  pattern="[0-9+\s\-]+"
+                  placeholder="+91 9876543210"
+                  value={form.phoneNo}
+                  onChange={(e) => setForm({ ...form, phoneNo: e.target.value })}
                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
                 />
               </div>

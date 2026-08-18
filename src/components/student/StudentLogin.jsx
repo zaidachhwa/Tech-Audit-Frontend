@@ -16,7 +16,11 @@ export default function StudentLogin() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await API.post("/students/login", form);
+      const payload = {
+        email: form.email.trim().toLowerCase(),
+        password: form.password.trim(),
+      };
+      const res = await API.post("/students/login", payload);
       login(res.data.token, res.data, "student");
       toast.success("Welcome back!");
       setTimeout(() => navigate("/student/dashboard"), 1000);

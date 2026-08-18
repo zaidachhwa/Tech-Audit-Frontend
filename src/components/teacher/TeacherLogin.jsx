@@ -16,7 +16,11 @@ export default function TeacherLogin() {
     e.preventDefault();
     try {
       setLoading(true);
-      const res = await loginTeacher(formData);
+      const payload = {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password.trim(),
+      };
+      const res = await loginTeacher(payload);
       login(res.token, { teacher: res.teacher }, "teacher");
       toast.success("Login successful!");
       navigate("/teacher/dashboard");

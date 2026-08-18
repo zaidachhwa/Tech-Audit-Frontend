@@ -24,12 +24,29 @@ API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear localStorage
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      // Redirect to login if not already there
-      if (window.location.pathname !== "/student-login" && window.location.pathname !== "/teacher-login" && window.location.pathname !== "/admin-login") {
-        window.location.href = "/student-login"; // fallback redirect
+      const currentPath = window.location.pathname;
+      const isLoginPage =
+        currentPath === "/student/login" ||
+        currentPath === "/teacher/login" ||
+        currentPath === "/admin/login" ||
+        currentPath === "/student-login" ||
+        currentPath === "/teacher-login" ||
+        currentPath === "/admin-login";
+
+      if (!isLoginPage) {
+        // Clear expired auth session
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("role");
+
+        // Redirect to respective login portal based on current path
+        if (currentPath.startsWith("/admin")) {
+          window.location.href = "/admin/login";
+        } else if (currentPath.startsWith("/teacher")) {
+          window.location.href = "/teacher/login";
+        } else {
+          window.location.href = "/student/login";
+        }
       }
     }
     return Promise.reject(error);

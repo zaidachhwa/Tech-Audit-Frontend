@@ -16,7 +16,11 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await API.post("/admin/login", form);
+      const payload = {
+        email: form.email.trim().toLowerCase(),
+        password: form.password.trim(),
+      };
+      const res = await API.post("/admin/login", payload);
       const token = res.data.token;
       const data = res.data;
       login(token, data, "admin");
