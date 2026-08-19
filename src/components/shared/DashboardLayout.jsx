@@ -109,13 +109,11 @@ export default function DashboardLayout({
           <img
             src="/logo.png"
             alt="NIT logo"
-            className={`${isCollapsed ? "h-10 w-10" : "h-28 w-auto max-w-[170px] -mt-2 -mb-2 scale-110"} object-contain transition-all duration-300 hover:scale-115`}
+            className={`${isCollapsed ? "h-10 w-10" : "h-28 w-auto max-w-[170px] -mt-2 -mb-2 scale-90"} object-contain`}
           />
           {!isCollapsed && (
             <>
-              <h2 className="text-center font-extrabold text-[11px] tracking-tight text-slate-800 px-1 leading-snug uppercase mt-0.5">
-                Nexcore Institute of Technology
-              </h2>
+             
               <span
                 style={{
                   marginTop: 4,

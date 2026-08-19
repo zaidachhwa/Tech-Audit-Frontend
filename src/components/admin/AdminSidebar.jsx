@@ -39,10 +39,8 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
         {/* LOGO & BRANDING SECTION */}
         {sidebarOpen ? (
           <div className="pt-2 pb-3 px-4 border-b border-[#F1F5F9] relative flex flex-col items-center">
-            <img src="/logo.png" alt="Nexcore logo" className="h-28 w-auto max-w-[170px] -mt-2 -mb-2 scale-110 object-contain transition duration-200 hover:scale-115" />
-            <h2 className="text-center font-extrabold text-xs tracking-tight text-[#0F3C8A] px-2 leading-snug uppercase mt-0.5">
-              Nexcore Institute of Technology
-            </h2>
+            <img src="/logo.png" alt="Nexcore logo" className="h-28 w-auto max-w-[170px] -mt-2 -mb-2 scale-110 object-contain" />
+          
             <span
               style={{
                 marginTop: 4,
@@ -67,7 +65,7 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
           </div>
         ) : (
           <div className="h-24 flex items-center justify-center border-b border-[#F1F5F9] cursor-pointer" onClick={() => setSidebarOpen(true)}>
-            <img src="/logo.png" alt="Nexcore logo" className="h-14 w-14 object-contain hover:scale-105 transition duration-200" />
+            <img src="/logo.png" alt="Nexcore logo" className="h-14 w-14 object-contain" />
           </div>
         )}
 

@@ -103,13 +103,11 @@ export default function TeacherLogin() {
           <img
             src="/logo.png"
             alt="Nexcore Institute of Technology"
-            className="h-28 w-28 mx-auto mb-6 drop-shadow-md hover:scale-105 transition-transform duration-300"
+            className="h-28 w-28 mx-auto  drop-shadow-md hover:scale-105 transition-transform duration-300"
           />
 
           {/* Brand Labels */}
-          <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#0F3C8A", margin: 0, textTransform: "uppercase", tracking: "-0.01em", textAlign: "center" }}>
-            Nexcore Institute of Technology
-          </h2>
+         
 
           {/* Form Header */}
           <div style={{ alignSelf: "flex-start", width: "100%", marginBottom: "20px" }}>

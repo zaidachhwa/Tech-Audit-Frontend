@@ -198,13 +198,11 @@ export default function StudentSignup() {
             <img
               src="/logo.png"
               alt="Nexcore Institute of Technology"
-              className="h-28 w-28 mx-auto mb-4 drop-shadow-md"
+              className="h-28 w-28 mx-auto drop-shadow-md"
             />
 
             {/* Brand Header */}
-            <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#0F3C8A", margin: 0, textTransform: "uppercase", textAlign: "center" }}>
-              Nexcore Institute of Technology
-            </h2>
+          
             <p style={{ fontSize: "13px", fontWeight: "800", color: "#FF6B00", margin: "4px 0 0", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center" }}>
               Student Registration
             </p>
