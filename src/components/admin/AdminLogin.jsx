@@ -3,12 +3,13 @@ import { API } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
-import { Lock, Mail, Loader2, Shield, GraduationCap, UserCircle } from "lucide-react";
+import { Lock, Mail, Loader2, Shield, GraduationCap, UserCircle, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AdminLogin() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -160,18 +161,29 @@ export default function AdminLogin() {
                   style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94A3B8" }}
                 />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   required
                   style={{
-                    width: "100%", padding: "10px 12px 10px 36px",
+                    width: "100%", padding: "10px 36px 10px 36px",
                     border: "1.5px solid #E2E8F0", borderRadius: "8px",
                     fontSize: "13px", color: "#1E293B", outline: "none",
                     backgroundColor: "#FFFFFF", transition: "all 0.2s",
                   }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer", color: "#94A3B8",
+                    display: "flex", alignItems: "center", justifyContent: "center", padding: 0
+                  }}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
             </div>
 
