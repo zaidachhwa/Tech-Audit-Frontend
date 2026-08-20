@@ -25,13 +25,7 @@ API.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       const currentPath = window.location.pathname;
-      const isLoginPage =
-        currentPath === "/student/login" ||
-        currentPath === "/teacher/login" ||
-        currentPath === "/admin/login" ||
-        currentPath === "/student-login" ||
-        currentPath === "/teacher-login" ||
-        currentPath === "/admin-login";
+      const isLoginPage = currentPath === "/login";
 
       if (!isLoginPage) {
         // Clear expired auth session
@@ -39,14 +33,7 @@ API.interceptors.response.use(
         localStorage.removeItem("user");
         localStorage.removeItem("role");
 
-        // Redirect to respective login portal based on current path
-        if (currentPath.startsWith("/admin")) {
-          window.location.href = "/admin/login";
-        } else if (currentPath.startsWith("/teacher")) {
-          window.location.href = "/teacher/login";
-        } else {
-          window.location.href = "/student/login";
-        }
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);

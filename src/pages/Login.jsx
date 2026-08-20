@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { API } from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
+import { API } from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { Lock, Mail, Loader2, GraduationCap, LogIn, Shield, UserCircle, Eye, EyeOff, KeyRound, CheckCircle2 } from "lucide-react";
-import { loginTeacher } from "../../api/syllabus.api";
 
-export default function StudentLogin() {
+
+export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,29 +27,9 @@ export default function StudentLogin() {
         password: form.password.trim(),
       };
 
-      let token, userData, role;
-
-      try {
-        // Try Admin
-        const res = await API.post("/admin/login", payload);
-        token = res.data.token;
-        userData = res.data;
-        role = "admin";
-      } catch (adminErr) {
-        try {
-          // Try Teacher
-          const res = await loginTeacher(payload);
-          token = res.token;
-          userData = { teacher: res.teacher };
-          role = "teacher";
-        } catch (teacherErr) {
-          // Try Student
-          const res = await API.post("/students/login", payload);
-          token = res.data.token;
-          userData = res.data;
-          role = "student";
-        }
-      }
+      const res = await API.post("/auth/login", payload);
+      const { token, role } = res.data;
+      const userData = res.data;
 
       login(token, userData, role);
       toast.success("Login successful!");

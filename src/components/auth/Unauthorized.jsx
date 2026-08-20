@@ -11,13 +11,13 @@ export default function Unauthorized() {
     if (user?.role) {
       navigate(`/${user.role}/dashboard`, { replace: true });
     } else {
-      navigate('/student/login', { replace: true });
+      navigate('/login', { replace: true });
     }
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/student/login', { replace: true });
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -148,7 +148,7 @@ export default function Unauthorized() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/student/login', { replace: true })}
+                onClick={() => navigate('/login', { replace: true })}
                 style={{
                   width: '100%',
                   padding: '13px',

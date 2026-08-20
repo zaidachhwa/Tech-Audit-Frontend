@@ -9,7 +9,7 @@ import Unauthorized from './components/auth/Unauthorized';
 import ForgotPassword from './components/auth/ForgotPassword';
 
 /* STUDENT */
-import StudentLogin from './components/student/StudentLogin';
+import Login from './pages/Login';
 import StudentSignup from './components/student/StudentSignup';
 import StudentLayout from './components/student/StudentLayout';
 import StudentDashboard from './components/student/StudentDashboard';
@@ -21,7 +21,7 @@ import StudentAnnouncements from './components/student/StudentAnnouncements';
 import StudentAttendancePunch from './components/student/StudentAttendancePunch';
 
 /* ADMIN */
-import AdminLogin from './components/admin/AdminLogin';
+
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ProjectTracking from './components/admin/ProjectTracking';
@@ -45,7 +45,7 @@ import AdminInstituteSettings from './components/admin/AdminInstituteSettings';
 import AdminAnnouncements from './components/admin/AdminAnnouncements';
 
 /* TEACHER */
-import TeacherLogin from './components/teacher/TeacherLogin';
+
 import TeacherRegister from './components/teacher/TeacherRegister';
 import TeacherLayout from './components/teacher/TeacherLayout';
 import TeacherSyllabusDashboard from './components/teacher/TeacherSyllabusDashboard';
@@ -75,7 +75,7 @@ export default function App() {
         <Route path="/unauthorized"    element={<Unauthorized />} />
 
         {/* ─── STUDENT AUTH ────────────────────────────────────────────────── */}
-        <Route path="/student/login"  element={<PublicOnlyRoute><StudentLogin /></PublicOnlyRoute>} />
+        <Route path="/login"  element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
         <Route path="/student/signup" element={<PublicOnlyRoute><StudentSignup /></PublicOnlyRoute>} />
 
         {/* ─── STUDENT PROTECTED ───────────────────────────────────────────── */}
@@ -100,7 +100,7 @@ export default function App() {
         </Route>
 
         {/* ─── ADMIN AUTH ──────────────────────────────────────────────────── */}
-        <Route path="/admin/login" element={<PublicOnlyRoute><AdminLogin /></PublicOnlyRoute>} />
+
 
         {/* ─── ADMIN PROTECTED ─────────────────────────────────────────────── */}
         <Route
@@ -139,7 +139,7 @@ export default function App() {
         </Route>
 
         {/* ─── TEACHER AUTH ────────────────────────────────────────────────── */}
-        <Route path="/teacher/login"    element={<PublicOnlyRoute><TeacherLogin /></PublicOnlyRoute>} />
+
         <Route path="/teacher/register" element={<PublicOnlyRoute><TeacherRegister /></PublicOnlyRoute>} />
 
         {/* ─── TEACHER PROTECTED ───────────────────────────────────────────── */}
@@ -178,7 +178,7 @@ export default function App() {
         </Route>
 
         {/* ─── FALLBACK ────────────────────────────────────────────────────── */}
-        <Route path="*" element={<Navigate to="/student/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </AuthProvider>
   );

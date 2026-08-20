@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children, role }) {
 
   // No session or incomplete session (missing role means invalid/old session)
   if (!user || !user.role) {
-    return <Navigate to={`/${role}/login`} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // Logged in but accessing a route for a different role

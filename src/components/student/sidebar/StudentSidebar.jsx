@@ -32,7 +32,7 @@ export default function StudentSidebar({ currentPath, onNavigate, user, collapse
     auth?.logout?.();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    onNavigate("/student/login");
+    onNavigate("/login");
   };
 
   return (

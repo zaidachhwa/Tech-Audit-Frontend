@@ -79,7 +79,7 @@ export default function StudentSignup() {
     try {
       await API.post("/students/register", form);
       setSuccessModal(true);
-      setTimeout(() => navigate("/student/login"), 5000);
+      setTimeout(() => navigate("/login"), 5000);
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");
     } finally {
@@ -469,7 +469,7 @@ export default function StudentSignup() {
 
                 <p style={{ textAlign: "center", fontSize: "13px", color: "#64748B", margin: 0 }}>
                   Already have an account?{" "}
-                  <Link to="/student/login" style={{ color: "#FF6B00", fontWeight: "600", textDecoration: "none" }}>
+                  <Link to="/login" style={{ color: "#FF6B00", fontWeight: "600", textDecoration: "none" }}>
                     Sign In Here
                   </Link>
                 </p>

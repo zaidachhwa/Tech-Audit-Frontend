@@ -37,7 +37,7 @@ export default function TeacherRegister() {
 
       setSuccessModal(true);
 
-      setTimeout(() => navigate("/teacher/login"), 5000);
+      setTimeout(() => navigate("/login"), 5000);
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Registration failed");
@@ -223,7 +223,7 @@ export default function TeacherRegister() {
             <p className="text-center text-gray-600 text-sm mt-4">
               Already have an account?{" "}
               <Link
-                to="/teacher/login"
+                to="/login"
                 className="text-emerald-600 font-semibold hover:text-emerald-700 hover:underline"
               >
                 Sign In
