@@ -3,8 +3,9 @@ import { API } from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
-import { Lock, Mail, Loader2, Shield, GraduationCap, UserCircle, Eye, EyeOff } from "lucide-react";
+import { Lock, Mail, Loader2, Shield, GraduationCap, UserCircle, Eye, EyeOff, LogIn } from "lucide-react";
 import { motion } from "framer-motion";
+import { loginTeacher } from "../../api/syllabus.api";
 
 export default function AdminLogin() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -21,14 +22,40 @@ export default function AdminLogin() {
         email: form.email.trim().toLowerCase(),
         password: form.password.trim(),
       };
-      const res = await API.post("/admin/login", payload);
-      const token = res.data.token;
-      const data = res.data;
-      login(token, data, "admin");
-      toast.success("Welcome back, Admin!", { duration: 2000 });
-      setTimeout(() => navigate("/admin/dashboard"), 1500);
+
+      let token, userData, role;
+
+      try {
+        // Try Admin
+        const res = await API.post("/admin/login", payload);
+        token = res.data.token;
+        userData = res.data;
+        role = "admin";
+      } catch (adminErr) {
+        try {
+          // Try Teacher
+          const res = await loginTeacher(payload);
+          token = res.token;
+          userData = { teacher: res.teacher };
+          role = "teacher";
+        } catch (teacherErr) {
+          // Try Student
+          const res = await API.post("/students/login", payload);
+          token = res.data.token;
+          userData = res.data;
+          role = "student";
+        }
+      }
+
+      login(token, userData, role);
+      toast.success("Login successful!");
+      
+      if (role === "admin") navigate("/admin/dashboard");
+      else if (role === "teacher") navigate("/teacher/dashboard");
+      else if (role === "student") navigate("/student/dashboard");
+
     } catch (err) {
-      toast.error(err.response?.data?.message || "Invalid credentials");
+      toast.error(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -52,36 +79,7 @@ export default function AdminLogin() {
       `}</style>
       <Toaster position="top-center" />
 
-      {/* Role Switcher (Top Right) */}
-      <div style={{ position: "absolute", top: 24, right: 24, display: "flex", alignItems: "center", gap: 12, zIndex: 100 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#64748B", letterSpacing: "0.02em" }}>Sign in as:</span>
-        <Link to="/student/login" style={{ textDecoration: "none" }}>
-          <motion.button
-            whileHover={{ y: -1, boxShadow: "0 4px 12px rgba(15,60,138,0.08)" }}
-            whileTap={{ scale: 0.98 }}
-            style={{
-              padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-              border: "1.5px solid #0F3C8A", background: "#0F3C8A", color: "#fff",
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-              fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
-            }}>
-            <GraduationCap size={14} /> Student
-          </motion.button>
-        </Link>
-        <Link to="/teacher/login" style={{ textDecoration: "none" }}>
-          <motion.button
-            whileHover={{ y: -1, boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}
-            whileTap={{ scale: 0.98 }}
-            style={{
-              padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-              border: "1.5px solid #E2E8F0", background: "#fff", color: "#0F3C8A",
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-              fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
-            }}>
-            <UserCircle size={14} /> Teacher
-          </motion.button>
-        </Link>
-      </div>
+
 
       {/* Centered Login Card */}
       <motion.div
@@ -115,10 +113,10 @@ export default function AdminLogin() {
           {/* Form Header */}
           <div style={{ alignSelf: "flex-start", width: "100%", marginBottom: "20px" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#1E293B", margin: 0 }}>
-              Admin Sign In
+              Sign In
             </h3>
             <p style={{ color: "#64748B", fontSize: "12px", margin: "4px 0 0" }}>
-              Access administrative settings and trackers
+              Access your dashboard
             </p>
           </div>
 
@@ -136,7 +134,7 @@ export default function AdminLogin() {
                 />
                 <input
                   type="email"
-                  placeholder="admin@nexcore.com"
+                  placeholder="user@nexcore.com"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   required
@@ -208,7 +206,7 @@ export default function AdminLogin() {
               {loading ? (
                 <><Loader2 size={15} className="animate-spin" /> Signing in...</>
               ) : (
-                <><Shield size={15} /> Sign In as Admin</>
+                <><LogIn size={15} /> Sign In</>
               )}
             </button>
           </form>

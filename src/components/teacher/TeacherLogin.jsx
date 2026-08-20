@@ -26,10 +26,38 @@ export default function TeacherLogin() {
         email: formData.email.trim().toLowerCase(),
         password: formData.password.trim(),
       };
-      const res = await loginTeacher(payload);
-      login(res.token, { teacher: res.teacher }, "teacher");
+
+      let token, userData, role;
+
+      try {
+        // Try Admin
+        const res = await API.post("/admin/login", payload);
+        token = res.data.token;
+        userData = res.data;
+        role = "admin";
+      } catch (adminErr) {
+        try {
+          // Try Teacher
+          const res = await loginTeacher(payload);
+          token = res.token;
+          userData = { teacher: res.teacher };
+          role = "teacher";
+        } catch (teacherErr) {
+          // Try Student
+          const res = await API.post("/students/login", payload);
+          token = res.data.token;
+          userData = res.data;
+          role = "student";
+        }
+      }
+
+      login(token, userData, role);
       toast.success("Login successful!");
-      navigate("/teacher/dashboard");
+      
+      if (role === "admin") navigate("/admin/dashboard");
+      else if (role === "teacher") navigate("/teacher/dashboard");
+      else if (role === "student") navigate("/student/dashboard");
+
     } catch (err) {
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
@@ -89,36 +117,7 @@ export default function TeacherLogin() {
       `}</style>
       <Toaster position="top-center" />
 
-      {/* Role Switcher (Top Right) */}
-      <div style={{ position: "absolute", top: 24, right: 24, display: "flex", alignItems: "center", gap: 12, zIndex: 100 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#64748B", letterSpacing: "0.02em" }}>Sign in as:</span>
-        <Link to="/student/login" style={{ textDecoration: "none" }}>
-          <motion.button
-            whileHover={{ y: -1, boxShadow: "0 4px 12px rgba(15,60,138,0.08)" }}
-            whileTap={{ scale: 0.98 }}
-            style={{
-              padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-              border: "1.5px solid #0F3C8A", background: "#0F3C8A", color: "#fff",
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-              fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
-            }}>
-            <GraduationCap size={14} /> Student
-          </motion.button>
-        </Link>
-        <Link to="/admin/login" style={{ textDecoration: "none" }}>
-          <motion.button
-            whileHover={{ y: -1, boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}
-            whileTap={{ scale: 0.98 }}
-            style={{
-              padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-              border: "1.5px solid #E2E8F0", background: "#fff", color: "#0F3C8A",
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-              fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s"
-            }}>
-            <Shield size={14} /> Admin
-          </motion.button>
-        </Link>
-      </div>
+
 
       {/* Centered Login Card */}
       <motion.div
@@ -143,7 +142,7 @@ export default function TeacherLogin() {
           <img
             src="/logo.png"
             alt="Nexcore Institute of Technology"
-            className="h-28 w-28 mx-auto drop-shadow-md hover:scale-105 transition-transform duration-300"
+            className="h-28 w-28 mx-auto"
           />
 
           {authView === "login" && (
@@ -151,10 +150,10 @@ export default function TeacherLogin() {
               {/* Form Header */}
               <div style={{ alignSelf: "flex-start", width: "100%", marginBottom: "20px" }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#1E293B", margin: 0 }}>
-                  Teacher Sign In
+                  Sign In
                 </h3>
                 <p style={{ color: "#64748B", fontSize: "12px", margin: "4px 0 0" }}>
-                  Access your batches, schedules, and homework reviews
+                  Access your dashboard
                 </p>
               </div>
 
@@ -172,7 +171,7 @@ export default function TeacherLogin() {
                     />
                     <input
                       type="email"
-                      placeholder="teacher@nexcore.edu"
+                      placeholder="user@nexcore.edu"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
@@ -257,14 +256,14 @@ export default function TeacherLogin() {
                   {loading ? (
                     <><RefreshCw size={15} className="animate-spin" /> Signing in...</>
                   ) : (
-                    <><LogIn size={15} /> Sign In as Teacher</>
+                    <><LogIn size={15} /> Sign In</>
                   )}
                 </button>
               </form>
 
               {/* Contact / Register */}
               <p style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", color: "#94A3B8" }}>
-                Don't have a teacher account?{" "}
+                Don't have an account?{" "}
                 <Link to="/teacher/register" style={{ color: "#FF6B00", fontWeight: "600", textDecoration: "none" }}>
                   Register Here
                 </Link>
@@ -301,7 +300,7 @@ export default function TeacherLogin() {
                     />
                     <input
                       type="email"
-                      placeholder="teacher@nexcore.edu"
+                      placeholder="user@nexcore.edu"
                       value={forgotForm.email}
                       onChange={(e) => setForgotForm({ ...forgotForm, email: e.target.value })}
                       required
