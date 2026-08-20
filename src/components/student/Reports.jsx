@@ -25,14 +25,20 @@ export default function Reports() {
   const [expandedReports, setExpandedReports] = useState(new Set());
 
   useEffect(() => {
-    fetchReports();
+    const studentId = user?._id || user?.id;
+    if (studentId) {
+      fetchReports();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchReports = async () => {
+    const studentId = user?._id || user?.id;
+    if (!studentId) return;
+
     try {
       setLoading(true);
-      const res = await API.get(`/reports/student/${user.id}`);
+      const res = await API.get(`/reports/student/${studentId}`);
       setReports(res.data?.reports || []);
     } catch (err) {
       console.error(err);
@@ -194,11 +200,33 @@ export default function Reports() {
 }
 
 function ReportCard({ report, index, expanded, onToggleExpand, calculateAverage, getGrade }) {
+  const [downloading, setDownloading] = useState(false);
   const avgScore = calculateAverage(report.parameters);
   const grade = getGrade(avgScore);
   const auditDate = report.auditDate
     ? new Date(report.auditDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : "N/A";
+
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloading(true);
+      const res = await API.get(`/reports/${report._id}/pdf`, { responseType: "blob" });
+      const dateStr = report.auditDate ? new Date(report.auditDate).toISOString().split("T")[0] : "report";
+      const fileName = `Performance-Report-${dateStr}.pdf`;
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("Report downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to download PDF report");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <motion.div
@@ -395,22 +423,21 @@ function ReportCard({ report, index, expanded, onToggleExpand, calculateAverage,
               )}
 
               {/* PDF Download */}
-              {report.pdfUrl && (
-                <a
-                  href={report.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 8,
-                    background: "#2563EB", color: "#fff", borderRadius: 8,
-                    padding: "10px 20px", fontWeight: 700, fontSize: 13,
-                    textDecoration: "none", width: "fit-content",
-                  }}
-                >
-                  <Download size={16} />
-                  Download PDF Report
-                </a>
-              )}
+              <button
+                onClick={handleDownloadPdf}
+                disabled={downloading}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  background: "#2563EB", color: "#fff", borderRadius: 8,
+                  padding: "10px 20px", fontWeight: 700, fontSize: 13,
+                  border: "none", cursor: downloading ? "not-allowed" : "pointer",
+                  width: "fit-content", opacity: downloading ? 0.7 : 1,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                <Download size={16} style={{ animation: downloading ? "spin 1s linear infinite" : "none" }} />
+                {downloading ? "Generating PDF..." : "Download PDF Report"}
+              </button>
             </div>
           </motion.div>
         )}

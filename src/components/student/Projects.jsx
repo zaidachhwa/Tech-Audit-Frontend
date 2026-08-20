@@ -32,12 +32,18 @@ export default function Projects() {
   const [loading, setLoading] = useState(false);
   const [expandedProjects, setExpandedProjects] = useState(new Set());
 
-  useEffect(() => { if (!user?.id) return; fetchProjects(); }, [user]);
+  useEffect(() => { 
+    const studentId = user?._id || user?.id;
+    if (studentId) fetchProjects(); 
+  }, [user]);
 
   const fetchProjects = async () => {
+    const studentId = user?._id || user?.id;
+    if (!studentId) return;
+
     try {
       setLoading(true);
-      const res = await API.get(`/projects/student/${user.id}`);
+      const res = await API.get(`/projects/student/${studentId}`);
       setProjects(res.data?.projects || res.data || []);
     } catch (err) { toast.error("Failed to fetch projects"); }
     finally { setLoading(false); }

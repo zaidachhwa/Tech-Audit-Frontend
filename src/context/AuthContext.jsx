@@ -11,7 +11,12 @@ export const AuthProvider = ({ children }) => {
     if (!savedUser || !token) return null;
 
     try {
-      return JSON.parse(savedUser);
+      const parsed = JSON.parse(savedUser);
+      if (parsed) {
+        const id = parsed.id || parsed._id;
+        return { ...parsed, id, _id: id };
+      }
+      return null;
     } catch (e) {
       return null;
     }
@@ -19,9 +24,13 @@ export const AuthProvider = ({ children }) => {
 
   const login = (token, userData, role) => {
     localStorage.setItem("token", token);
+    const raw = userData.student || userData.admin || userData.teacher || userData.user || userData;
+    const id = raw?._id || raw?.id;
     const userWithRole = {
-      ...(userData.student || userData.admin || userData.teacher || userData),
-      role,
+      ...raw,
+      id,
+      _id: id,
+      role: role || raw?.role,
     };
     localStorage.setItem("user", JSON.stringify(userWithRole));
     setUser(userWithRole);
