@@ -786,8 +786,8 @@ export default function TeacherStudents() {
                     <div>
                       <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Mother Email *</label>
                       <input
-                        required
                         type="email"
+                        autoComplete="off"
                         value={form.motherEmail}
                         onChange={(e) => setForm({ ...form, motherEmail: e.target.value })}
                         className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
@@ -802,6 +802,7 @@ export default function TeacherStudents() {
                 <input
                   required
                   type="password"
+                  autoComplete="new-password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
@@ -955,8 +956,8 @@ export default function TeacherStudents() {
                     <div>
                       <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Mother Email *</label>
                       <input
-                        required
                         type="email"
+                        autoComplete="off"
                         value={form.motherEmail}
                         onChange={(e) => setForm({ ...form, motherEmail: e.target.value })}
                         className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
@@ -970,6 +971,7 @@ export default function TeacherStudents() {
                 <label className="block text-sm font-medium text-[#1B2B4B] mb-1">Password (Leave empty to keep current)</label>
                 <input
                   type="password"
+                  autoComplete="new-password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:outline-none focus:border-[#2563EB]"
