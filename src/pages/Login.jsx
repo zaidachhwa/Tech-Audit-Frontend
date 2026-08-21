@@ -33,7 +33,7 @@ export default function Login() {
 
       login(token, userData, role);
       toast.success("Login successful!");
-      
+
       if (role === "admin") navigate("/admin/dashboard");
       else if (role === "teacher") navigate("/teacher/dashboard");
       else if (role === "student") navigate("/student/dashboard");
@@ -254,7 +254,7 @@ export default function Login() {
           {authView === "forgot" && (
             <>
               <div style={{ alignSelf: "flex-start", width: "100%", marginBottom: "20px" }}>
-                <button 
+                <button
                   onClick={() => setAuthView("login")}
                   style={{ background: "none", border: "none", color: "#64748B", fontSize: "12px", cursor: "pointer", padding: 0, marginBottom: "12px", fontWeight: "600" }}
                 >
@@ -319,7 +319,7 @@ export default function Login() {
           {authView === "reset" && (
             <>
               <div style={{ alignSelf: "flex-start", width: "100%", marginBottom: "20px" }}>
-                <button 
+                <button
                   onClick={() => setAuthView("login")}
                   style={{ background: "none", border: "none", color: "#64748B", fontSize: "12px", cursor: "pointer", padding: 0, marginBottom: "12px", fontWeight: "600" }}
                 >
