@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { API } from "../api/axios";
 import toast, { Toaster } from "react-hot-toast";
-import { Calendar, BookOpen, Monitor, Building2, Trash2 } from "lucide-react";
+import { Calendar, BookOpen, Monitor, Building2, Trash2, ExternalLink, FileText, Upload } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const S = {
@@ -22,9 +22,11 @@ const S = {
 export default function ExamSchedule() {
   const { user } = useAuth();
   const [batches, setBatches] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [file, setFile] = useState(null);
 
   const [form, setForm] = useState({
     batch: "",
@@ -39,6 +41,14 @@ export default function ExamSchedule() {
     API.get("/batches/public")
       .then((res) => setBatches(res.data || []))
       .catch(() => toast.error("Failed to load batches"));
+      
+    API.get("/subjects")
+      .then((res) => {
+        const data = res.data;
+        setSubjects(Array.isArray(data) ? data : (data?.subjects || data?.syllabi || []));
+      })
+      .catch(() => toast.error("Failed to load subjects"));
+
     fetchExams("");
   }, []);
 
@@ -66,11 +76,34 @@ export default function ExamSchedule() {
     }
     try {
       setSaving(true);
-      await API.post("/exams", form);
+      
+      let questionPaperData = null;
+      if (form.examType === "offline" && file) {
+        toast.loading("Uploading question paper...", { id: "upload" });
+        const formData = new FormData();
+        formData.append("file", file);
+        const uploadRes = await API.post("/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        questionPaperData = {
+          fileName: uploadRes.data.originalName || file.name,
+          fileUrl: uploadRes.data.fileUrl
+        };
+        toast.dismiss("upload");
+      }
+      
+      const payload = {
+        ...form,
+        ...(questionPaperData && { questionPaper: questionPaperData })
+      };
+      
+      await API.post("/exams", payload);
       toast.success("Exam scheduled successfully");
       setForm({ batch: "", subject: "", date: "", examType: "offline" });
+      setFile(null);
       fetchExams(filterBatch);
     } catch (err) {
+      toast.dismiss("upload");
       toast.error(err.response?.data?.message || "Failed to schedule exam");
     } finally {
       setSaving(false);
@@ -111,12 +144,13 @@ export default function ExamSchedule() {
           </div>
           <div>
             <label style={S.label}>Subject</label>
-            <input 
-              style={S.input} 
-              placeholder="e.g. Mathematics" 
-              value={form.subject} 
-              onChange={(e) => setForm({ ...form, subject: e.target.value })} 
-            />
+            <select style={S.select} value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })}>
+              <option value="">Select Subject</option>
+              {subjects.map((s) => {
+                const sName = s.subject || s.name || s.title;
+                return <option key={s._id || sName} value={sName}>{sName}</option>;
+              })}
+            </select>
           </div>
           <div>
             <label style={S.label}>Exam Date</label>
@@ -129,12 +163,29 @@ export default function ExamSchedule() {
           </div>
           <div>
             <label style={S.label}>Exam Type</label>
-            <select style={S.select} value={form.examType} onChange={(e) => setForm({ ...form, examType: e.target.value })}>
+            <select style={S.select} value={form.examType} onChange={(e) => {
+              setForm({ ...form, examType: e.target.value });
+              if (e.target.value === "online") setFile(null);
+            }}>
               <option value="offline">Offline</option>
               <option value="online">Online</option>
             </select>
           </div>
         </div>
+        
+        {form.examType === "offline" && (
+          <div className="mb-4">
+            <label style={S.label}>Question Paper (PDF/Doc)</label>
+            <div className="flex items-center gap-4">
+              <label style={{ ...S.btnSave, background: "#F1F5F9", color: "#475569", border: "1.5px solid #CBD5E1", cursor: "pointer" }}>
+                <Upload size={14} /> {file ? "Change File" : "Upload File"}
+                <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={(e) => setFile(e.target.files[0])} />
+              </label>
+              {file && <span style={{ fontSize: 13, color: "#1B2B4B", fontWeight: 500 }}>{file.name}</span>}
+            </div>
+          </div>
+        )}
+        
         <div className="flex justify-end">
           <button style={S.btnSave} onClick={handleSave} disabled={saving}>
             {saving ? "Scheduling..." : "Schedule Exam"}
@@ -181,20 +232,69 @@ export default function ExamSchedule() {
                   Batch: {exam.batch?.batch_name} (#{exam.batch?.batch_no})
                 </p>
                 
-                <div className="flex items-center gap-4 mt-4 pt-3" style={{ borderTop: "1px dashed #E2E8F0" }}>
-                  <div className="flex items-center gap-2 text-sm text-[#475569]">
-                    <Calendar size={14} />
-                    <span style={{ fontSize: 12, fontWeight: 500 }}>
-                      {new Date(exam.date).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-[#475569]">
-                    {exam.examType === "online" ? <Monitor size={14} color="#10B981" /> : <Building2 size={14} color="#F59E0B" />}
-                    <span style={{ fontSize: 12, fontWeight: 600, color: exam.examType === "online" ? "#10B981" : "#F59E0B", textTransform: "capitalize" }}>
-                      {exam.examType}
-                    </span>
+                <div className="flex items-center justify-between mt-4 pt-3" style={{ borderTop: "1px dashed #E2E8F0" }}>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm text-[#475569]">
+                      <Calendar size={14} />
+                      <span style={{ fontSize: 12, fontWeight: 500 }}>
+                        {new Date(exam.date).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-[#475569]">
+                      {exam.examType === "online" ? <Monitor size={14} color="#10B981" /> : <Building2 size={14} color="#F59E0B" />}
+                      <span style={{ fontSize: 12, fontWeight: 600, color: exam.examType === "online" ? "#10B981" : "#F59E0B", textTransform: "capitalize" }}>
+                        {exam.examType}
+                      </span>
+                    </div>
                   </div>
                 </div>
+                {exam.examType === "online" && (
+                  <button
+                    onClick={() => window.open("https://quiz.nexcoreinstitute.org/", "_blank")}
+                    style={{
+                      width: "100%",
+                      marginTop: 12,
+                      padding: "8px 0",
+                      background: "#10B981",
+                      border: "none",
+                      borderRadius: 8,
+                      color: "#fff",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                    }}
+                  >
+                    Go to Exam Page <ExternalLink size={14} />
+                  </button>
+                )}
+                
+                {exam.examType === "offline" && exam.questionPaper?.fileUrl && (
+                  <button
+                    onClick={() => window.open(exam.questionPaper.fileUrl, "_blank")}
+                    style={{
+                      width: "100%",
+                      marginTop: 12,
+                      padding: "8px 0",
+                      background: "#F1F5F9",
+                      border: "1.5px solid #CBD5E1",
+                      borderRadius: 8,
+                      color: "#475569",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <FileText size={14} /> View Question Paper
+                  </button>
+                )}
               </div>
             ))}
           </div>
