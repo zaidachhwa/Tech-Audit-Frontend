@@ -42,6 +42,7 @@ import TeacherProfileView from './components/admin/TeacherProfileView';
 import StudentProfileView from './components/admin/StudentProfileView';
 import AdminAnalytics from './pages/AdminAnalytics';
 import LectureSchedule from './pages/LectureSchedule';
+import ExamSchedule from './pages/ExamSchedule';
 import AdminStudentAttendance from './components/admin/AdminStudentAttendance';
 import AdminInstituteSettings from './components/admin/AdminInstituteSettings';
 import AdminAnnouncements from './components/admin/AdminAnnouncements';
@@ -135,6 +136,7 @@ export default function App() {
           <Route path="drafts" element={<Drafts />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="lecture-scheduler" element={<LectureSchedule />} />
+          <Route path="exam-schedule" element={<ExamSchedule />} />
           <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
           <Route path="student-attendance" element={<AdminStudentAttendance />} />
@@ -179,6 +181,7 @@ export default function App() {
           <Route path="grades" element={<TeacherGrades />} />
           <Route path="announcements" element={<TeacherAnnouncements />} />
           <Route path="lecture-scheduler" element={<LectureSchedule />} />
+          <Route path="exam-schedule" element={<ExamSchedule />} />
         </Route>
 
         {/* ─── FALLBACK ────────────────────────────────────────────────────── */}

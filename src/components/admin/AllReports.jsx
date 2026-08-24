@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
+  Edit,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -618,6 +619,12 @@ function StudentAccordion({
                             className="flex items-center gap-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold bg-[#2563EB] hover:bg-[#1E40AF] transition"
                           >
                             <Eye size={13} /> View
+                          </button>
+                          <button
+                            onClick={() => navigate(`/admin/add-reports`, { state: { editReport: r } })}
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold bg-[#10B981] hover:bg-[#059669] transition"
+                          >
+                            <Edit size={13} /> Edit
                           </button>
                           <button
                             onClick={() => onDeleteTarget(r)}

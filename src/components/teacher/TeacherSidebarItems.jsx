@@ -13,6 +13,7 @@ import {
   GraduationCap,
   LibraryBig,
   Fingerprint,
+  Calendar,
 } from "lucide-react";
 
 export const teacherSidebarItems = [
@@ -95,6 +96,11 @@ export const teacherSidebarItems = [
     name: "Drafts",
     icon: FileText,
     path: "/teacher/drafts",
+  },
+  {
+    name: "Exam Schedule",
+    icon: Calendar,
+    path: "/teacher/exam-schedule",
   },
   {
     name: "Profile",

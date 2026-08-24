@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { API } from "../../api/axios";
 import { toast, Toaster } from "react-hot-toast";
 
@@ -28,6 +29,9 @@ const S = {
 };
 
 export default function AddReport2() {
+  const location = useLocation();
+  const editReport = location.state?.editReport;
+
   const [students, setStudents] = useState([]);
   const [batches, setBatches] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
@@ -56,7 +60,24 @@ export default function AddReport2() {
     API.get("/batches/public")
       .then((res) => setBatches(res.data || []))
       .catch(() => toast.error("Failed to load batches"));
-  }, []);
+      
+    if (editReport) {
+      setForm(prev => ({
+        ...prev,
+        batch_name: editReport.student?.batch_name || "",
+        batch_no: editReport.student?.batch_no || "",
+        studentId: editReport.student?._id || "",
+        parameters: editReport.parameters?.length ? editReport.parameters : prev.parameters,
+        feedbackSchema: editReport.feedbackSchema || prev.feedbackSchema,
+        overallRemarks: editReport.overallRemarks || "",
+        auditDate: editReport.auditDate ? new Date(editReport.auditDate).toISOString().split('T')[0] : "",
+        isAutoFilled: true,
+        existingStatus: editReport.status || ""
+      }));
+      setExistingReportId(editReport._id);
+      setExistingReportName(editReport.student?.name || "");
+    }
+  }, [editReport]);
 
   useEffect(() => {
     const filtered = students.filter(
@@ -155,7 +176,7 @@ export default function AddReport2() {
         const parsed = JSON.parse(saved);
         setForm({ ...form, parameters: parsed });
         toast.success("Parameters loaded");
-      } catch(e) {
+      } catch (e) {
         toast.error("Failed to load parameters");
       }
     } else {
@@ -166,7 +187,7 @@ export default function AddReport2() {
   const handleGenerateFeedback = async () => {
     const validParams = form.parameters.filter((p) => p.name.trim());
     if (!validParams.length) { toast.error("Add at least one parameter to generate feedback"); return; }
-    
+
     try {
       setGeneratingAI(true);
       toast.loading("Generating AI Feedback...", { id: "ai-feedback" });
@@ -376,7 +397,7 @@ export default function AddReport2() {
 
   const { obtained: grandObtained, total: grandTotal } = calculateTotals();
   const grandPercentage = grandTotal > 0 ? (grandObtained / grandTotal) * 100 : 0;
-  
+
   const getGrade = (percentage) => {
     if (percentage >= 90) return "A+";
     if (percentage >= 80) return "A";
@@ -387,7 +408,7 @@ export default function AddReport2() {
     if (grandTotal === 0) return "-";
     return "F";
   };
-  
+
   const grade = getGrade(grandPercentage);
 
   return (
@@ -415,11 +436,11 @@ export default function AddReport2() {
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563EB" }} />
           <span>
             {form.existingStatus === "draft"
-              ? <>Showing data from an existing <strong>draft</strong> for this student on this date.</>  
+              ? <>Showing data from an existing <strong>draft</strong> for this student on this date.</>
               : <>Existing report found — data auto-filled. <strong>Modify parameters</strong> to save a new report.</>}
           </span>
-          <button 
-            onClick={() => setForm({...form, isAutoFilled: false, existingStatus: "", parameters: [{name: "", score: "", totalScore: ""}], feedbackSchema: {point1: "", point2: "", point3: ""}, overallRemarks: ""})}
+          <button
+            onClick={() => setForm({ ...form, isAutoFilled: false, existingStatus: "", parameters: [{ name: "", score: "", totalScore: "" }], feedbackSchema: { point1: "", point2: "", point3: "" }, overallRemarks: "" })}
             style={{ marginLeft: "auto", background: "none", border: "none", color: "#2563EB", cursor: "pointer", fontWeight: 600, fontSize: 12 }}
           >
             Clear Form
@@ -505,7 +526,7 @@ export default function AddReport2() {
           <div key={i} style={S.paramRow}>
             <input style={S.input} placeholder="Name" value={p.name} onChange={(e) => handleParamChange(i, "name", e.target.value)} />
             <input style={S.scoreInput} placeholder="Score" value={p.score} onChange={(e) => handleParamChange(i, "score", e.target.value)} />
-            <span style={{color: "#64748B", fontWeight: 600}}>/</span>
+            <span style={{ color: "#64748B", fontWeight: 600 }}>/</span>
             <input style={S.scoreInput} placeholder="Total" value={p.totalScore !== undefined ? p.totalScore : 10} onChange={(e) => handleParamChange(i, "totalScore", e.target.value)} />
             <button style={S.removeBtn} onClick={() => removeParameter(i)}>✕</button>
           </div>
@@ -530,8 +551,8 @@ export default function AddReport2() {
             <div style={S.dot} />
             <span style={S.sectionTitle}>Feedback Points</span>
           </div>
-          <button 
-            style={{ ...S.previewBtn, background: "#F3E8FF", color: "#7E22CE", border: "1.5px solid #D8B4FE", display: "flex", alignItems: "center", gap: 6 }} 
+          <button
+            style={{ ...S.previewBtn, background: "#F3E8FF", color: "#7E22CE", border: "1.5px solid #D8B4FE", display: "flex", alignItems: "center", gap: 6 }}
             onClick={handleGenerateFeedback}
             disabled={generatingAI}
           >

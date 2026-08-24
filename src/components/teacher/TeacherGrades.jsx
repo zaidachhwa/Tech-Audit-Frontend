@@ -258,42 +258,42 @@ export default function TeacherGrades() {
                     </td>
                   </tr>
                 ) : (
-                filteredStudents.map((s, i) => {
-                  const avg = avgScore(s._id);
-                  const gd = getGrade(avg, 100);
-                  return (
-                    <tr key={s._id} style={{ background: i % 2 === 0 ? "#fff" : "#F8FAFC", borderTop: "1px solid #F1F5F9" }}>
-                      <td style={{ padding: "10px 18px", whiteSpace: "nowrap" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{(s.name || "?")[0]}</div>
-                          <button 
-                            onClick={() => navigate(`/teacher/student-profile/${s._id}`)}
-                            style={{ fontWeight: 700, color: "#2563EB", border: "none", background: "none", padding: 0, cursor: "pointer", fontSize: 13 }}
-                            className="hover:underline"
-                          >
-                            {s.name}
-                          </button>
-                        </div>
-                      </td>
-                      {assignments.map((a) => (
-                        <td key={a} style={{ padding: "8px 10px" }}>
-                          <input
-                            type="number"
-                            min={0}
-                            max={maxScore[a] || 100}
-                            value={grades[s._id]?.[a] || ""}
-                            onChange={(e) => updateGrade(s._id, a, e.target.value)}
-                            placeholder="—"
-                            style={S.input}
-                          />
+                  filteredStudents.map((s, i) => {
+                    const avg = avgScore(s._id);
+                    const gd = getGrade(avg, 100);
+                    return (
+                      <tr key={s._id} style={{ background: i % 2 === 0 ? "#fff" : "#F8FAFC", borderTop: "1px solid #F1F5F9" }}>
+                        <td style={{ padding: "10px 18px", whiteSpace: "nowrap" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{(s.name || "?")[0]}</div>
+                            <button
+                              onClick={() => navigate(`/teacher/student-profile/${s._id}`)}
+                              style={{ fontWeight: 700, color: "#2563EB", border: "none", background: "none", padding: 0, cursor: "pointer", fontSize: 13 }}
+                              className="hover:underline"
+                            >
+                              {s.name}
+                            </button>
+                          </div>
                         </td>
-                      ))}
-                      <td style={{ padding: "10px 12px", textAlign: "center" }}>
-                        <span style={{ background: gd.bg, color: gd.color, borderRadius: 20, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>{avg ? `${gd.grade} (${avg})` : "—"}</span>
-                      </td>
-                    </tr>
-                  );
-                }))}
+                        {assignments.map((a) => (
+                          <td key={a} style={{ padding: "8px 10px" }}>
+                            <input
+                              type="number"
+                              min={0}
+                              max={maxScore[a] || 100}
+                              value={grades[s._id]?.[a] || ""}
+                              onChange={(e) => updateGrade(s._id, a, e.target.value)}
+                              placeholder="—"
+                              style={S.input}
+                            />
+                          </td>
+                        ))}
+                        <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                          <span style={{ background: gd.bg, color: gd.color, borderRadius: 20, padding: "3px 14px", fontSize: 12, fontWeight: 700 }}>{avg ? `${gd.grade} (${avg})` : "—"}</span>
+                        </td>
+                      </tr>
+                    );
+                  }))}
               </tbody>
             </table>
           )}
