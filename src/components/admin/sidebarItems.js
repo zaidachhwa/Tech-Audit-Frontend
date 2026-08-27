@@ -15,6 +15,8 @@ import {
   Settings,
   Megaphone,
   Calendar,
+  Trophy,
+  Award
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -87,6 +89,16 @@ export const adminSidebarItems = [
     name: "Exam Schedule",
     path: "/admin/exam-schedule",
     icon: Calendar,
+  },
+  {
+    name: "Exam Results",
+    path: "/admin/exam-results",
+    icon: Award,
+  },
+  {
+    name: "Leaderboard",
+    path: "/admin/leaderboard",
+    icon: Trophy,
   },
   {
     name: "Analytics",

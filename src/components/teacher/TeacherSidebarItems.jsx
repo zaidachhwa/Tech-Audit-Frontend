@@ -14,6 +14,8 @@ import {
   LibraryBig,
   Fingerprint,
   Calendar,
+  Trophy,
+  Award
 } from "lucide-react";
 
 export const teacherSidebarItems = [
@@ -101,6 +103,16 @@ export const teacherSidebarItems = [
     name: "Exam Schedule",
     icon: Calendar,
     path: "/teacher/exam-schedule",
+  },
+  {
+    name: "Exam Results",
+    icon: Award,
+    path: "/teacher/exam-results",
+  },
+  {
+    name: "Leaderboard",
+    icon: Trophy,
+    path: "/teacher/leaderboard",
   },
   {
     name: "Profile",

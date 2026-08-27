@@ -15,17 +15,20 @@ export default function StudentDashboard() {
   const { user: authUser } = useAuth();
   const [me, setMe] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
+  const [examResults, setExamResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchAll = async () => {
     try {
       setLoading(true);
-      const [meRes, dbRes] = await Promise.all([
+      const [meRes, dbRes, examRes] = await Promise.all([
         API.get("/students/me"),
-        API.get("/dashboard/student")
+        API.get("/dashboard/student"),
+        API.get("/exam-results/my-results").catch(() => ({ data: [] }))
       ]);
       setMe(meRes.data.student || meRes.data);
       setDashboardData(dbRes.data);
+      setExamResults(examRes.data || []);
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Failed to load dashboard data");
@@ -270,6 +273,62 @@ export default function StudentDashboard() {
           </div>
         </div>
 
+      </div>
+
+      {/* EXAM RESULTS */}
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden mt-6">
+        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-4 bg-orange-500 rounded-full" />
+            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <Award size={16} className="text-orange-500" /> Exam Results
+            </h3>
+          </div>
+        </div>
+        <div className="p-6">
+          {examResults.length === 0 ? (
+            <p className="text-xs text-slate-400 text-center py-6">No exam results published yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {examResults.map(res => (
+                <div key={res._id} className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-sm mb-1">{res.exam?.subject}</h4>
+                    <p className="text-[10px] text-slate-400 font-semibold mb-3">
+                      {new Date(res.exam?.date).toLocaleDateString()} • {res.exam?.examType === "online" ? "Online" : "Offline"}
+                    </p>
+                    
+                    <div className="flex justify-between items-end mb-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Score</span>
+                      <span className="text-lg font-black text-slate-800">{res.marksObtained} <span className="text-xs text-slate-400">/ {res.totalMarks}</span></span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-200/60">
+                    <span className={`px-2 py-0.5 text-[10px] font-extrabold uppercase rounded border ${
+                      res.status === "Pass" 
+                        ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                        : "bg-rose-50 text-rose-600 border-rose-100"
+                    }`}>
+                      {res.status} ({res.grade})
+                    </span>
+                    
+                    {res.gradedPaper?.fileUrl && (
+                      <a 
+                        href={res.gradedPaper.fileUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-[10px] font-bold text-blue-600 hover:underline"
+                      >
+                        View Paper
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
     </div>

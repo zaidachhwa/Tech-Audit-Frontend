@@ -74,6 +74,16 @@ export default function ExamSchedule() {
       toast.error("Please fill all fields");
       return;
     }
+    
+    // Check if date is in the past
+    const examDate = new Date(form.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (examDate < today) {
+      toast.error("Exam date cannot be in the past");
+      return;
+    }
+
     try {
       setSaving(true);
       
@@ -158,6 +168,7 @@ export default function ExamSchedule() {
               type="date" 
               style={S.input} 
               value={form.date} 
+              min={new Date().toISOString().split("T")[0]}
               onChange={(e) => setForm({ ...form, date: e.target.value })} 
             />
           </div>
