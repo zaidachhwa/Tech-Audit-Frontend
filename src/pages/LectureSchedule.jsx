@@ -1476,40 +1476,46 @@ export default function LectureSchedule() {
     }
   };
 
-  // Student: Convert selected file to base64
+  // Student: Select file for upload
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("File is too large. Maximum size allowed is 2MB.");
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("File is too large. Maximum size allowed is 15MB.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setSelectedFile({
-        name: file.name,
-        base64: reader.result
-      });
-    };
-    reader.readAsDataURL(file);
+    setSelectedFile(file);
   };
 
-  // Student: submit file to backend
+  // Student: submit file to backend using fast multipart upload
   const handleHWSubmission = async () => {
     if (!selectedFile) {
-      toast.error("Please upload a file first.");
+      toast.error("Please select a file first.");
       return;
     }
 
     try {
       setSubmittingHW(true);
+      let finalFileUrl = "";
+      let finalFileName = selectedFile.name || "submission-file";
+
+      if (typeof selectedFile === "object" && selectedFile instanceof File) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        const uploadRes = await API.post("/upload", formData);
+        finalFileUrl = uploadRes.data.fileUrl;
+        finalFileName = uploadRes.data.originalName || uploadRes.data.fileName || selectedFile.name;
+      } else if (selectedFile.base64) {
+        finalFileUrl = selectedFile.base64;
+      }
+
       await API.post(
         `/schedules/${selectedSchedule._id}/lectures/${activeHomeworkLecture._id}/submissions`,
         {
-          fileName: selectedFile.name,
-          fileUrl: selectedFile.base64
+          fileName: finalFileName,
+          fileUrl: finalFileUrl
         }
       );
 

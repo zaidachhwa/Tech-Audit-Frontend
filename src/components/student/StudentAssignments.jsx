@@ -4,7 +4,8 @@ import { useAuth } from "../../context/AuthContext";
 import {
   ClipboardList, Calendar, MessageSquare, ChevronDown,
   CheckCircle, AlertCircle, Loader2, BookOpen, Clock,
-  Search, FileText, Send, Upload, Paperclip, Video, Image, File
+  Search, FileText, Send, Upload, Paperclip, Video, Image, File,
+  Layers, User
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { getHomeworkStatusBadge } from "../../utils/statusHelper";
@@ -13,8 +14,6 @@ const S = {
   page: { fontFamily: "'DM Sans', sans-serif" },
   card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" },
 };
-
-// Reusable status badge is imported from statusHelper
 
 function HomeworkCard({ homework, onSubmitted }) {
   const [open, setOpen] = useState(false);
@@ -31,7 +30,7 @@ function HomeworkCard({ homework, onSubmitted }) {
     if (homework.submissionText) {
       setSubmissionText(homework.submissionText);
     }
-    if (homework.submissionAttachments) {
+    if (homework.submissionAttachments && Array.isArray(homework.submissionAttachments)) {
       setAttachments(homework.submissionAttachments);
     }
   }, [homework]);
@@ -40,13 +39,9 @@ function HomeworkCard({ homework, onSubmitted }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 10 MB size limit
-    if (file.size > 10 * 1024 * 1024) {
-      if (file.type.startsWith("video/")) {
-        toast.error("Video size cannot exceed 10 MB.");
-      } else {
-        toast.error("File size cannot exceed 10 MB.");
-      }
+    // 15 MB size limit
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("File size cannot exceed 15 MB.");
       return;
     }
 
@@ -63,7 +58,6 @@ function HomeworkCard({ homework, onSubmitted }) {
       toast.error(err.response?.data?.message || "File upload failed");
     } finally {
       setUploading(false);
-      // Reset input value to allow uploading the same file again if needed
       e.target.value = null;
     }
   };
@@ -87,7 +81,7 @@ function HomeworkCard({ homework, onSubmitted }) {
         attachments
       });
 
-      toast.success("Homework submitted successfully");
+      toast.success(status === "rejected" ? "Homework resubmitted successfully!" : "Homework submitted successfully!");
       onSubmitted();
       setOpen(false);
     } catch (err) {
@@ -98,16 +92,25 @@ function HomeworkCard({ homework, onSubmitted }) {
   };
 
   const getFileIcon = (url) => {
+    if (!url) return <File size={13} className="text-gray-500" />;
     const extension = url.split(".").pop().toLowerCase();
     const videoExts = ["mp4", "mov", "avi", "mkv", "webm"];
-    const imageExts = ["jpg", "jpeg", "png", "gif", "webp"];
+    const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
     const pdfExts = ["pdf"];
 
-    if (videoExts.includes(extension)) return <Video size={12} className="text-purple-500" />;
-    if (imageExts.includes(extension)) return <Image size={12} className="text-blue-500" />;
-    if (pdfExts.includes(extension)) return <FileText size={12} className="text-red-500" />;
-    return <File size={12} className="text-gray-500" />;
+    if (videoExts.includes(extension)) return <Video size={13} className="text-purple-500" />;
+    if (imageExts.includes(extension)) return <Image size={13} className="text-blue-500" />;
+    if (pdfExts.includes(extension)) return <FileText size={13} className="text-red-500" />;
+    return <File size={13} className="text-gray-500" />;
   };
+
+  const subjectDisplayName =
+    homework.subjectName ||
+    homework.subject?.subject ||
+    homework.lecture?.syllabus?.subject ||
+    homework.lecture?.title ||
+    homework.course ||
+    "Coursework";
 
   return (
     <div style={{ ...S.card, marginBottom: 16, overflow: "hidden" }}>
@@ -127,20 +130,28 @@ function HomeworkCard({ homework, onSubmitted }) {
         }}
       >
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
             <ClipboardList size={20} />
           </div>
           <div>
             <h3 className="font-bold text-[#1B2B4B] text-[15px]">{homework.title}</h3>
-            <div className="flex items-center gap-4 text-xs text-[#64748B] mt-1">
-              <span className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 text-xs text-[#64748B] mt-1">
+              <span className="flex items-center gap-1 font-semibold text-blue-600">
                 <BookOpen size={13} />
-                {homework.lecture?.syllabus?.subject || homework.lecture?.title || homework.batchName || "General"}
+                {subjectDisplayName}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
                 <Calendar size={13} /> Due: {new Date(homework.dueDate).toLocaleDateString()}
               </span>
+              {homework.batchName && (
+                <>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 text-gray-500">
+                    <Layers size={13} /> {homework.batchName} #{homework.batchNumber || ""}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -169,12 +180,14 @@ function HomeworkCard({ homework, onSubmitted }) {
       {open && (
         <div className="p-6 border-t border-[#E2E8F0] bg-white space-y-6">
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Instructions</h4>
-            <p className="text-sm text-[#334155] leading-relaxed">{homework.description}</p>
+            <h4 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Assignment Instructions</h4>
+            <p className="text-sm text-[#334155] leading-relaxed whitespace-pre-wrap">
+              {homework.description || homework.comment || "No detailed instructions provided."}
+            </p>
             
             {homework.attachments?.length > 0 && (
               <div className="mt-3 space-y-2">
-                <p className="text-xs font-semibold text-[#64748B]">Reference Attachments:</p>
+                <p className="text-xs font-semibold text-[#64748B]">Reference Material & Samples:</p>
                 <div className="flex flex-wrap gap-2">
                   {homework.attachments.map((url, i) => (
                     <a
@@ -192,48 +205,51 @@ function HomeworkCard({ homework, onSubmitted }) {
             )}
           </div>
 
+          {/* Teacher feedback remarks if graded */}
           {homework.remarks && (
             <div className={`p-4 rounded-xl border ${
               status === "approved" ? "bg-emerald-50/50 border-emerald-100" : "bg-rose-50/50 border-rose-100"
             }`}>
-              <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Teacher Feedback</h4>
+              <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <User size={13} /> Teacher Evaluation & Feedback
+              </h4>
               {homework.marks !== undefined && (
                 <p className="text-sm font-bold text-[#1B2B4B] mb-1">
-                  Score: {homework.marks} {homework.outOf !== undefined ? `/ ${homework.outOf}` : ""} Marks
+                  Grade: <span className="text-emerald-600">{homework.marks}</span> {homework.outOf !== undefined ? `/ ${homework.outOf}` : ""} Marks
                 </p>
               )}
-              <p className="text-sm text-gray-600 italic">"{homework.remarks}"</p>
+              <p className="text-sm text-gray-700 italic">"{homework.remarks}"</p>
             </div>
           )}
 
           {status === "assigned" || status === "rejected" ? (
             <form onSubmit={handleSubmit} className="space-y-4 pt-4 border-t border-[#E2E8F0]">
               <h4 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">
-                {status === "rejected" ? "Resubmit Homework" : "Submit Answer"}
+                {status === "rejected" ? "Resubmit Solution / Homework" : "Submit Homework Solution"}
               </h4>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-[#475569]">Submission Text / Notes</label>
+                <label className="text-xs font-semibold text-[#475569]">Notes & Explanation</label>
                 <textarea
                   value={submissionText}
                   onChange={(e) => setSubmissionText(e.target.value)}
-                  placeholder="Explain your submission here..."
+                  placeholder="Explain your approach, paste solution text, or provide repository links..."
                   className="w-full min-h-[120px] p-3 text-sm border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-[#475569] block">Attachments</label>
+                <label className="text-xs font-semibold text-[#475569] block">Attach Documents / Code Files / Screen Recordings</label>
                 <div className="flex items-center gap-3">
                   <label className="inline-flex items-center gap-2 px-4 py-2 border border-[#E2E8F0] rounded-xl text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition">
                     <Upload size={16} />
-                    {uploading ? "Uploading..." : "Upload Document or Video"}
+                    {uploading ? "Uploading..." : "Upload Solution File / Video"}
                     <input 
                       type="file" 
                       onChange={handleFileUpload} 
                       className="hidden" 
                       disabled={uploading} 
-                      accept="image/*,.pdf,.doc,.docx,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm"
+                      accept="image/*,.pdf,.doc,.docx,.zip,.txt,video/mp4,video/quicktime,video/x-msvideo,video/webm"
                     />
                   </label>
                 </div>
@@ -241,18 +257,16 @@ function HomeworkCard({ homework, onSubmitted }) {
                 {attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {attachments.map((url, i) => {
-                      const extension = url.split(".").pop().toLowerCase();
-                      const isVideo = ["mp4", "mov", "avi", "mkv", "webm"].includes(extension);
                       return (
                         <div key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-[#E2E8F0] text-xs">
                           {getFileIcon(url)}
-                          <a href={url} target="_blank" rel="noopener noreferrer" className="max-w-[120px] truncate text-gray-700 hover:text-blue-600 transition">
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="max-w-[150px] truncate text-gray-700 hover:text-blue-600 transition">
                             {url.split('/').pop()}
                           </a>
                           <button
                             type="button"
                             onClick={() => handleRemoveAttachment(i)}
-                            className="text-rose-500 font-bold hover:text-rose-700 ml-1"
+                            className="text-rose-500 font-bold hover:text-rose-700 ml-1 cursor-pointer"
                           >
                             ×
                           </button>
@@ -266,38 +280,34 @@ function HomeworkCard({ homework, onSubmitted }) {
               <button
                 type="submit"
                 disabled={submitting || uploading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
               >
                 <Send size={16} />
-                {submitting ? "Submitting..." : "Submit Homework"}
+                {submitting ? "Submitting..." : status === "rejected" ? "Resubmit Solution" : "Submit Solution"}
               </button>
             </form>
           ) : (
             <div className="pt-4 border-t border-[#E2E8F0] space-y-3">
-              <h4 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Your Submission</h4>
-              <p className="text-sm text-[#334155] bg-gray-50 p-4 rounded-xl border border-gray-100 leading-relaxed">
-                {homework.submissionText || <span className="text-gray-400 italic">No notes provided</span>}
+              <h4 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Your Submitted Work</h4>
+              <p className="text-sm text-[#334155] bg-gray-50 p-4 rounded-xl border border-gray-100 leading-relaxed whitespace-pre-wrap">
+                {homework.submissionText || <span className="text-gray-400 italic">No explanatory text provided</span>}
               </p>
               {homework.submissionAttachments?.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-1 pt-1">
                   <p className="text-xs font-semibold text-[#64748B]">Submitted Attachments:</p>
                   <div className="flex flex-wrap gap-2">
-                    {homework.submissionAttachments.map((url, i) => {
-                      const extension = url.split(".").pop().toLowerCase();
-                      const isVideo = ["mp4", "mov", "avi", "mkv", "webm"].includes(extension);
-                      return (
-                        <a
-                          key={i}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-[#E2E8F0] text-xs font-medium text-blue-600 hover:bg-blue-50"
-                        >
-                          {getFileIcon(url)} 
-                          <span className="truncate max-w-[150px]">{url.split('/').pop()}</span>
-                        </a>
-                      );
-                    })}
+                    {homework.submissionAttachments.map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-[#E2E8F0] text-xs font-medium text-blue-600 hover:bg-blue-50"
+                      >
+                        {getFileIcon(url)} 
+                        <span className="truncate max-w-[160px]">{url.split('/').pop()}</span>
+                      </a>
+                    ))}
                   </div>
                 </div>
               )}
@@ -330,16 +340,19 @@ export default function StudentAssignments() {
         // Hoist the latest submission's data so the UI can display it
         data = data.map(hw => {
           if (hw.submissions && hw.submissions.length > 0) {
-            // Get most recent submission (last in array)
             const latestSub = hw.submissions[hw.submissions.length - 1];
+            const subsAtt = latestSub.attachments && latestSub.attachments.length > 0
+              ? latestSub.attachments
+              : (latestSub.fileUrl ? [latestSub.fileUrl] : []);
+
             return {
               ...hw,
-              status: latestSub.status,
-              marks: latestSub.marks,
-              outOf: latestSub.outOf,
-              remarks: latestSub.remarks,
-              submissionText: latestSub.submissionText,
-              submissionAttachments: latestSub.fileUrl ? [latestSub.fileUrl] : []
+              status: latestSub.status || hw.status,
+              marks: latestSub.marks !== undefined ? latestSub.marks : hw.marks,
+              outOf: latestSub.outOf !== undefined ? latestSub.outOf : hw.outOf,
+              remarks: latestSub.remarks || hw.remarks,
+              submissionText: latestSub.submissionText || "",
+              submissionAttachments: subsAtt
             };
           }
           return hw;
@@ -362,7 +375,7 @@ export default function StudentAssignments() {
 
   const filteredHomework = useMemo(() => {
     return homeworkList.filter((hw) => {
-      const subjectName = hw.lecture?.syllabus?.subject || hw.lecture?.title || hw.batchName || "";
+      const subjectName = hw.subjectName || hw.lecture?.syllabus?.subject || hw.lecture?.title || hw.batchName || "";
       const matchesSearch =
         hw.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         subjectName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -374,10 +387,8 @@ export default function StudentAssignments() {
       const isAssigned = s === "assigned";
 
       if (activeTab === "assigned") {
-        // Show anything that needs action: assigned, rejected, or pending
         return matchesSearch && (isAssigned || isRejected || isPending);
       } else {
-        // History: approved or pending
         return matchesSearch && (isApproved || isPending);
       }
     });
@@ -388,15 +399,15 @@ export default function StudentAssignments() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[#1B2B4B]">My Homework</h1>
-            <p className="text-sm text-[#64748B]">View assigned tasks and submit your homework answers.</p>
+            <h1 className="text-2xl font-bold text-[#1B2B4B]">My Assignments & Tasks</h1>
+            <p className="text-sm text-[#64748B]">View assigned tasks for your batch and submit your solutions.</p>
           </div>
 
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search homework..."
+              placeholder="Search tasks or subjects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-xl text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
@@ -414,7 +425,10 @@ export default function StudentAssignments() {
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
-            Assigned & Action Required
+            Assigned & Action Required ({homeworkList.filter(h => {
+              const s = (h.status || "assigned").toLowerCase();
+              return s === "assigned" || s === "rejected" || s === "pending_review";
+            }).length})
           </button>
           <button
             onClick={() => setActiveTab("history")}
@@ -424,19 +438,22 @@ export default function StudentAssignments() {
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
-            Submission History
+            Submission History ({homeworkList.filter(h => {
+              const s = (h.status || "assigned").toLowerCase();
+              return s === "approved" || s === "completed";
+            }).length})
           </button>
         </div>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
             <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-            <span className="text-sm text-gray-500">Loading homework list...</span>
+            <span className="text-sm text-gray-500">Loading assignments...</span>
           </div>
         ) : filteredHomework.length === 0 ? (
           <div className="text-center py-16 bg-white border border-[#E2E8F0] rounded-2xl space-y-3">
             <ClipboardList className="mx-auto h-12 w-12 text-gray-300" />
-            <h3 className="text-lg font-bold text-[#1B2B4B]">No homework found</h3>
+            <h3 className="text-lg font-bold text-[#1B2B4B]">No assignments found</h3>
             <p className="text-sm text-gray-500">You are all caught up!</p>
           </div>
         ) : (
