@@ -16,6 +16,7 @@ export default function StudentDashboard() {
   const [me, setMe] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [examResults, setExamResults] = useState([]);
+  const [examFilter, setExamFilter] = useState("all");
   const [loading, setLoading] = useState(false);
 
   const fetchAll = async () => {
@@ -28,7 +29,8 @@ export default function StudentDashboard() {
       ]);
       setMe(meRes.data.student || meRes.data);
       setDashboardData(dbRes.data);
-      setExamResults(examRes.data || []);
+      const offlineOnlyExams = (examRes?.data || []).filter(r => r && r.exam?.examType !== "online");
+      setExamResults(offlineOnlyExams);
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Failed to load dashboard data");
@@ -275,61 +277,154 @@ export default function StudentDashboard() {
 
       </div>
 
-      {/* EXAM RESULTS */}
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden mt-6">
-        <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-1 h-4 bg-orange-500 rounded-full" />
-            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Award size={16} className="text-orange-500" /> Exam Results
-            </h3>
-          </div>
-        </div>
-        <div className="p-6">
-          {examResults.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center py-6">No exam results published yet.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {examResults.map(res => (
-                <div key={res._id} className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 flex flex-col justify-between">
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-sm mb-1">{res.exam?.subject}</h4>
-                    <p className="text-[10px] text-slate-400 font-semibold mb-3">
-                      {new Date(res.exam?.date).toLocaleDateString()} • {res.exam?.examType === "online" ? "Online" : "Offline"}
-                    </p>
-                    
-                    <div className="flex justify-between items-end mb-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Score</span>
-                      <span className="text-lg font-black text-slate-800">{res.marksObtained} <span className="text-xs text-slate-400">/ {res.totalMarks}</span></span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-200/60">
-                    <span className={`px-2 py-0.5 text-[10px] font-extrabold uppercase rounded border ${
-                      res.status === "Pass" 
-                        ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                        : "bg-rose-50 text-rose-600 border-rose-100"
-                    }`}>
-                      {res.status} ({res.grade})
-                    </span>
-                    
-                    {res.gradedPaper?.fileUrl && (
-                      <a 
-                        href={res.gradedPaper.fileUrl} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="text-[10px] font-bold text-blue-600 hover:underline"
-                      >
-                        View Paper
-                      </a>
-                    )}
-                  </div>
+      {/* EXAM RESULTS MODULE */}
+      {(() => {
+        const filteredExams = examResults.filter((res) => {
+          const type = (res.exam?.examType || "offline").toLowerCase();
+          if (examFilter === "online") return type === "online";
+          if (examFilter === "offline") return type === "offline";
+          return true; // "all"
+        });
+
+        return (
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden mt-6">
+            <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-4 bg-orange-500 rounded-full" />
+                <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <Award size={16} className="text-orange-500" /> Exams & Results
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Filter Buttons */}
+                <div className="flex items-center bg-slate-200/60 p-1 rounded-xl gap-1">
+                  <button
+                    onClick={() => setExamFilter("all")}
+                    className={`px-3 py-1 text-xs font-extrabold rounded-lg transition ${
+                      examFilter === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setExamFilter("online")}
+                    className={`px-3 py-1 text-xs font-extrabold rounded-lg transition ${
+                      examFilter === "online" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Online
+                  </button>
+                  <button
+                    onClick={() => setExamFilter("offline")}
+                    className={`px-3 py-1 text-xs font-extrabold rounded-lg transition ${
+                      examFilter === "offline" ? "bg-white text-amber-600 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Offline
+                  </button>
                 </div>
-              ))}
+
+                <Link
+                  to="/student/exams"
+                  className="text-xs font-extrabold text-[#2563EB] hover:underline bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+                >
+                  View All Exams →
+                </Link>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
+
+            <div className="p-6">
+              {filteredExams.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-6">
+                  {examResults.length === 0 ? "No exam results published yet." : `No ${examFilter} exams found.`}
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredExams.map((res) => {
+                    const isOnline = res.exam?.examType === "online";
+                    const isPending = res.status === "Pending" || res.marksObtained === null || res.marksObtained === undefined;
+
+                    return (
+                      <div key={res._id} className="p-4 border border-slate-100 rounded-xl bg-slate-50/50 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <h4 className="font-bold text-slate-800 text-sm truncate">{res.exam?.subject || "Exam"}</h4>
+                            <span className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border ${
+                              isOnline
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                : "bg-amber-50 text-amber-600 border-amber-100"
+                            }`}>
+                              {isOnline ? "Online" : "Offline"}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-semibold mb-3">
+                            {res.exam?.date ? new Date(res.exam.date).toLocaleDateString() : "Date N/A"}
+                          </p>
+                          
+                          <div className="flex justify-between items-end mb-2">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Score</span>
+                            {isPending ? (
+                              <span className="text-sm font-bold text-slate-400">Awaiting Evaluation</span>
+                            ) : (
+                              <span className="text-lg font-black text-slate-800">
+                                {res.marksObtained} <span className="text-xs text-slate-400">/ {res.totalMarks}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 flex-wrap gap-2">
+                          <span className={`px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border ${
+                            isPending
+                              ? "bg-slate-100 text-slate-500 border-slate-200"
+                              : res.status === "Pass" 
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                                : "bg-rose-50 text-rose-600 border-rose-100"
+                          }`}>
+                            {isPending ? "Pending" : res.status}
+                          </span>
+                          
+                          <div className="flex items-center gap-2">
+                            {isOnline && (
+                              <button
+                                onClick={() => window.open("https://quiz.nexcoreinstitute.org/", "_blank")}
+                                className="text-[10px] font-bold text-emerald-600 hover:underline"
+                              >
+                                Exam Link
+                              </button>
+                            )}
+                            {!isOnline && res.exam?.questionPaper?.fileUrl && (
+                              <a 
+                                href={res.exam.questionPaper.fileUrl} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="text-[10px] font-bold text-amber-600 hover:underline"
+                              >
+                                Question Paper
+                              </a>
+                            )}
+                            {res.gradedPaper?.fileUrl && (
+                              <a 
+                                href={res.gradedPaper.fileUrl} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="text-[10px] font-bold text-blue-600 hover:underline"
+                              >
+                                Graded Paper
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

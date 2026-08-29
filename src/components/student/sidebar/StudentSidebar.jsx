@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { LayoutDashboard, Layers, BarChart2, User, LogOut, Menu, Mail, BookOpen, ClipboardList, Megaphone, CalendarCheck, X, Download } from "lucide-react";
+import { LayoutDashboard, Layers, BarChart2, User, LogOut, Menu, Mail, BookOpen, ClipboardList, Megaphone, CalendarCheck, X, Download, Award } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { usePWAInstall } from "../../../hooks/usePWAInstall";
 
 const navLinks = [
   { name: "Dashboard", path: "/student/dashboard", icon: LayoutDashboard },
   { name: "My Homework", path: "/student/assignments", icon: ClipboardList },
+  { name: "Exam Results", path: "/student/exams", icon: Award },
   { name: "Lecture Scheduler", path: "/student/lecture-scheduler", icon: CalendarCheck },
   { name: "Announcements", path: "/student/announcements", icon: Megaphone },
   { name: "Projects", path: "/student/projects", icon: Layers },

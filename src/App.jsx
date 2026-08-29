@@ -21,6 +21,7 @@ import StudentProfile from './components/student/StudentProfile';
 import StudentAssignments from './components/student/StudentAssignments';
 import StudentAnnouncements from './components/student/StudentAnnouncements';
 import StudentAttendancePunch from './components/student/StudentAttendancePunch';
+import StudentExams from './components/student/StudentExams';
 
 /* ADMIN */
 
@@ -104,6 +105,9 @@ export default function App() {
           <Route path="profile" element={<StudentProfile />} />
           <Route path="lecture-scheduler" element={<LectureSchedule />} />
           <Route path="attendance" element={<StudentAttendancePunch />} />
+          <Route path="exams" element={<StudentExams />} />
+          <Route path="exam-results" element={<StudentExams />} />
+          <Route path="results" element={<StudentExams />} />
         </Route>
 
         {/* ─── ADMIN AUTH ──────────────────────────────────────────────────── */}
