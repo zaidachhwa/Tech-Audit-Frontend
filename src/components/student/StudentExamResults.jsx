@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { API } from "../../api/axios";
 import toast, { Toaster } from "react-hot-toast";
 import {
+  Award,
   Search,
-  FileText,
   CheckCircle2,
   XCircle,
   Clock,
@@ -13,44 +12,23 @@ import {
   BookOpen,
   Calendar,
   Download,
-  Play,
-  Award,
+  FileText,
   Eye,
   X
 } from "lucide-react";
 
-export default function StudentExams() {
-  const navigate = useNavigate();
+export default function StudentExamResults() {
   const [examResults, setExamResults] = useState([]);
-  const [onlineStatuses, setOnlineStatuses] = useState({}); // { examId: { windowStatus, attempt, remainingSeconds } }
   const [loading, setLoading] = useState(false);
   const [examFilter, setExamFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Result Breakdown Modal state
   const [activeResultDetail, setActiveResultDetail] = useState(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const fetchResults = async () => {
     try {
       setLoading(true);
       const res = await API.get("/exam-results/my-results");
-      const allResults = res.data || [];
-      setExamResults(allResults);
-
-      // Fetch online exam statuses for all online exams
-      const onlineExams = allResults.filter((r) => r.exam?.examType === "online" && r.exam?._id);
-      onlineExams.forEach((r) => {
-        const eId = r.exam._id;
-        API.get(`/online-exams/status/${eId}`)
-          .then((statusRes) => {
-            setOnlineStatuses((prev) => ({
-              ...prev,
-              [eId]: statusRes.data
-            }));
-          })
-          .catch(() => {});
-      });
+      setExamResults(res.data || []);
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Failed to load exam results");
@@ -65,13 +43,13 @@ export default function StudentExams() {
 
   const handleOpenResultDetail = async (examId) => {
     try {
-      setLoadingDetail(true);
+      toast.loading("Loading breakdown...", { id: "detail" });
       const res = await API.get(`/online-exams/result-detail/${examId}`);
       setActiveResultDetail(res.data);
+      toast.dismiss("detail");
     } catch (err) {
-      toast.error("Unable to load detailed result breakdown");
-    } finally {
-      setLoadingDetail(false);
+      toast.dismiss("detail");
+      toast.error("Detailed breakdown not available for this exam");
     }
   };
 
@@ -91,7 +69,7 @@ export default function StudentExams() {
 
   const averageScore = gradedExams.length > 0 ? Math.round(totalPercentage / gradedExams.length) : 0;
 
-  // Filtering
+  // Filtered List
   const filteredExams = examResults.filter((item) => {
     const type = (item.exam?.examType || "offline").toLowerCase();
     const subject = (item.exam?.subject || "").toLowerCase();
@@ -109,19 +87,18 @@ export default function StudentExams() {
   return (
     <div className="space-y-6 pb-24 font-['DM_Sans',sans-serif]">
       <Toaster position="top-right" />
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
 
       {/* PAGE HEADER */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-1.5 h-7 bg-[#2563EB] rounded-full" />
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">
-              My Online Exams & Results
+            <div className="w-1.5 h-7 bg-indigo-600 rounded-full" />
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+              Exam Results & Performance <Award size={22} className="text-indigo-600" />
             </h1>
           </div>
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
-            Comprehensive overview of online & offline assessments
+            Detailed scores, grades, and paper evaluation summaries
           </p>
         </div>
 
@@ -130,49 +107,45 @@ export default function StudentExams() {
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition shadow-sm"
         >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh Results
         </button>
       </div>
 
       {/* SUMMARY STATS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Exams */}
         <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Exams</span>
             <span className="text-2xl font-black text-slate-800">{totalExams}</span>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">Scheduled for your batch</p>
+            <p className="text-[10px] text-slate-400 font-semibold mt-1">Evaluated & Pending</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
             <BookOpen size={20} />
           </div>
         </div>
 
-        {/* Passed Exams */}
         <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Passed Exams</span>
             <span className="text-2xl font-black text-emerald-600">{passedExams}</span>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">Passed successfully</p>
+            <p className="text-[10px] text-slate-400 font-semibold mt-1">Cleared successfully</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
             <CheckCircle2 size={20} />
           </div>
         </div>
 
-        {/* Average Score */}
         <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Average Score</span>
             <span className="text-2xl font-black text-indigo-600">{averageScore}%</span>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">Overall performance</p>
+            <p className="text-[10px] text-slate-400 font-semibold mt-1">Overall percentage</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
             <TrendingUp size={20} />
           </div>
         </div>
 
-        {/* Pending / Failed */}
         <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Pending / Failed</span>
@@ -183,7 +156,7 @@ export default function StudentExams() {
                 <span className="text-xs text-rose-500 font-bold">• {failedExams} Fail</span>
               )}
             </div>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">Awaiting evaluation / retry</p>
+            <p className="text-[10px] text-slate-400 font-semibold mt-1">Pending evaluation / retry</p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
             <Clock size={20} />
@@ -193,19 +166,17 @@ export default function StudentExams() {
 
       {/* FILTER & SEARCH BAR */}
       <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Search */}
         <div className="relative w-full md:w-72">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search exam by subject..."
+            placeholder="Search exam results..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-blue-500 transition"
+            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-500 transition"
           />
         </div>
 
-        {/* Filter Pills */}
         <div className="flex items-center bg-slate-100 p-1 rounded-xl gap-1 w-full md:w-auto">
           <button
             onClick={() => setExamFilter("all")}
@@ -213,7 +184,7 @@ export default function StudentExams() {
               examFilter === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            All Exams ({totalExams})
+            All Results ({totalExams})
           </button>
           <button
             onClick={() => setExamFilter("online")}
@@ -237,13 +208,13 @@ export default function StudentExams() {
       {/* EXAMS LIST GRID */}
       {loading ? (
         <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center text-slate-400 font-semibold text-xs shadow-sm">
-          Loading exam records...
+          Loading exam results...
         </div>
       ) : filteredExams.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-2xl p-12 text-center text-slate-400 font-semibold text-xs shadow-sm">
           {searchQuery || examFilter !== "all"
-            ? "No exams found matching your filter criteria."
-            : "No exams scheduled or published for your batch yet."}
+            ? "No exam results match your filter criteria."
+            : "No exam results recorded for your account yet."}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -257,25 +228,18 @@ export default function StudentExams() {
             const percentage =
               !isPending && res.totalMarks ? Math.round((res.marksObtained / res.totalMarks) * 100) : 0;
 
-            const onlineStatus = isOnline && res.exam?._id ? onlineStatuses[res.exam._id] : null;
-            const windowStatus = onlineStatus?.windowStatus || "available";
-
             return (
               <div
                 key={res._id}
-                className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
               >
                 <div>
-                  {/* Card Top Header */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
                       <h3 className="font-extrabold text-slate-800 text-base">{res.exam?.subject || "Exam Subject"}</h3>
                       <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold mt-0.5">
                         <Calendar size={12} />
                         <span>{res.exam?.date ? new Date(res.exam.date).toLocaleDateString() : "N/A"}</span>
-                        {isOnline && res.exam?.startTime && (
-                          <span>• {res.exam.startTime}</span>
-                        )}
                       </div>
                     </div>
 
@@ -290,16 +254,13 @@ export default function StudentExams() {
                     </span>
                   </div>
 
-                  {/* Score & Progress Section */}
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 mb-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
                         Score Obtained
                       </span>
                       {isPending ? (
-                        <span className="text-xs font-bold text-amber-500">
-                          {isOnline ? (windowStatus === "upcoming" ? "Scheduled" : windowStatus === "completed" ? "Completed" : "Ready to Start") : "Awaiting Evaluation"}
-                        </span>
+                        <span className="text-xs font-bold text-amber-500">Awaiting Evaluation</span>
                       ) : (
                         <div className="text-right">
                           <span className="text-lg font-black text-slate-800">{res.marksObtained}</span>
@@ -308,7 +269,6 @@ export default function StudentExams() {
                       )}
                     </div>
 
-                    {/* Progress Bar */}
                     {!isPending && (
                       <div className="space-y-1">
                         <div className="w-full bg-slate-200/80 h-2 rounded-full overflow-hidden">
@@ -328,7 +288,6 @@ export default function StudentExams() {
                     )}
                   </div>
 
-                  {/* Status & Remarks */}
                   <div className="flex items-center justify-between mb-4">
                     <span
                       className={`px-2.5 py-1 text-[10px] font-extrabold uppercase rounded-lg border ${
@@ -350,55 +309,31 @@ export default function StudentExams() {
                   </div>
                 </div>
 
-                {/* Footer Action Links */}
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2 w-full">
-                    {isOnline && isPending && (
-                      <button
-                        onClick={() => navigate(`/student/online-exam/${res.exam._id}`)}
-                        disabled={windowStatus === "upcoming"}
-                        className={`w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm ${
-                          windowStatus === "in_progress"
-                            ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                            : windowStatus === "upcoming"
-                            ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                            : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                        }`}
-                      >
-                        <Play size={14} />
-                        {windowStatus === "in_progress"
-                          ? "Resume Online Exam"
-                          : windowStatus === "upcoming"
-                          ? `Starts at ${res.exam?.startTime || "scheduled time"}`
-                          : "Start Online Exam"}
-                      </button>
-                    )}
+                  {isOnline && !isPending && (
+                    <button
+                      onClick={() => handleOpenResultDetail(res.exam._id)}
+                      className="w-full flex items-center justify-between text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 p-2.5 rounded-xl transition"
+                    >
+                      <span className="flex items-center gap-1.5"><Award size={14} /> View Question Breakdown</span>
+                      <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-black">
+                        {percentage}% <Eye size={13} />
+                      </span>
+                    </button>
+                  )}
 
-                    {isOnline && !isPending && (
-                      <button
-                        onClick={() => handleOpenResultDetail(res.exam._id)}
-                        className="w-full flex items-center justify-between text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 p-2.5 rounded-xl transition"
-                      >
-                        <span className="flex items-center gap-1.5"><Award size={14} /> Exam Completed</span>
-                        <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-black">
-                          {percentage}% Score <Eye size={13} />
-                        </span>
-                      </button>
-                    )}
+                  {!isOnline && res.exam?.questionPaper?.fileUrl && (
+                    <a
+                      href={res.exam.questionPaper.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg transition"
+                    >
+                      <FileText size={13} /> Question Paper
+                    </a>
+                  )}
 
-                    {!isOnline && res.exam?.questionPaper?.fileUrl && (
-                      <a
-                        href={res.exam.questionPaper.fileUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg transition"
-                      >
-                        <FileText size={13} /> Question Paper
-                      </a>
-                    )}
-                  </div>
-
-                  {!isOnline && res.gradedPaper?.fileUrl && (
+                  {res.gradedPaper?.fileUrl && (
                     <a
                       href={res.gradedPaper.fileUrl}
                       target="_blank"
@@ -422,12 +357,9 @@ export default function StudentExams() {
             <div className="flex items-start justify-between border-b border-slate-200 pb-4">
               <div>
                 <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-wider rounded-lg border border-emerald-100">
-                  Online Exam Result Details
+                  Detailed Result Breakdown
                 </span>
                 <h2 className="text-xl font-black text-slate-800 mt-1">{activeResultDetail.exam?.subject}</h2>
-                <p className="text-xs text-slate-400 font-bold mt-0.5">
-                  Submitted: {activeResultDetail.attempt?.submittedAt ? new Date(activeResultDetail.attempt.submittedAt).toLocaleString() : "Completed"}
-                </p>
               </div>
 
               <button
@@ -438,7 +370,6 @@ export default function StudentExams() {
               </button>
             </div>
 
-            {/* Score Overview Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center">
               <div>
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase">Score Obtained</span>
@@ -460,10 +391,9 @@ export default function StudentExams() {
               </div>
             </div>
 
-            {/* Questions Breakdown */}
             <div className="space-y-4 pt-2">
               <h3 className="text-sm font-black text-slate-800 border-b border-slate-100 pb-2">
-                Question Performance Breakdown ({activeResultDetail.breakdown ? activeResultDetail.breakdown.length : 0})
+                Questions Breakdown ({activeResultDetail.breakdown ? activeResultDetail.breakdown.length : 0})
               </h3>
 
               {!activeResultDetail.breakdown || activeResultDetail.breakdown.length === 0 ? (
@@ -480,8 +410,7 @@ export default function StudentExams() {
                   >
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-extrabold text-slate-800">Question #{idx + 1}</span>
-                      <span className={`font-extrabold flex items-center gap-1 ${q.isCorrect ? "text-emerald-600" : "text-rose-600"}`}>
-                        {q.isCorrect ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                      <span className={`font-extrabold ${q.isCorrect ? "text-emerald-600" : "text-rose-600"}`}>
                         {q.marksAwarded} / {q.totalMarks} Marks
                       </span>
                     </div>

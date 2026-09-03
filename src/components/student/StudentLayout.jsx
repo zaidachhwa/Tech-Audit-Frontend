@@ -13,12 +13,14 @@ import {
   LibraryBig,
   Fingerprint,
   Award,
+  Monitor,
 } from "lucide-react";
 
 const STUDENT_SIDEBAR_ITEMS = [
   { name: "Dashboard",         path: "/student/dashboard",         icon: LayoutDashboard },
   { name: "My Homework",       path: "/student/assignments",       icon: ClipboardList },
-  { name: "Exam Results",      path: "/student/exams",             icon: Award },
+  { name: "Online Exams",      path: "/student/online-exams",      icon: Monitor },
+  { name: "Exam Results",      path: "/student/exam-results",      icon: Award },
   { name: "Lecture Scheduler", path: "/student/lecture-scheduler", icon: CalendarCheck },
   { name: "My Attendance",     path: "/student/attendance",        icon: Fingerprint },
   { name: "Announcements",     path: "/student/announcements",     icon: Megaphone },
@@ -31,9 +33,10 @@ const STUDENT_SIDEBAR_ITEMS = [
 const PAGE_LABELS = {
   "/student/dashboard":         "Dashboard",
   "/student/assignments":       "My Homework",
-  "/student/exams":             "Exam Results",
-  "/student/exam-results":      "Exam Results",
-  "/student/results":           "Exam Results",
+  "/student/online-exams":      "Online Exams Portal",
+  "/student/exams":             "Online Exams Portal",
+  "/student/exam-results":      "Exam Results & Performance",
+  "/student/results":           "Exam Results & Performance",
   "/student/lecture-scheduler": "Lecture Schedule",
   "/student/attendance":        "My Attendance",
   "/student/announcements":     "Announcements",

@@ -29,8 +29,7 @@ export default function StudentDashboard() {
       ]);
       setMe(meRes.data.student || meRes.data);
       setDashboardData(dbRes.data);
-      const offlineOnlyExams = (examRes?.data || []).filter(r => r && r.exam?.examType !== "online");
-      setExamResults(offlineOnlyExams);
+      setExamResults(examRes?.data || []);
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || "Failed to load dashboard data");
@@ -387,12 +386,12 @@ export default function StudentDashboard() {
                           
                           <div className="flex items-center gap-2">
                             {isOnline && (
-                              <button
-                                onClick={() => window.open("https://quiz.nexcoreinstitute.org/", "_blank")}
-                                className="text-[10px] font-bold text-emerald-600 hover:underline"
+                              <Link
+                                to={isPending ? `/student/online-exam/${res.exam._id}` : "/student/exams"}
+                                className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-md hover:bg-emerald-100 transition"
                               >
-                                Exam Link
-                              </button>
+                                {isPending ? "Take Exam" : "View Score"}
+                              </Link>
                             )}
                             {!isOnline && res.exam?.questionPaper?.fileUrl && (
                               <a 
