@@ -18,23 +18,25 @@ import {
   FileSpreadsheet,
   ArrowUp,
   ArrowDown,
-  X
+  X,
+  Sparkles,
+  Wand2
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import * as XLSX from "xlsx";
 
 const S = {
   page: { fontFamily: "'DM Sans', sans-serif" },
-  pageTitle: { fontSize: 20, fontWeight: 700, color: "#1B2B4B", marginBottom: 2 },
-  pageSubtitle: { fontSize: 13, color: "#64748B", marginBottom: 20 },
-  card: { background: "#fff", border: "1.5px solid #E2E8F0", borderRadius: 12, padding: 20, marginBottom: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
-  sectionHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: "0.5px solid #E2E8F0" },
-  dot: { width: 8, height: 8, borderRadius: "50%", background: "#2563EB", flexShrink: 0 },
-  sectionTitle: { fontSize: 13, fontWeight: 500, color: "#1B2B4B" },
-  label: { fontSize: 11, fontWeight: 600, color: "#64748B", marginBottom: 5, display: "block", textTransform: "uppercase", letterSpacing: "0.06em" },
-  input: { width: "100%", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#1B2B4B", outline: "none", background: "#fff", boxSizing: "border-box" },
-  select: { width: "100%", border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 11px", fontSize: 13, color: "#1B2B4B", outline: "none", background: "#fff", boxSizing: "border-box" },
-  btnSave: { padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none", background: "#2563EB", color: "#fff", display: "inline-flex", alignItems: "center", gap: 6 },
+  pageTitle: { fontSize: 26, fontWeight: 800, color: "#0F172A", marginBottom: 6 },
+  pageSubtitle: { fontSize: 15, color: "#475569", marginBottom: 24, fontWeight: 500 },
+  card: { background: "#fff", border: "1.5px solid #CBD5E1", borderRadius: 16, padding: 26, marginBottom: 24, boxShadow: "0 4px 12px rgba(0,0,0,0.04)" },
+  sectionHeader: { display: "flex", alignItems: "center", gap: 12, marginBottom: 20, paddingBottom: 14, borderBottom: "1.5px solid #E2E8F0" },
+  dot: { width: 12, height: 12, borderRadius: "50%", background: "#2563EB", flexShrink: 0 },
+  sectionTitle: { fontSize: 18, fontWeight: 800, color: "#0F172A" },
+  label: { fontSize: 13, fontWeight: 800, color: "#1E293B", marginBottom: 8, display: "block", textTransform: "uppercase", letterSpacing: "0.06em" },
+  input: { width: "100%", border: "1.5px solid #94A3B8", borderRadius: 10, padding: "12px 16px", fontSize: 16, fontWeight: 600, color: "#0F172A", outline: "none", background: "#fff", boxSizing: "border-box" },
+  select: { width: "100%", border: "1.5px solid #94A3B8", borderRadius: 10, padding: "12px 16px", fontSize: 16, fontWeight: 600, color: "#0F172A", outline: "none", background: "#fff", boxSizing: "border-box" },
+  btnSave: { padding: "12px 26px", borderRadius: 12, fontSize: 16, fontWeight: 800, cursor: "pointer", border: "none", background: "#2563EB", color: "#fff", display: "inline-flex", alignItems: "center", gap: 8 },
   btnDelete: { background: "none", border: "none", color: "#EF4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }
 };
 
@@ -62,8 +64,18 @@ export default function ExamSchedule() {
 
   // Online Questions List
   const [questions, setQuestions] = useState([]);
-  const [questionTab, setQuestionTab] = useState("manual"); // "manual" or "import"
+  const [questionTab, setQuestionTab] = useState("manual"); // "manual", "ai", or "import"
   const [previewExam, setPreviewExam] = useState(null); // Preview modal target
+
+  // AI Question Generator State
+  const [aiConfig, setAiConfig] = useState({
+    topic: "",
+    numQuestions: 5,
+    difficulty: "Medium",
+    questionType: "mcq",
+    marksPerQuestion: 1
+  });
+  const [generatingAI, setGeneratingAI] = useState(false);
 
   // Manual Question Builder State
   const [currentQuestion, setCurrentQuestion] = useState({
@@ -119,6 +131,39 @@ export default function ExamSchedule() {
       setForm((prev) => ({ ...prev, totalMarks: calculatedMarks }));
     }
   }, [questions.length, form.examType]);
+
+  // AI Question Generator Handler
+  const handleGenerateAIQuestions = async () => {
+    const topicToUse = aiConfig.topic.trim() || form.subject;
+    if (!topicToUse) {
+      toast.error("Please enter a topic or subject description for AI question paper generation");
+      return;
+    }
+
+    try {
+      setGeneratingAI(true);
+      toast.loading("Gemini AI is generating question paper...", { id: "aiGen" });
+
+      const res = await API.post("/exams/generate-ai-questions", {
+        topic: topicToUse,
+        numQuestions: aiConfig.numQuestions,
+        difficulty: aiConfig.difficulty,
+        questionType: aiConfig.questionType,
+        marksPerQuestion: aiConfig.marksPerQuestion
+      });
+
+      toast.dismiss("aiGen");
+      if (res.data && Array.isArray(res.data.questions)) {
+        setQuestions((prev) => [...prev, ...res.data.questions]);
+        toast.success(res.data.message || `Generated ${res.data.questions.length} questions!`);
+      }
+    } catch (err) {
+      toast.dismiss("aiGen");
+      toast.error(err.response?.data?.message || "Failed to generate AI question paper");
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
 
   // Option Management
   const handleAddOptionChoice = () => {
@@ -593,21 +638,30 @@ export default function ExamSchedule() {
                   <span style={S.sectionTitle}>3. Question Paper ({questions.length} Questions)</span>
                 </div>
 
-                <div className="flex items-center bg-slate-100 p-1 rounded-lg gap-1">
+                <div className="flex items-center bg-slate-100 p-1.5 rounded-xl gap-1">
                   <button
                     type="button"
                     onClick={() => setQuestionTab("manual")}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition ${
-                      questionTab === "manual" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    className={`px-4 py-2 text-sm font-extrabold rounded-lg transition ${
+                      questionTab === "manual" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
                     Manual Builder
                   </button>
                   <button
                     type="button"
+                    onClick={() => setQuestionTab("ai")}
+                    className={`px-4 py-2 text-sm font-extrabold rounded-lg transition flex items-center gap-1.5 ${
+                      questionTab === "ai" ? "bg-indigo-600 text-white shadow-xs" : "text-indigo-600 hover:bg-indigo-50"
+                    }`}
+                  >
+                    <Sparkles size={15} /> AI Generator
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setQuestionTab("import")}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition ${
-                      questionTab === "import" ? "bg-emerald-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-800"
+                    className={`px-4 py-2 text-sm font-extrabold rounded-lg transition ${
+                      questionTab === "import" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
                     Import Excel
@@ -615,11 +669,112 @@ export default function ExamSchedule() {
                 </div>
               </div>
 
+              {/* AI Question Generator Tab */}
+              {questionTab === "ai" && (
+                <div className="bg-gradient-to-br from-indigo-50/90 via-purple-50/50 to-white p-5 md:p-6 border border-indigo-200 rounded-2xl space-y-4 mb-5 shadow-xs">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+                        <Sparkles size={20} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-indigo-950 flex items-center gap-2">
+                          Gemini AI Question Paper Generator
+                        </h4>
+                        <p className="text-xs text-indigo-700 font-medium mt-0.5">
+                          Specify subject topics or syllabus criteria, and Gemini AI will automatically structure standard question options.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={S.label}>Topic / Syllabus Description *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. React Hooks, State Management & useEffect Lifecycle"
+                      style={S.input}
+                      value={aiConfig.topic || form.subject}
+                      onChange={(e) => setAiConfig({ ...aiConfig, topic: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label style={S.label}>Number of Questions</label>
+                      <select
+                        style={S.select}
+                        value={aiConfig.numQuestions}
+                        onChange={(e) => setAiConfig({ ...aiConfig, numQuestions: Number(e.target.value) })}
+                      >
+                        <option value={3}>3 Questions</option>
+                        <option value={5}>5 Questions</option>
+                        <option value={10}>10 Questions</option>
+                        <option value={15}>15 Questions</option>
+                        <option value={20}>20 Questions</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={S.label}>Difficulty Level</label>
+                      <select
+                        style={S.select}
+                        value={aiConfig.difficulty}
+                        onChange={(e) => setAiConfig({ ...aiConfig, difficulty: e.target.value })}
+                      >
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                        <option value="Mixed">Mixed (Easy to Hard)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={S.label}>Question Format</label>
+                      <select
+                        style={S.select}
+                        value={aiConfig.questionType}
+                        onChange={(e) => setAiConfig({ ...aiConfig, questionType: e.target.value })}
+                      >
+                        <option value="mcq">Multiple Choice (4 Options)</option>
+                        <option value="true_false">True / False</option>
+                        <option value="short_answer">Short Answer</option>
+                        <option value="mixed">Mixed Formats</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={S.label}>Marks per Question</label>
+                      <input
+                        type="number"
+                        min="1"
+                        style={S.input}
+                        value={aiConfig.marksPerQuestion}
+                        onChange={(e) => setAiConfig({ ...aiConfig, marksPerQuestion: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-3 border-t border-indigo-100">
+                    <button
+                      type="button"
+                      disabled={generatingAI}
+                      onClick={handleGenerateAIQuestions}
+                      className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-sm font-black flex items-center gap-2 shadow-md hover:shadow-lg transition cursor-pointer"
+                    >
+                      <Sparkles size={16} className={generatingAI ? "animate-spin" : ""} />
+                      {generatingAI ? "Generating Question Paper..." : "⚡ Generate Question Paper with AI"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Manual Question Form */}
               {questionTab === "manual" && (
-                <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-3 mb-4">
+                <div className="bg-slate-50/80 p-5 md:p-6 border border-slate-300 rounded-2xl space-y-4 mb-5 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-slate-700 uppercase">
+                    <span className="text-sm font-black text-slate-800 uppercase tracking-wide flex items-center gap-2">
+                      <Plus size={16} className="text-blue-600" />
                       {editingIndex >= 0 ? `Editing Question #${editingIndex + 1}` : "Add New Question"}
                     </span>
                     {editingIndex >= 0 && (
@@ -628,7 +783,7 @@ export default function ExamSchedule() {
                           setEditingIndex(-1);
                           setCurrentQuestion({ questionText: "", questionType: "mcq", options: ["", "", "", ""], correctAnswer: "A", marks: 1 });
                         }}
-                        className="text-xs text-rose-500 font-bold hover:underline"
+                        className="text-sm text-rose-600 font-bold hover:underline"
                       >
                         Cancel Edit
                       </button>
@@ -646,7 +801,7 @@ export default function ExamSchedule() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label style={S.label}>Question Type</label>
                       <select
@@ -700,36 +855,36 @@ export default function ExamSchedule() {
 
                   {/* Options Input for MCQ */}
                   {currentQuestion.questionType === "mcq" && (
-                    <div className="space-y-2 pt-2 border-t border-slate-200">
+                    <div className="space-y-3 pt-3 border-t border-slate-200">
                       <div className="flex items-center justify-between">
                         <label style={S.label}>Options & Select Correct Answer</label>
                         <button
                           type="button"
                           onClick={handleAddOptionChoice}
-                          className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1"
+                          className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-2xs"
                         >
-                          <Plus size={12} /> Add Option
+                          <Plus size={14} /> Add Option
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         {currentQuestion.options.map((optVal, idx) => {
                           const letter = String.fromCharCode(65 + idx);
                           return (
-                            <div key={idx} className="flex items-center gap-2 bg-white p-2 border border-slate-200 rounded-lg shadow-2xs">
+                            <div key={idx} className="flex items-center gap-3 bg-white p-3 border border-slate-300 rounded-xl shadow-xs hover:border-slate-400 transition">
                               <input
                                 type="radio"
                                 name="correctAnswerRadio"
                                 checked={currentQuestion.correctAnswer === letter}
                                 onChange={() => setCurrentQuestion({ ...currentQuestion, correctAnswer: letter })}
-                                className="w-4 h-4 text-emerald-600 accent-emerald-600 cursor-pointer"
+                                className="w-5 h-5 text-emerald-600 accent-emerald-600 cursor-pointer flex-shrink-0"
                                 title={`Set Option ${letter} as correct answer`}
                               />
-                              <span className="text-xs font-extrabold text-slate-700 w-6">{letter}.</span>
+                              <span className="text-sm font-black text-slate-800 w-6 flex-shrink-0">{letter}.</span>
                               <input
                                 type="text"
                                 placeholder={`Option ${letter} text`}
-                                className="w-full text-xs outline-none text-slate-800 font-medium"
+                                className="w-full text-sm outline-none text-slate-900 font-medium bg-transparent"
                                 value={optVal || ""}
                                 onChange={(e) => {
                                   const newOpts = [...currentQuestion.options];
@@ -741,10 +896,10 @@ export default function ExamSchedule() {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveOptionChoice(idx)}
-                                  className="text-slate-300 hover:text-rose-600 transition p-1"
+                                  className="text-slate-400 hover:text-rose-600 transition p-1"
                                   title="Remove option"
                                 >
-                                  <Trash2 size={13} />
+                                  <Trash2 size={15} />
                                 </button>
                               )}
                             </div>
@@ -767,13 +922,13 @@ export default function ExamSchedule() {
                     </div>
                   )}
 
-                  <div className="flex justify-end pt-2">
+                  <div className="flex justify-end pt-3">
                     <button
                       type="button"
                       onClick={handleAddQuestion}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                      className="px-5 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl text-sm font-black flex items-center gap-2 shadow-md hover:shadow-lg transition cursor-pointer"
                     >
-                      <Plus size={14} /> {editingIndex >= 0 ? "Update Question" : "Save Question to Paper"}
+                      <Plus size={16} /> {editingIndex >= 0 ? "Update Question" : "Save Question to Paper"}
                     </button>
                   </div>
                 </div>
@@ -781,13 +936,13 @@ export default function ExamSchedule() {
 
               {/* Excel Import Tab */}
               {questionTab === "import" && (
-                <div className="bg-emerald-50/50 p-4 border border-emerald-200 rounded-xl space-y-3 mb-4">
-                  <div className="flex items-center justify-between">
+                <div className="bg-emerald-50/60 p-5 border border-emerald-200 rounded-2xl space-y-3.5 mb-5 shadow-xs">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
-                      <h4 className="text-xs font-extrabold text-emerald-900 flex items-center gap-1.5">
-                        <FileSpreadsheet size={16} /> Excel Question Paper Import
+                      <h4 className="text-sm font-black text-emerald-900 flex items-center gap-2">
+                        <FileSpreadsheet size={18} /> Excel Question Paper Import
                       </h4>
-                      <p className="text-[11px] text-emerald-700 mt-0.5">
+                      <p className="text-xs text-emerald-700 mt-1">
                         Upload an Excel file (.xlsx, .xls, .csv) formatted with Question, Option A-D, Correct Answer, Marks.
                       </p>
                     </div>
@@ -795,27 +950,27 @@ export default function ExamSchedule() {
                     <button
                       type="button"
                       onClick={downloadSampleExcel}
-                      className="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm"
+                      className="px-3.5 py-2 bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-xs transition"
                     >
                       Download Template
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-3 bg-white p-3 border border-emerald-200 rounded-lg">
+                  <div className="flex items-center gap-3 bg-white p-3.5 border border-emerald-200 rounded-xl">
                     <input
                       type="file"
                       accept=".xlsx, .xls, .csv"
                       onChange={handleExcelImport}
-                      className="text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
+                      className="text-xs text-slate-700 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
                     />
                   </div>
 
                   {excelValidationErrors.length > 0 && (
-                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 space-y-1">
-                      <div className="font-bold flex items-center gap-1">
-                        <AlertTriangle size={14} /> Found Excel Validation Warnings:
+                    <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 space-y-1">
+                      <div className="font-bold flex items-center gap-1.5 text-sm">
+                        <AlertTriangle size={16} /> Found Excel Validation Warnings:
                       </div>
-                      <ul className="list-disc pl-5 text-[11px] space-y-0.5 max-h-32 overflow-y-auto">
+                      <ul className="list-disc pl-5 text-xs space-y-1 max-h-32 overflow-y-auto">
                         {excelValidationErrors.map((err, i) => (
                           <li key={i}>{err}</li>
                         ))}
@@ -827,82 +982,89 @@ export default function ExamSchedule() {
 
               {/* Questions List Display */}
               {questions.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-500 font-bold px-1">
-                    <span>Paper Question List</span>
+                <div className="space-y-4 pt-2 border-t border-slate-200">
+                  <div className="flex items-center justify-between text-base text-slate-800 font-extrabold px-1">
+                    <span>Paper Question List ({questions.length} Questions)</span>
                     <button
                       type="button"
                       onClick={() => setPreviewExam({ ...form, questions })}
-                      className="text-blue-600 hover:underline flex items-center gap-1 text-xs"
+                      className="text-blue-600 hover:text-blue-800 font-black flex items-center gap-1.5 text-sm hover:underline"
                     >
-                      <Eye size={13} /> Preview Full Question Paper
+                      <Eye size={16} /> Preview Full Question Paper
                     </button>
                   </div>
 
-                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  <div className="space-y-4 max-h-[550px] overflow-y-auto pr-2">
                     {questions.map((q, idx) => (
-                      <div key={idx} className="bg-white p-3 border border-slate-200 rounded-lg flex items-start justify-between gap-3 shadow-xs">
-                        <div className="space-y-1 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-extrabold rounded-md">
+                      <div key={idx} className="bg-white p-5 border border-slate-300 rounded-2xl flex items-start justify-between gap-5 shadow-xs hover:border-slate-400 transition">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="px-3 py-1 bg-slate-900 text-white text-xs font-black rounded-lg">
                               Q{idx + 1}
                             </span>
-                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-md">
+                            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-black uppercase rounded-lg border border-blue-200">
                               {q.questionType}
                             </span>
-                            <span className="text-[11px] font-bold text-emerald-600">
+                            <span className="px-3 py-1 bg-emerald-100 text-emerald-900 text-xs font-black rounded-lg border border-emerald-200">
                               {q.marks} Mark{q.marks > 1 ? "s" : ""}
                             </span>
                           </div>
 
-                          <p className="text-xs font-bold text-slate-800">{q.questionText}</p>
+                          <p className="text-base md:text-lg font-bold text-slate-900 leading-snug">{q.questionText}</p>
 
                           {q.questionType === "mcq" && (
-                            <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-600 pl-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-sm text-slate-800 font-semibold pt-2">
                               {(q.options || []).map((optText, i) => {
                                 const l = String.fromCharCode(65 + i);
+                                const isCorrect = q.correctAnswer === l;
                                 return (
-                                  <span
+                                  <div
                                     key={i}
-                                    className={q.correctAnswer === l ? "font-extrabold text-emerald-700 bg-emerald-50 px-1 rounded" : ""}
+                                    className={`px-3.5 py-2 rounded-xl flex items-start gap-2 text-sm font-semibold border ${
+                                      isCorrect
+                                        ? "bg-emerald-100/90 text-emerald-950 border-emerald-300 font-bold shadow-2xs"
+                                        : "bg-slate-50 text-slate-800 border-slate-200"
+                                    }`}
                                   >
-                                    {l}. {optText} {q.correctAnswer === l ? "✓" : ""}
-                                  </span>
+                                    <span className="font-black text-slate-900 text-base">{l}.</span>
+                                    <span className="flex-1 leading-snug">{optText}</span>
+                                    {isCorrect && <span className="font-black text-emerald-700 text-base">✓</span>}
+                                  </div>
                                 );
                               })}
                             </div>
                           )}
 
                           {q.questionType !== "mcq" && (
-                            <p className="text-[11px] text-emerald-600 font-semibold pl-2">
+                            <div className="inline-block mt-2 px-3.5 py-1.5 bg-emerald-50 text-emerald-800 font-bold text-sm rounded-xl border border-emerald-200">
                               Correct Answer: {q.correctAnswer}
-                            </p>
+                            </div>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             type="button"
                             onClick={() => handleMoveQuestion(idx, -1)}
                             disabled={idx === 0}
-                            className="p-1 hover:bg-slate-100 rounded text-slate-500 disabled:opacity-30"
+                            className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 disabled:opacity-30 transition"
                             title="Move Up"
                           >
-                            <ArrowUp size={14} />
+                            <ArrowUp size={18} />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleMoveQuestion(idx, 1)}
                             disabled={idx === questions.length - 1}
-                            className="p-1 hover:bg-slate-100 rounded text-slate-500 disabled:opacity-30"
+                            className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 disabled:opacity-30 transition"
                             title="Move Down"
                           >
-                            <ArrowDown size={14} />
+                            <ArrowDown size={18} />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDuplicateQuestion(idx)}
-                            className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-bold rounded border border-emerald-200"
+                            className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-black rounded-xl border border-emerald-300 transition"
                             title="Duplicate question"
                           >
                             Duplicate
@@ -910,17 +1072,17 @@ export default function ExamSchedule() {
                           <button
                             type="button"
                             onClick={() => handleEditQuestion(idx)}
-                            className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded"
+                            className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black rounded-xl border border-slate-300 transition"
                           >
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteQuestion(idx)}
-                            className="p-1 text-rose-500 hover:bg-rose-50 rounded"
+                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition"
                             title="Delete"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={18} />
                           </button>
                         </div>
                       </div>
@@ -1101,34 +1263,34 @@ export default function ExamSchedule() {
                 <p className="text-xs text-slate-400 text-center py-6">No questions added yet.</p>
               ) : (
                 previewExam.questions.map((q, idx) => (
-                  <div key={idx} className="p-4 border border-slate-200 rounded-xl space-y-2 bg-white shadow-xs">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-extrabold text-slate-700">Question #{idx + 1}</span>
-                      <span className="font-bold text-emerald-600">{q.marks || 1} Mark{q.marks > 1 ? "s" : ""}</span>
+                  <div key={idx} className="p-4 md:p-5 border border-slate-300 rounded-2xl space-y-2.5 bg-white shadow-xs">
+                    <div className="flex items-center justify-between text-xs font-black">
+                      <span className="text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg">Question #{idx + 1}</span>
+                      <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">{q.marks || 1} Mark{q.marks > 1 ? "s" : ""}</span>
                     </div>
 
-                    <p className="text-xs font-bold text-slate-900">{q.questionText}</p>
+                    <p className="text-base font-bold text-slate-950 leading-snug">{q.questionText}</p>
 
                     {q.questionType === "mcq" && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
                         {["A", "B", "C", "D"].map((letter, i) => (
                           <div
                             key={letter}
-                            className={`p-2 rounded-lg text-xs border flex items-center justify-between ${
+                            className={`p-3 rounded-xl text-sm border flex items-center justify-between font-semibold ${
                               q.correctAnswer === letter
-                                ? "bg-emerald-50 border-emerald-300 font-bold text-emerald-900"
-                                : "bg-slate-50 border-slate-200 text-slate-700"
+                                ? "bg-emerald-100/90 border-emerald-300 font-bold text-emerald-950 shadow-2xs"
+                                : "bg-slate-50 border-slate-200 text-slate-800"
                             }`}
                           >
-                            <span>{letter}. {q.options[i]}</span>
-                            {q.correctAnswer === letter && <CheckCircle size={14} className="text-emerald-600" />}
+                            <span><strong className="font-black text-slate-900 mr-1">{letter}.</strong> {q.options[i]}</span>
+                            {q.correctAnswer === letter && <CheckCircle size={16} className="text-emerald-700 flex-shrink-0" />}
                           </div>
                         ))}
                       </div>
                     )}
 
                     {q.questionType !== "mcq" && (
-                      <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-800">
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-bold text-emerald-900">
                         Answer Key: {q.correctAnswer}
                       </div>
                     )}
