@@ -48,6 +48,7 @@ import LectureSchedule from './pages/LectureSchedule';
 import ExamSchedule from './pages/ExamSchedule';
 import ExamResults from './pages/ExamResults';
 import Leaderboard from './pages/Leaderboard';
+import StudentExamReportPage from './pages/StudentExamReportPage';
 import AdminStudentAttendance from './components/admin/AdminStudentAttendance';
 import AdminInstituteSettings from './components/admin/AdminInstituteSettings';
 import AdminAnnouncements from './components/admin/AdminAnnouncements';
@@ -110,6 +111,9 @@ export default function App() {
           <Route path="online-exams" element={<StudentOnlineExams />} />
           <Route path="exams" element={<StudentOnlineExams />} />
           <Route path="online-exam/:examId" element={<OnlineExamRunner />} />
+          <Route path="online_exam/:examId" element={<OnlineExamRunner />} />
+          <Route path="online-exams/:examId" element={<OnlineExamRunner />} />
+          <Route path="exam/:examId" element={<OnlineExamRunner />} />
           <Route path="exam-results" element={<StudentExamResults />} />
           <Route path="results" element={<StudentExamResults />} />
         </Route>
@@ -149,6 +153,7 @@ export default function App() {
           <Route path="exam-schedule" element={<ExamSchedule />} />
           <Route path="exam-results" element={<ExamResults />} />
           <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="student-exam-report" element={<StudentExamReportPage />} />
           <Route path="teacher/:teacherId" element={<TeacherProfileView />} />
           <Route path="student/:studentId" element={<StudentProfileView />} />
           <Route path="student-attendance" element={<AdminStudentAttendance />} />
@@ -196,6 +201,7 @@ export default function App() {
           <Route path="exam-schedule" element={<ExamSchedule />} />
           <Route path="exam-results" element={<ExamResults />} />
           <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="student-exam-report" element={<StudentExamReportPage />} />
         </Route>
 
         {/* ─── FALLBACK ────────────────────────────────────────────────────── */}

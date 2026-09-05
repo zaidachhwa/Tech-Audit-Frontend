@@ -110,6 +110,11 @@ export const teacherSidebarItems = [
     path: "/teacher/exam-results",
   },
   {
+    name: "Exam Report",
+    icon: TrendingUp,
+    path: "/teacher/student-exam-report",
+  },
+  {
     name: "Leaderboard",
     icon: Trophy,
     path: "/teacher/leaderboard",

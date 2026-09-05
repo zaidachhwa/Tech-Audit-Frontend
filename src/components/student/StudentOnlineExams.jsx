@@ -14,7 +14,9 @@ import {
   Award,
   Search,
   BookOpen,
-  X
+  X,
+  ShieldAlert,
+  ShieldCheck
 } from "lucide-react";
 
 export default function StudentOnlineExams() {
@@ -72,6 +74,20 @@ export default function StudentOnlineExams() {
     }
   };
 
+  const checkExamDone = (r, statusesMap) => {
+    const eId = r.exam?._id;
+    const statusObj = statusesMap[eId];
+    const wStatus = statusObj?.windowStatus;
+    const attemptStatus = statusObj?.attempt?.status;
+
+    return (
+      (r.status !== "Pending" && r.marksObtained !== null && r.marksObtained !== undefined) ||
+      wStatus === "completed" ||
+      attemptStatus === "completed" ||
+      attemptStatus === "auto_submitted"
+    );
+  };
+
   // Filter logic
   const filteredList = onlineExams.filter((item) => {
     const subject = (item.exam?.subject || "").toLowerCase();
@@ -79,7 +95,7 @@ export default function StudentOnlineExams() {
 
     const statusObj = statuses[item.exam?._id];
     const wStatus = statusObj?.windowStatus || "available";
-    const isDone = item.status !== "Pending" && item.marksObtained !== null && item.marksObtained !== undefined;
+    const isDone = checkExamDone(item, statuses);
 
     let matchesTab = true;
     if (filterTab === "active") {
@@ -95,15 +111,12 @@ export default function StudentOnlineExams() {
 
   const activeCount = onlineExams.filter((r) => {
     const st = statuses[r.exam?._id]?.windowStatus;
-    const isDone = r.status !== "Pending" && r.marksObtained !== null && r.marksObtained !== undefined;
+    const isDone = checkExamDone(r, statuses);
     return (st === "available" || st === "in_progress") && !isDone;
   }).length;
 
   const upcomingCount = onlineExams.filter((r) => statuses[r.exam?._id]?.windowStatus === "upcoming").length;
-  const completedCount = onlineExams.filter((r) => {
-    const isDone = r.status !== "Pending" && r.marksObtained !== null && r.marksObtained !== undefined;
-    return isDone || statuses[r.exam?._id]?.windowStatus === "completed";
-  }).length;
+  const completedCount = onlineExams.filter((r) => checkExamDone(r, statuses)).length;
 
   return (
     <div className="space-y-6 pb-24 font-['DM_Sans',sans-serif]">
@@ -234,8 +247,19 @@ export default function StudentOnlineExams() {
             const examData = res.exam;
             const statusObj = statuses[examData._id];
             const wStatus = statusObj?.windowStatus || "available";
-            const isCompleted = res.status !== "Pending" && res.marksObtained !== null && res.marksObtained !== undefined;
-            const percentage = !isCompleted && res.totalMarks ? 0 : (isCompleted ? Math.round((res.marksObtained / res.totalMarks) * 100) : 0);
+            const attemptStatus = statusObj?.attempt?.status;
+
+            const isCompleted = checkExamDone(res, statuses);
+
+            const scoreObtained = res.marksObtained !== null && res.marksObtained !== undefined
+              ? res.marksObtained
+              : (statusObj?.attempt?.score !== undefined ? statusObj.attempt.score : null);
+
+            const totalMarksVal = res.totalMarks || statusObj?.attempt?.totalMarks || examData.totalMarks || 100;
+
+            const percentage = scoreObtained !== null && totalMarksVal > 0
+              ? Math.round((scoreObtained / totalMarksVal) * 100)
+              : (statusObj?.attempt?.percentage !== undefined ? statusObj.attempt.percentage : 0);
 
             return (
               <div
@@ -358,6 +382,35 @@ export default function StudentOnlineExams() {
                 <p className={`text-sm font-black uppercase mt-1 ${activeResultDetail.attempt?.status === "Pass" ? "text-emerald-600" : "text-rose-600"}`}>
                   {activeResultDetail.attempt?.status}
                 </p>
+              </div>
+            </div>
+
+            {/* SECURITY AUDIT SUMMARY */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                {activeResultDetail.attempt?.securityStatus === "Suspicious" || activeResultDetail.attempt?.securityStatus === "AutoSubmitted" ? (
+                  <ShieldAlert size={20} className="text-rose-500 shrink-0" />
+                ) : (
+                  <ShieldCheck size={20} className="text-emerald-500 shrink-0" />
+                )}
+                <div>
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase block">Exam Security Audit</span>
+                  <span className="font-bold text-slate-700">Security Rating: </span>
+                  <span className={`font-black uppercase ${
+                    activeResultDetail.attempt?.securityStatus === "Suspicious" || activeResultDetail.attempt?.securityStatus === "AutoSubmitted"
+                      ? "text-rose-600"
+                      : activeResultDetail.attempt?.securityStatus === "Warning"
+                      ? "text-amber-600"
+                      : "text-emerald-600"
+                  }`}>
+                    {activeResultDetail.attempt?.securityStatus || "Normal"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 text-[11px] font-bold text-slate-600">
+                <span>Tab Switches: <strong className="text-slate-900">{activeResultDetail.attempt?.tabSwitchCount || 0}</strong></span>
+                <span>Fullscreen Exits: <strong className="text-slate-900">{activeResultDetail.attempt?.fullscreenExitCount || 0}</strong></span>
               </div>
             </div>
 

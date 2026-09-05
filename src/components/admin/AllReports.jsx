@@ -18,14 +18,32 @@ export default function ReportsList() {
   const navigate = useNavigate();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [reportTypeFilter, setReportTypeFilter] = useState('all'); // 'all' | 'audit' | 'exam'
 
   const [selectedReport, setSelectedReport] = useState(null); // { report, reportIndex }
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteBatchTarget, setDeleteBatchTarget] = useState(null);
 
+  const auditCount = useMemo(
+    () => reports.filter((r) => (r.reportType || 'audit') === 'audit').length,
+    [reports],
+  );
+  const examCount = useMemo(
+    () => reports.filter((r) => r.reportType === 'exam').length,
+    [reports],
+  );
+
+  const filteredReports = useMemo(() => {
+    if (reportTypeFilter === 'all') return reports;
+    return reports.filter((r) => {
+      const type = r.reportType || 'audit';
+      return type === reportTypeFilter;
+    });
+  }, [reports, reportTypeFilter]);
+
   const groupedReports = useMemo(() => {
     const groups = {};
-    reports.forEach((r) => {
+    filteredReports.forEach((r) => {
       const batchName = r.student?.batch_name;
       const batchNo = r.student?.batch_no;
       const key =
@@ -34,7 +52,7 @@ export default function ReportsList() {
       groups[key].push(r);
     });
     return groups;
-  }, [reports]);
+  }, [filteredReports]);
 
   const fetchReports = async () => {
     try {
@@ -86,23 +104,60 @@ export default function ReportsList() {
       `}</style>
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div
-          className="w-6 h-6 flex items-center justify-center rounded-lg"
-          style={{ backgroundColor: '#EFF6FF' }}
-        >
-          <FileText className="w-6 h-6" style={{ color: '#2563EB' }} />
-        </div>
-        <div>
-          <h1
-            className="font-bold"
-            style={{ color: '#1B2B4B', fontSize: '20px', fontWeight: '700' }}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 flex items-center justify-center rounded-xl"
+            style={{ backgroundColor: '#EFF6FF' }}
           >
-            Audit Reports
-          </h1>
-          <p className="text-sm" style={{ color: '#94A3B8', fontSize: '13px' }}>
-            {reports.length} total reports
-          </p>
+            <FileText className="w-5 h-5" style={{ color: '#2563EB' }} />
+          </div>
+          <div>
+            <h1
+              className="font-bold text-xl text-[#1B2B4B]"
+            >
+              All Student Reports
+            </h1>
+            <p className="text-xs text-[#94A3B8]">
+              {filteredReports.length} reports shown ({reports.length} total)
+            </p>
+          </div>
+        </div>
+
+        {/* Filter Buttons */}
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+          <button
+            onClick={() => setReportTypeFilter('all')}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+              reportTypeFilter === 'all'
+                ? 'bg-white text-[#2563EB] shadow-sm font-extrabold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            All Reports ({reports.length})
+          </button>
+          <button
+            onClick={() => setReportTypeFilter('audit')}
+            className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+              reportTypeFilter === 'audit'
+                ? 'bg-white text-blue-600 shadow-sm font-extrabold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
+            Audit Reports ({auditCount})
+          </button>
+          <button
+            onClick={() => setReportTypeFilter('exam')}
+            className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+              reportTypeFilter === 'exam'
+                ? 'bg-white text-purple-600 shadow-sm font-extrabold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>
+            Exam Reports ({examCount})
+          </button>
         </div>
       </div>
 
@@ -156,9 +211,22 @@ export default function ReportsList() {
           <Modal onClose={() => setSelectedReport(null)}>
             {/* 🔒 STICKY HEADER */}
             <div className="sticky top-0 z-10 bg-white border-b px-4 sm:px-6 py-3 flex items-center justify-between">
-              <h2 className="font-semibold text-base sm:text-lg md:text-xl">
-                Report Details
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-base sm:text-lg md:text-xl">
+                  {selectedReport.report.reportType === 'exam'
+                    ? 'Exam Report Details'
+                    : 'Audit Report Details'}
+                </h2>
+                {selectedReport.report.reportType === 'exam' ? (
+                  <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+                    Exam Report
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                    Audit Report
+                  </span>
+                )}
+              </div>
 
               <div className="flex items-center gap-2">
                 {/* Download */}
@@ -171,10 +239,18 @@ export default function ReportsList() {
                       }
 
                       const { report: reportData, reportIndex } = selectedReport;
+                      const isExam = reportData.reportType === 'exam';
 
-                      const res = await fetch(
-                        `${import.meta.env.VITE_API_URL}/reports/${reportData._id}/pdf`,
-                      );
+                      const studentId = reportData.student?._id || reportData.student;
+                      const pdfUrl = isExam
+                        ? `${import.meta.env.VITE_API_URL}/exam-results/student/${studentId}/report/pdf`
+                        : `${import.meta.env.VITE_API_URL}/reports/${reportData._id}/pdf`;
+
+                      const res = await fetch(pdfUrl, {
+                        headers: {
+                          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+                        },
+                      });
 
                       const blob = await res.blob();
                       const url = window.URL.createObjectURL(blob);
@@ -190,8 +266,9 @@ export default function ReportsList() {
                         .toISOString()
                         .split('T')[0];
 
-                      // Include report index to make filename unique when same student has multiple reports
-                      const fileName = `${studentName}-${batchName}-${batchNo}-${date}_Report${reportIndex}.pdf`;
+                      const fileName = isExam
+                        ? `Exam_Report_${studentName}_${date}.pdf`
+                        : `${studentName}-${batchName}-${batchNo}-${date}_Report${reportIndex}.pdf`;
 
                       const a = document.createElement('a');
                       a.href = url;
@@ -205,10 +282,10 @@ export default function ReportsList() {
                       toast.error('Download failed');
                     }
                   }}
-                  className="px-3 py-1 text-xs sm:text-sm border rounded-lg flex items-center gap-2"
+                  className="px-3 py-1 text-xs sm:text-sm border rounded-lg flex items-center gap-2 font-semibold bg-blue-50 text-[#2563EB] hover:bg-blue-100 transition cursor-pointer"
                 >
                   <Download size={16} />
-                  Download
+                  Download PDF
                 </button>
 
                 {/* Close */}
@@ -225,21 +302,24 @@ export default function ReportsList() {
             <div className="overflow-y-auto px-4 sm:px-6 py-4 space-y-6">
               {/* STUDENT INFO */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  <Info
-                    label="Student Name"
-                    value={selectedReport.report.student?.name || "Missing Name"}
-                  />
-                  <Info label="Email" value={selectedReport.report.student?.email || "Missing Email"} />
-                  <Info
-                    label="Batch"
-                    value={
-                      selectedReport.report.student?.batch_name 
-                        ? `${selectedReport.report.student.batch_name} - ${selectedReport.report.student.batch_no || '?'}`
-                        : "Unassigned"
-                    }
-                  />
                 <Info
-                  label="Audit Date"
+                  label="Student Name"
+                  value={selectedReport.report.student?.name || 'Missing Name'}
+                />
+                <Info
+                  label="Email"
+                  value={selectedReport.report.student?.email || 'Missing Email'}
+                />
+                <Info
+                  label="Batch"
+                  value={
+                    selectedReport.report.student?.batch_name
+                      ? `${selectedReport.report.student.batch_name} - ${selectedReport.report.student.batch_no || '?'}`
+                      : 'Unassigned'
+                  }
+                />
+                <Info
+                  label="Report Date"
                   value={new Date(selectedReport.report.auditDate).toLocaleDateString(
                     'en-GB',
                     {
@@ -583,7 +663,10 @@ function StudentAccordion({
                 <thead className="bg-[#F8FAFC]">
                   <tr>
                     <th className="px-4 py-2 text-left text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
-                      Audit Date
+                      Report Type
+                    </th>
+                    <th className="px-4 py-2 text-left text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                      Report Date
                     </th>
                     <th className="px-4 py-2 text-center text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
                       Actions
@@ -591,51 +674,67 @@ function StudentAccordion({
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map((r, idx) => (
-                    <tr
-                      key={r._id}
-                      className="border-b border-[#F1F5F9] last:border-0"
-                    >
-                      <td className="px-4 py-2.5 text-[#1B2B4B] font-medium">
-                        <div className="flex items-center gap-2">
-                          <FileText size={14} className="text-[#94A3B8]" />
-                          {new Date(r.auditDate).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                          {/* Show report number badge when student has multiple reports */}
-                          {reports.length > 1 && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#EFF6FF] text-[#2563EB]">
-                              #{idx + 1}
+                  {reports.map((r, idx) => {
+                    const isExam = r.reportType === 'exam';
+                    return (
+                      <tr
+                        key={r._id}
+                        className="border-b border-[#F1F5F9] last:border-0"
+                      >
+                        <td className="px-4 py-2.5">
+                          {isExam ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                              Exam Report
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                              Audit Report
                             </span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => onSelectedReport(r, idx + 1)}
-                            className="flex items-center gap-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold bg-[#2563EB] hover:bg-[#1E40AF] transition"
-                          >
-                            <Eye size={13} /> View
-                          </button>
-                          <button
-                            onClick={() => navigate(`/admin/add-reports`, { state: { editReport: r } })}
-                            className="flex items-center gap-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold bg-[#10B981] hover:bg-[#059669] transition"
-                          >
-                            <Edit size={13} /> Edit
-                          </button>
-                          <button
-                            onClick={() => onDeleteTarget(r)}
-                            className="flex items-center gap-1.5 px-3 py-1 rounded-md text-[#EF4444] text-xs font-semibold bg-[#FEF2F2] hover:bg-[#FEE2E2] transition"
-                          >
-                            <Trash2 size={13} /> Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-4 py-2.5 text-[#1B2B4B] font-medium">
+                          <div className="flex items-center gap-2">
+                            <FileText size={14} className="text-[#94A3B8]" />
+                            {new Date(r.auditDate).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                            {/* Show report number badge when student has multiple reports */}
+                            {reports.length > 1 && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#EFF6FF] text-[#2563EB]">
+                                #{idx + 1}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={() => onSelectedReport(r, idx + 1)}
+                              className="flex items-center gap-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold bg-[#2563EB] hover:bg-[#1E40AF] transition cursor-pointer"
+                            >
+                              <Eye size={13} /> View
+                            </button>
+                            {!isExam && (
+                              <button
+                                onClick={() => navigate(`/admin/add-reports`, { state: { editReport: r } })}
+                                className="flex items-center gap-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold bg-[#10B981] hover:bg-[#059669] transition cursor-pointer"
+                              >
+                                <Edit size={13} /> Edit
+                              </button>
+                            )}
+                            <button
+                              onClick={() => onDeleteTarget(r)}
+                              className="flex items-center gap-1.5 px-3 py-1 rounded-md text-[#EF4444] text-xs font-semibold bg-[#FEF2F2] hover:bg-[#FEE2E2] transition cursor-pointer"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

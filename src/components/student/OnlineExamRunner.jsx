@@ -36,11 +36,140 @@ export default function OnlineExamRunner() {
   const [sessionId, setSessionId] = useState("");
   const [tabConflict, setTabConflict] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [fullscreenExitCount, setFullscreenExitCount] = useState(0);
+  const [securityStatus, setSecurityStatus] = useState("Normal");
   const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true);
 
-  // Broadcast channel for multi-tab check
+  // Pre-Exam Consent & Offline States
+  const [examSessionStarted, setExamSessionStarted] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [offlineQueue, setOfflineQueue] = useState([]);
+
+  const MAX_TAB_SWITCHES = 3;
+  const lastSwitchTimeRef = useRef(0);
   const channelRef = useRef(null);
+
+  // Sync state into refs for leak-free event handlers
+  const examCompletedRef = useRef(examCompleted);
+  const loadingRef = useRef(loading);
+  const attemptIdRef = useRef(attemptId);
+  const sessionIdRef = useRef(sessionId);
+  const examSessionStartedRef = useRef(examSessionStarted);
+
+  useEffect(() => {
+    examCompletedRef.current = examCompleted;
+    loadingRef.current = loading;
+    attemptIdRef.current = attemptId;
+    sessionIdRef.current = sessionId;
+    examSessionStartedRef.current = examSessionStarted;
+  }, [examCompleted, loading, attemptId, sessionId, examSessionStarted]);
+
+  // Request Fullscreen helper
+  const enterFullscreen = () => {
+    const docEl = document.documentElement;
+    if (docEl.requestFullscreen) {
+      docEl.requestFullscreen().catch(() => {});
+    } else if (docEl.webkitRequestFullscreen) {
+      docEl.webkitRequestFullscreen().catch(() => {});
+    } else if (docEl.msRequestFullscreen) {
+      docEl.msRequestFullscreen().catch(() => {});
+    }
+  };
+
+  // Exit Fullscreen helper
+  const exitFullscreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen().catch(() => {});
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen().catch(() => {});
+    }
+  };
+
+  // Detailed Security Event Logger
+  const logSecurityEvent = (eventType, metadata = {}) => {
+    if (!attemptIdRef.current || examCompletedRef.current || loadingRef.current) return;
+    API.post("/online-exams/log-security-event", {
+      attemptId: attemptIdRef.current,
+      sessionId: sessionIdRef.current,
+      eventType,
+      metadata
+    })
+      .then((res) => {
+        if (res.data?.securityStatus) setSecurityStatus(res.data.securityStatus);
+        if (res.data?.tabSwitchCount !== undefined) setTabSwitchCount(res.data.tabSwitchCount);
+        if (res.data?.fullscreenExitCount !== undefined) setFullscreenExitCount(res.data.fullscreenExitCount);
+        if (res.data?.autoSubmitted) {
+          toast.error("Security violation limit reached! Exam auto-submitting...", { id: "sec-limit" });
+          handleAutoSubmit();
+        }
+      })
+      .catch(() => {});
+  };
+
+  const handleSecurityViolation = (type = "TAB_SWITCH") => {
+    if (examCompletedRef.current || loadingRef.current || !examSessionStartedRef.current) return;
+
+    const now = Date.now();
+    if (now - lastSwitchTimeRef.current < 1500) return; // Debounce 1.5s
+    lastSwitchTimeRef.current = now;
+
+    logSecurityEvent(type);
+
+    setTabSwitchCount((prev) => {
+      const nextCount = prev + 1;
+      if (nextCount >= MAX_TAB_SWITCHES) {
+        toast.error(`Maximum window changes (${MAX_TAB_SWITCHES}) exceeded! Exam auto-submitting...`, { id: "max-tab-warn" });
+        setTimeout(() => {
+          handleAutoSubmit();
+        }, 800);
+      } else {
+        toast.error(
+          `Security Warning #${nextCount} of ${MAX_TAB_SWITCHES}: Leaving exam window or minimizing is logged! Exam auto-submits after ${MAX_TAB_SWITCHES} violations.`,
+          { id: "tab-switch-warn", duration: 5000 }
+        );
+      }
+      return nextCount;
+    });
+  };
+
+  // Network Offline / Online Listener
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      toast.success("Network reconnected. Syncing answers...", { id: "net-sync" });
+      logSecurityEvent("RECONNECT");
+      // Flush offline queued answers
+      if (offlineQueue.length > 0) {
+        offlineQueue.forEach((item) => {
+          API.post("/online-exams/save-answer", {
+            attemptId,
+            questionId: item.questionId,
+            answer: item.answer,
+            sessionId
+          }).catch(() => {});
+        });
+        setOfflineQueue([]);
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+      toast.error("Network connection lost! Unsaved answers are queued locally.", { id: "net-off", duration: 6000 });
+      logSecurityEvent("NETWORK_DISCONNECT");
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [attemptId, sessionId, offlineQueue]);
 
   useEffect(() => {
     // 1. Generate or retrieve unique session token for this browser tab
@@ -61,47 +190,133 @@ export default function OnlineExamRunner() {
           channel.postMessage({ type: "PONG_ACTIVE_TAB", sid });
         } else if (event.data?.type === "PONG_ACTIVE_TAB" && event.data.sid !== sid) {
           setTabConflict(true);
+          logSecurityEvent("MULTIPLE_TAB_ATTEMPT", { secondSessionId: sid });
         }
       };
 
-      // Announce presence
       channel.postMessage({ type: "PING_ACTIVE_TAB", sid });
     } catch (e) {
       console.warn("BroadcastChannel not supported in this browser environment");
     }
 
-    // 3. Tab Visibility Warning
+    // 3. Strict Tab Visibility & Window Blur Logger
     const handleVisibilityChange = () => {
-      if (document.hidden && !examCompleted) {
-        setTabSwitchCount((prev) => {
-          const nextCount = prev + 1;
-          toast.error(`Warning #${nextCount}: Switching tabs or leaving the exam window is logged!`, { id: "tab-switch-warn" });
-          return nextCount;
-        });
+      if (document.hidden) {
+        handleSecurityViolation("PAGE_HIDDEN");
+      }
+    };
 
-        // Log tab switch to server
-        if (attemptId) {
-          API.post("/online-exams/tab-switch", { attemptId, sessionId: sid }).catch(() => {});
-        }
+    const handleWindowBlur = () => {
+      if (!document.hidden) {
+        handleSecurityViolation("WINDOW_BLUR");
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
 
     // 4. Initialize or Resume Attempt
     initAttempt(sid);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
       if (channelRef.current) {
         channelRef.current.close();
       }
     };
   }, [examId]);
 
+  // Fullscreen & Shortcut Security Restrictions
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFS = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+      setIsFullscreen(isFS);
+      if (!isFS && !examCompleted && !loading && attemptId && examSessionStarted) {
+        toast.error("Full screen mode required! Click to enter full screen.", { id: "fs-warn" });
+        logSecurityEvent("FULLSCREEN_EXIT");
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+    const handleBeforeUnload = (e) => {
+      if (!examCompleted && attemptId && examSessionStarted) {
+        e.preventDefault();
+        e.returnValue = "Exam is in progress. Leaving will log a security violation.";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Keyboard Shortcuts Block (DevTools, New Tab, Refresh, Copy/Paste)
+    const handleKeyDown = (e) => {
+      if (examCompleted || !attemptId || !examSessionStarted) return;
+
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      const key = e.key ? e.key.toLowerCase() : "";
+
+      // F12 or DevTools shortcuts
+      if (
+        e.keyCode === 123 ||
+        (isCtrlOrCmd && e.shiftKey && (key === "i" || key === "j" || key === "c")) ||
+        (isCtrlOrCmd && key === "u")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        toast.error("Developer tools are disabled during the exam!", { id: "sec-key" });
+        return false;
+      }
+
+      // New Tab (Ctrl+T), New Window (Ctrl+N), Close Tab (Ctrl+W)
+      if (isCtrlOrCmd && (key === "t" || key === "n" || key === "w")) {
+        e.preventDefault();
+        e.stopPropagation();
+        toast.error("Opening new tabs or windows is blocked during the exam!", { id: "sec-key" });
+        return false;
+      }
+
+      // Refresh (Ctrl+R, F5)
+      if ((isCtrlOrCmd && key === "r") || e.keyCode === 116) {
+        e.preventDefault();
+        e.stopPropagation();
+        toast.error("Page refresh is blocked during the exam!", { id: "sec-key" });
+        return false;
+      }
+
+      // Copy / Cut / Paste / Select All
+      if (isCtrlOrCmd && (key === "c" || key === "v" || key === "x" || key === "a")) {
+        e.preventDefault();
+        e.stopPropagation();
+        toast.error("Copying and pasting is disabled during the exam!", { id: "sec-key" });
+        return false;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [examCompleted, loading, attemptId, examSessionStarted]);
+
   // Server Countdown Timer Tick
   useEffect(() => {
-    if (remainingSeconds <= 0 || examCompleted || tabConflict) return;
+    if (remainingSeconds <= 0 || examCompleted || tabConflict || !examSessionStarted) return;
 
     const interval = setInterval(() => {
       setRemainingSeconds((prev) => {
@@ -115,11 +330,11 @@ export default function OnlineExamRunner() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [remainingSeconds, examCompleted, tabConflict]);
+  }, [remainingSeconds, examCompleted, tabConflict, examSessionStarted]);
 
   // Periodic Timer Sync with Server (Every 30 Seconds)
   useEffect(() => {
-    if (!attemptId || examCompleted || tabConflict) return;
+    if (!attemptId || examCompleted || tabConflict || !examSessionStarted) return;
 
     const syncInterval = setInterval(() => {
       API.post("/online-exams/sync-timer", { attemptId, sessionId })
@@ -127,7 +342,7 @@ export default function OnlineExamRunner() {
           if (res.data.expired || res.data.status === "auto_submitted" || res.data.status === "completed") {
             setRemainingSeconds(0);
             setExamCompleted(true);
-            toast.error("Exam time expired!");
+            exitFullscreen();
           } else if (res.data.remainingSeconds !== undefined) {
             setRemainingSeconds(res.data.remainingSeconds);
           }
@@ -136,7 +351,7 @@ export default function OnlineExamRunner() {
     }, 30000);
 
     return () => clearInterval(syncInterval);
-  }, [attemptId, sessionId, examCompleted, tabConflict]);
+  }, [attemptId, sessionId, examCompleted, tabConflict, examSessionStarted]);
 
   const initAttempt = async (sid) => {
     try {
@@ -152,33 +367,51 @@ export default function OnlineExamRunner() {
       // Restore saved answers
       const answersObj = {};
       (savedAnswers || []).forEach((a) => {
-        answersObj[a.questionId] = a.answer;
+        if (a && a.questionId) {
+          answersObj[a.questionId] = a.answer;
+        }
       });
       setAnswers(answersObj);
 
       if (status === "completed" || status === "auto_submitted") {
         setExamCompleted(true);
+        exitFullscreen();
+        API.get(`/online-exams/result/${examId}`).then((r) => {
+          if (r.data?.attempt) setResultSummary(r.data.attempt);
+        }).catch(() => {});
       }
     } catch (err) {
       console.error(err);
-      const msg = err.response?.data?.message || "Failed to start exam attempt";
-      toast.error(msg);
       if (err.response?.status === 400 && err.response?.data?.attempt) {
+        // Exam already completed - cleanly show results without error toast
         setExamCompleted(true);
+        exitFullscreen();
         setResultSummary(err.response.data.attempt);
+        API.get(`/online-exams/result/${examId}`).then((r) => {
+          if (r.data?.attempt) setResultSummary(r.data.attempt);
+        }).catch(() => {});
+      } else {
+        const msg = err.response?.data?.message || "Failed to start exam attempt";
+        toast.error(msg);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Save Answer Handler
+  // Save Answer Handler (with Offline Support)
   const handleSelectAnswer = async (questionId, value) => {
     if (examCompleted || tabConflict) return;
 
     // Update local state immediately
     const updatedAnswers = { ...answers, [questionId]: value };
     setAnswers(updatedAnswers);
+
+    if (!navigator.onLine) {
+      setOfflineQueue((prev) => [...prev.filter((i) => i.questionId !== questionId), { questionId, answer: value }]);
+      toast.success("Saved locally (Offline)", { id: "offline-save" });
+      return;
+    }
 
     // Save to backend asynchronously
     try {
@@ -196,6 +429,7 @@ export default function OnlineExamRunner() {
       } else if (err.response?.data?.expired) {
         setRemainingSeconds(0);
         setExamCompleted(true);
+        exitFullscreen();
         toast.error("Exam time expired!");
       }
     } finally {
@@ -203,18 +437,25 @@ export default function OnlineExamRunner() {
     }
   };
 
-  // Auto Submission when timer hits 0
+  // Auto Submission when timer hits 0 or violation limit reached
   const handleAutoSubmit = async () => {
     if (examCompleted) return;
-    toast.loading("Time expired! Auto-submitting exam...", { id: "autosubmit" });
+    toast.loading("Auto-submitting exam...", { id: "autosubmit" });
     try {
-      const res = await API.post("/online-exams/submit", { attemptId, sessionId });
+      const res = await API.post("/online-exams/submit", { attemptId, sessionId, isAuto: true });
       setResultSummary(res.data.result);
       setExamCompleted(true);
+      exitFullscreen();
       toast.success("Exam submitted automatically!", { id: "autosubmit" });
     } catch (err) {
       toast.dismiss("autosubmit");
       setExamCompleted(true);
+      exitFullscreen();
+      if (examId) {
+        API.get(`/online-exams/result/${examId}`).then((r) => {
+          if (r.data?.attempt) setResultSummary(r.data.attempt);
+        }).catch(() => {});
+      }
     }
   };
 
@@ -226,6 +467,7 @@ export default function OnlineExamRunner() {
       const res = await API.post("/online-exams/submit", { attemptId, sessionId });
       setResultSummary(res.data.result);
       setExamCompleted(true);
+      exitFullscreen();
       setConfirmSubmitOpen(false);
       toast.success("Exam submitted successfully!", { id: "submitting" });
     } catch (err) {
@@ -268,7 +510,7 @@ export default function OnlineExamRunner() {
           </div>
           <h2 className="text-xl font-black text-white">Active Exam Session Detected</h2>
           <p className="text-xs text-slate-300">
-            You already have this online exam open in another browser tab or window. To maintain exam integrity, only one active tab is allowed.
+            This exam is already open in another browser tab or window. To maintain exam integrity, only one active tab is allowed.
           </p>
           <div className="pt-2">
             <button
@@ -276,6 +518,65 @@ export default function OnlineExamRunner() {
               className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm"
             >
               Resume in This Tab
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pre-Exam Consent Modal (Displayed before student enters lock mode)
+  if (!examSessionStarted && !examCompleted) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4 font-['DM_Sans',sans-serif]">
+        <Toaster position="top-right" />
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-lg w-full text-center space-y-6 shadow-2xl">
+          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/20">
+            <Lock size={32} />
+          </div>
+
+          <div>
+            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider rounded-full border border-emerald-500/30">
+              Secure Exam Mode
+            </span>
+            <h1 className="text-2xl font-black text-white mt-2">{exam?.subject || "Online Assessment"}</h1>
+            <p className="text-xs text-slate-400 font-semibold mt-1">
+              Please review the exam integrity rules before launching your exam session.
+            </p>
+          </div>
+
+          <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 text-left space-y-3 text-xs text-slate-300">
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span><strong>Full Screen Enforcement:</strong> The exam runs in Full Screen mode. Exiting full screen is recorded as a security event.</span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span><strong>Single Active Tab:</strong> Opening this exam in another tab or window will restrict question access.</span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span><strong>Activity Monitoring:</strong> Leaving the exam window, switching apps, or hiding the page is logged to the server.</span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span><strong>Server-Controlled Timer:</strong> The countdown runs authoritatively on the server and cannot be paused.</span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span><strong>Answer Auto-Saving:</strong> Your responses save automatically and persist across page refreshes and network drops.</span>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <button
+              onClick={() => {
+                enterFullscreen();
+                setExamSessionStarted(true);
+              }}
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-bold transition shadow-lg flex items-center justify-center gap-2"
+            >
+              <Lock size={18} /> Start Exam Session
             </button>
           </div>
         </div>
@@ -347,8 +648,48 @@ export default function OnlineExamRunner() {
   const answeredCount = Object.keys(answers).filter((k) => answers[k] && answers[k].trim() !== "").length;
 
   return (
-    <div className="h-[calc(100vh-5rem)] bg-slate-900 text-white flex flex-col font-['DM_Sans',sans-serif] selection:bg-emerald-500 selection:text-white overflow-hidden rounded-2xl border border-slate-800 shadow-2xl">
+    <div
+      onContextMenu={(e) => { e.preventDefault(); toast.error("Right-click context menu disabled!"); }}
+      onCopy={(e) => e.preventDefault()}
+      onCut={(e) => e.preventDefault()}
+      onPaste={(e) => e.preventDefault()}
+      onSelectStart={(e) => e.preventDefault()}
+      className="h-[calc(100vh-5rem)] bg-slate-900 text-white flex flex-col font-['DM_Sans',sans-serif] selection:bg-none overflow-hidden rounded-2xl border border-slate-800 shadow-2xl relative select-none"
+    >
       <Toaster position="top-right" />
+
+      {/* FULLSCREEN REQUIRED LOCK OVERLAY */}
+      {!isFullscreen && !examCompleted && !loading && attemptId && (
+        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-6 z-[9999] font-['DM_Sans',sans-serif]">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 max-w-md w-full text-center space-y-5 shadow-2xl">
+            <div className="w-16 h-16 bg-amber-500/10 text-amber-400 rounded-2xl flex items-center justify-center mx-auto border border-amber-500/20">
+              <Lock size={36} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">Full Screen Required</h2>
+              <p className="text-xs text-slate-300 mt-2">
+                To prevent opening new tabs or minimizing, this online exam must be taken in Full Screen mode.
+              </p>
+            </div>
+            <div className="bg-slate-800/80 border border-slate-700 p-3.5 rounded-xl text-left text-xs space-y-1 text-slate-300 font-medium">
+              <p className="text-amber-400 font-bold flex items-center gap-1.5">
+                <AlertTriangle size={14} /> Anti-Cheating Protocol Active:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400 pt-1">
+                <li>Opening new tabs or windows is restricted.</li>
+                <li>Minimizing the app logs a security violation.</li>
+                <li>Exceeding {MAX_TAB_SWITCHES} violations auto-submits your exam.</li>
+              </ul>
+            </div>
+            <button
+              onClick={enterFullscreen}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition shadow-lg flex items-center justify-center gap-2"
+            >
+              <Lock size={14} /> Enter Full Screen & Resume Exam
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* TOP HEADER */}
       <header className="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/80 px-4 py-2.5 flex-shrink-0">

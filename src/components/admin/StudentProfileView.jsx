@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getStudent, uploadStudentPhoto, updateStudent } from "../../api/student.api";
 import { getReportsByStudent } from "../../api/report.api";
@@ -15,8 +15,9 @@ import {
   ArrowLeft, User, Mail, RefreshCw, BookOpen, BarChart2,
   FileText, Calendar, GraduationCap, Camera, Edit, X, Phone,
   CheckSquare, Briefcase, Layers, Trash2, Key, CheckCircle,
-  Clock, AlertTriangle, XCircle, ChevronRight, Download, Eye
+  Clock, AlertTriangle, XCircle, ChevronRight, Download, Eye, TrendingUp, Award
 } from "lucide-react";
+import StudentExamReportView from "./StudentExamReportView";
 
 export default function StudentProfileView() {
   const { studentId } = useParams();
@@ -45,10 +46,21 @@ export default function StudentProfileView() {
     dob: "", gender: "", password: ""
   });
   const [savingEdit, setSavingEdit] = useState(false);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const defaultTab = queryParams.get("tab") || "overview";
+
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const requestedTab = queryParams.get("tab");
+    if (requestedTab) {
+      setActiveTab(requestedTab);
+    }
+  }, [location.search]);
 
   const fetchData = async () => {
     try {

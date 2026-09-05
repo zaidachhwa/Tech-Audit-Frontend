@@ -23,6 +23,7 @@ import {
   ChevronDown,
   Upload,
   Download,
+  Award
 } from "lucide-react";
 
 export default function AdminStudents() {
@@ -493,6 +494,13 @@ export default function AdminStudents() {
 
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
+                      <Link 
+                        to={`/admin/student-exam-report?studentId=${s._id}`}
+                        className="text-[#0F3C8A] border border-[#EFF6FF] hover:bg-[#EFF6FF] p-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                        title="View Exam Report"
+                      >
+                        <Award size={14} /> Report
+                      </Link>
                       <button 
                         onClick={() => toggleApproval(s._id, s.isActive, s.name)}
                         className={`p-1.5 rounded-lg border transition cursor-pointer ${

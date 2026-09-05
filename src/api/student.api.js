@@ -37,3 +37,23 @@ export const deleteStudent = async (id) => {
   const res = await API.delete(`/students/delete/${id}`);
   return res.data;
 };
+
+export const getStudentExamReport = async (studentId, params = {}) => {
+  const res = await API.get(`/exam-results/student/${studentId}/report`, { params });
+  return res.data;
+};
+
+export const downloadStudentExamReportPDF = async (studentId, params = {}) => {
+  const res = await API.get(`/exam-results/student/${studentId}/report/pdf`, {
+    params,
+    responseType: "blob"
+  });
+  return res.data;
+};
+
+export const saveStudentExamReport = async (studentId, payload = {}) => {
+  const res = await API.post(`/exam-results/student/${studentId}/report/save`, payload);
+  return res.data;
+};
+
+

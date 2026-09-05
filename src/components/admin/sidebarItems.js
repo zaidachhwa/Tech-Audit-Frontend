@@ -16,7 +16,8 @@ import {
   Megaphone,
   Calendar,
   Trophy,
-  Award
+  Award,
+  TrendingUp
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -94,6 +95,11 @@ export const adminSidebarItems = [
     name: "Exam Results",
     path: "/admin/exam-results",
     icon: Award,
+  },
+  {
+    name: "Exam Report",
+    path: "/admin/student-exam-report",
+    icon: TrendingUp,
   },
   {
     name: "Leaderboard",
