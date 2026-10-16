@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { API } from '../../api/axios';
+import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { API } from "../../api/axios";
 import {
   FileText,
   Eye,
@@ -10,33 +10,33 @@ import {
   ChevronRight,
   Download,
   Edit,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 
 export default function ReportsList() {
   const navigate = useNavigate();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [reportTypeFilter, setReportTypeFilter] = useState('all'); // 'all' | 'audit' | 'exam'
+  const [reportTypeFilter, setReportTypeFilter] = useState("all"); // 'all' | 'audit' | 'exam'
 
   const [selectedReport, setSelectedReport] = useState(null); // { report, reportIndex }
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteBatchTarget, setDeleteBatchTarget] = useState(null);
 
   const auditCount = useMemo(
-    () => reports.filter((r) => (r.reportType || 'audit') === 'audit').length,
+    () => reports.filter((r) => (r.reportType || "audit") === "audit").length,
     [reports],
   );
   const examCount = useMemo(
-    () => reports.filter((r) => r.reportType === 'exam').length,
+    () => reports.filter((r) => r.reportType === "exam").length,
     [reports],
   );
 
   const filteredReports = useMemo(() => {
-    if (reportTypeFilter === 'all') return reports;
+    if (reportTypeFilter === "all") return reports;
     return reports.filter((r) => {
-      const type = r.reportType || 'audit';
+      const type = r.reportType || "audit";
       return type === reportTypeFilter;
     });
   }, [reports, reportTypeFilter]);
@@ -47,20 +47,21 @@ export default function ReportsList() {
       const batchName = r.student?.batch_name;
       const batchNo = r.student?.batch_no;
       const key =
-        batchName && batchNo ? `${batchName} - #${batchNo}` : 'Unassigned';
+        batchName && batchNo ? `${batchName} - #${batchNo}` : "Unassigned";
       if (!groups[key]) groups[key] = [];
       groups[key].push(r);
     });
+    console.log(groups);
     return groups;
   }, [filteredReports]);
 
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const res = await API.get('/reports');
+      const res = await API.get("/reports");
       setReports(res.data.reports || []);
     } catch {
-      toast.error('Failed to load reports');
+      toast.error("Failed to load reports");
     } finally {
       setLoading(false);
     }
@@ -73,11 +74,11 @@ export default function ReportsList() {
   const handleDelete = async () => {
     try {
       await API.delete(`/reports/${deleteTarget._id}`);
-      toast.success('Report deleted');
+      toast.success("Report deleted");
       setDeleteTarget(null);
       fetchReports();
     } catch {
-      toast.error('Delete failed');
+      toast.error("Delete failed");
     }
   };
 
@@ -92,8 +93,48 @@ export default function ReportsList() {
       setDeleteBatchTarget(null);
       fetchReports();
     } catch {
-      toast.error('Batch delete failed');
+      toast.error("Batch delete failed");
       setLoading(false);
+    }
+  };
+
+  const handleDownloadBatch = async (batchKey) => {
+    try {
+      toast.loading("Compiling batch ZIP archive...", { id: "batch-dl" });
+
+      // Extract batchName if format is "BatchName#No" or just pass batchName
+      const batchDetails = batchKey.split(" - #");
+      console.log(batchDetails);
+
+      const batchUrl = `${import.meta.env.VITE_API_URL}/reports/batch/download?batchName=${encodeURIComponent(batchDetails[0].trim())}&batchNo=${encodeURIComponent(batchDetails[1])}`;
+
+      const res = await fetch(batchUrl, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
+
+      if (!res.ok) {
+        console.log(res);
+        throw new Error("Failed to generate batch zip");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `batch-reports-${batchDetails[0].replace(/\s+/g, "_") + "_" + batchDetails[1]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Batch ZIP downloaded successfully!", { id: "batch-dl" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to download batch ZIP", { id: "batch-dl" });
     }
   };
 
@@ -108,14 +149,12 @@ export default function ReportsList() {
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 flex items-center justify-center rounded-xl"
-            style={{ backgroundColor: '#EFF6FF' }}
+            style={{ backgroundColor: "#EFF6FF" }}
           >
-            <FileText className="w-5 h-5" style={{ color: '#2563EB' }} />
+            <FileText className="w-5 h-5" style={{ color: "#2563EB" }} />
           </div>
           <div>
-            <h1
-              className="font-bold text-xl text-[#1B2B4B]"
-            >
+            <h1 className="font-bold text-xl text-[#1B2B4B]">
               All Student Reports
             </h1>
             <p className="text-xs text-[#94A3B8]">
@@ -127,32 +166,32 @@ export default function ReportsList() {
         {/* Filter Buttons */}
         <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
           <button
-            onClick={() => setReportTypeFilter('all')}
+            onClick={() => setReportTypeFilter("all")}
             className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-              reportTypeFilter === 'all'
-                ? 'bg-white text-[#2563EB] shadow-sm font-extrabold'
-                : 'text-slate-600 hover:text-slate-900'
+              reportTypeFilter === "all"
+                ? "bg-white text-[#2563EB] shadow-sm font-extrabold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             All Reports ({reports.length})
           </button>
           <button
-            onClick={() => setReportTypeFilter('audit')}
+            onClick={() => setReportTypeFilter("audit")}
             className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
-              reportTypeFilter === 'audit'
-                ? 'bg-white text-blue-600 shadow-sm font-extrabold'
-                : 'text-slate-600 hover:text-slate-900'
+              reportTypeFilter === "audit"
+                ? "bg-white text-blue-600 shadow-sm font-extrabold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
             Audit Reports ({auditCount})
           </button>
           <button
-            onClick={() => setReportTypeFilter('exam')}
+            onClick={() => setReportTypeFilter("exam")}
             className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
-              reportTypeFilter === 'exam'
-                ? 'bg-white text-purple-600 shadow-sm font-extrabold'
-                : 'text-slate-600 hover:text-slate-900'
+              reportTypeFilter === "exam"
+                ? "bg-white text-purple-600 shadow-sm font-extrabold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>
@@ -167,10 +206,10 @@ export default function ReportsList() {
           <div
             className="py-12 text-center rounded-lg"
             style={{
-              backgroundColor: '#FFFFFF',
-              border: '1.5px solid #E2E8F0',
-              borderRadius: '12px',
-              color: '#94A3B8',
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              color: "#94A3B8",
             }}
           >
             Loading reports...
@@ -179,10 +218,10 @@ export default function ReportsList() {
           <div
             className="py-12 text-center rounded-lg"
             style={{
-              backgroundColor: '#FFFFFF',
-              border: '1.5px solid #E2E8F0',
-              borderRadius: '12px',
-              color: '#94A3B8',
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #E2E8F0",
+              borderRadius: "12px",
+              color: "#94A3B8",
             }}
           >
             No reports found
@@ -198,6 +237,7 @@ export default function ReportsList() {
                 onSelectedReport={setSelectedReport}
                 onDeleteTarget={setDeleteTarget}
                 onDeleteBatch={() => setDeleteBatchTarget(batchReports)}
+                onDownloadBatch={handleDownloadBatch} // <-- Pass handler here
                 navigate={navigate}
               />
             ))
@@ -213,11 +253,11 @@ export default function ReportsList() {
             <div className="sticky top-0 z-10 bg-white border-b px-4 sm:px-6 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h2 className="font-semibold text-base sm:text-lg md:text-xl">
-                  {selectedReport.report.reportType === 'exam'
-                    ? 'Exam Report Details'
-                    : 'Audit Report Details'}
+                  {selectedReport.report.reportType === "exam"
+                    ? "Exam Report Details"
+                    : "Audit Report Details"}
                 </h2>
-                {selectedReport.report.reportType === 'exam' ? (
+                {selectedReport.report.reportType === "exam" ? (
                   <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
                     Exam Report
                   </span>
@@ -234,21 +274,23 @@ export default function ReportsList() {
                   onClick={async () => {
                     try {
                       if (!selectedReport) {
-                        toast.error('Report data not available');
+                        toast.error("Report data not available");
                         return;
                       }
 
-                      const { report: reportData, reportIndex } = selectedReport;
-                      const isExam = reportData.reportType === 'exam';
+                      const { report: reportData, reportIndex } =
+                        selectedReport;
+                      const isExam = reportData.reportType === "exam";
 
-                      const studentId = reportData.student?._id || reportData.student;
+                      const studentId =
+                        reportData.student?._id || reportData.student;
                       const pdfUrl = isExam
                         ? `${import.meta.env.VITE_API_URL}/exam-results/student/${studentId}/report/pdf`
                         : `${import.meta.env.VITE_API_URL}/reports/${reportData._id}/pdf`;
 
                       const res = await fetch(pdfUrl, {
                         headers: {
-                          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+                          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
                         },
                       });
 
@@ -256,21 +298,21 @@ export default function ReportsList() {
                       const url = window.URL.createObjectURL(blob);
 
                       const studentName =
-                        reportData.student?.name?.replace(/\s+/g, '_') ||
-                        'Student';
+                        reportData.student?.name?.replace(/\s+/g, "_") ||
+                        "Student";
 
                       const batchName =
-                        reportData.student?.batch_name || 'Batch';
-                      const batchNo = reportData.student?.batch_no || '';
+                        reportData.student?.batch_name || "Batch";
+                      const batchNo = reportData.student?.batch_no || "";
                       const date = new Date(reportData.auditDate)
                         .toISOString()
-                        .split('T')[0];
+                        .split("T")[0];
 
                       const fileName = isExam
                         ? `Exam_Report_${studentName}_${date}.pdf`
                         : `${studentName}-${batchName}-${batchNo}-${date}_Report${reportIndex}.pdf`;
 
-                      const a = document.createElement('a');
+                      const a = document.createElement("a");
                       a.href = url;
                       a.download = fileName;
                       document.body.appendChild(a);
@@ -279,7 +321,7 @@ export default function ReportsList() {
                       a.remove();
                       window.URL.revokeObjectURL(url);
                     } catch (err) {
-                      toast.error('Download failed');
+                      toast.error("Download failed");
                     }
                   }}
                   className="px-3 py-1 text-xs sm:text-sm border rounded-lg flex items-center gap-2 font-semibold bg-blue-50 text-[#2563EB] hover:bg-blue-100 transition cursor-pointer"
@@ -304,30 +346,31 @@ export default function ReportsList() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <Info
                   label="Student Name"
-                  value={selectedReport.report.student?.name || 'Missing Name'}
+                  value={selectedReport.report.student?.name || "Missing Name"}
                 />
                 <Info
                   label="Email"
-                  value={selectedReport.report.student?.email || 'Missing Email'}
+                  value={
+                    selectedReport.report.student?.email || "Missing Email"
+                  }
                 />
                 <Info
                   label="Batch"
                   value={
                     selectedReport.report.student?.batch_name
-                      ? `${selectedReport.report.student.batch_name} - ${selectedReport.report.student.batch_no || '?'}`
-                      : 'Unassigned'
+                      ? `${selectedReport.report.student.batch_name} - ${selectedReport.report.student.batch_no || "?"}`
+                      : "Unassigned"
                   }
                 />
                 <Info
                   label="Report Date"
-                  value={new Date(selectedReport.report.auditDate).toLocaleDateString(
-                    'en-GB',
-                    {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    },
-                  )}
+                  value={new Date(
+                    selectedReport.report.auditDate,
+                  ).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
                 />
               </div>
 
@@ -377,7 +420,7 @@ export default function ReportsList() {
                 </h3>
 
                 <p className="text-sm rounded-lg p-3 border bg-gray-50">
-                  {selectedReport.report.overallRemarks || '—'}
+                  {selectedReport.report.overallRemarks || "—"}
                 </p>
               </div>
             </div>
@@ -391,12 +434,12 @@ export default function ReportsList() {
           <Modal onClose={() => setDeleteTarget(null)}>
             <h2
               className="font-semibold mb-3"
-              style={{ color: '#EF4444', fontSize: '18px', fontWeight: '700' }}
+              style={{ color: "#EF4444", fontSize: "18px", fontWeight: "700" }}
             >
               Delete Report
             </h2>
 
-            <p className="text-sm mb-6" style={{ color: '#64748B' }}>
+            <p className="text-sm mb-6" style={{ color: "#64748B" }}>
               Are you sure you want to delete this report?
             </p>
 
@@ -405,16 +448,16 @@ export default function ReportsList() {
                 onClick={() => setDeleteTarget(null)}
                 className="px-4 py-2 rounded-lg font-medium transition"
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1.5px solid #E2E8F0',
-                  color: '#1B2B4B',
-                  borderRadius: '8px',
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  color: "#1B2B4B",
+                  borderRadius: "8px",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#F8FAFC';
+                  e.currentTarget.style.backgroundColor = "#F8FAFC";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#FFFFFF';
+                  e.currentTarget.style.backgroundColor = "#FFFFFF";
                 }}
               >
                 Cancel
@@ -424,14 +467,14 @@ export default function ReportsList() {
                 onClick={handleDelete}
                 className="px-4 py-2 rounded-lg text-white font-medium transition"
                 style={{
-                  backgroundColor: '#EF4444',
-                  borderRadius: '8px',
+                  backgroundColor: "#EF4444",
+                  borderRadius: "8px",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#DC2626';
+                  e.currentTarget.style.backgroundColor = "#DC2626";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#EF4444';
+                  e.currentTarget.style.backgroundColor = "#EF4444";
                 }}
               >
                 Delete
@@ -447,12 +490,12 @@ export default function ReportsList() {
           <Modal onClose={() => setDeleteBatchTarget(null)}>
             <h2
               className="font-semibold mb-3"
-              style={{ color: '#EF4444', fontSize: '18px', fontWeight: '700' }}
+              style={{ color: "#EF4444", fontSize: "18px", fontWeight: "700" }}
             >
               Delete All Reports
             </h2>
-            <p className="text-sm mb-6" style={{ color: '#64748B' }}>
-              Are you sure you want to delete all {deleteBatchTarget.length}{' '}
+            <p className="text-sm mb-6" style={{ color: "#64748B" }}>
+              Are you sure you want to delete all {deleteBatchTarget.length}{" "}
               reports for this batch? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
@@ -460,10 +503,10 @@ export default function ReportsList() {
                 onClick={() => setDeleteBatchTarget(null)}
                 className="px-4 py-2 rounded-lg font-medium transition"
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1.5px solid #E2E8F0',
-                  color: '#1B2B4B',
-                  borderRadius: '8px',
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E2E8F0",
+                  color: "#1B2B4B",
+                  borderRadius: "8px",
                 }}
               >
                 Cancel
@@ -471,7 +514,7 @@ export default function ReportsList() {
               <button
                 onClick={handleBatchDelete}
                 className="px-4 py-2 rounded-lg text-white font-medium transition disabled:opacity-50"
-                style={{ backgroundColor: '#EF4444', borderRadius: '8px' }}
+                style={{ backgroundColor: "#EF4444", borderRadius: "8px" }}
               >
                 Delete All
               </button>
@@ -491,6 +534,7 @@ function BatchAccordion({
   onSelectedReport,
   onDeleteTarget,
   onDeleteBatch,
+  onDownloadBatch, // 🚀 1. Accept the new download handler prop
   navigate,
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -499,73 +543,100 @@ function BatchAccordion({
     <div
       className="rounded-lg overflow-hidden"
       style={{
-        backgroundColor: '#FFFFFF',
-        border: '1.5px solid #E2E8F0',
-        borderRadius: '12px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        backgroundColor: "#FFFFFF",
+        border: "1.5px solid #E2E8F0",
+        borderRadius: "12px",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
       }}
     >
       <div
         className="w-full flex items-center justify-between p-4 transition"
         style={{
-          backgroundColor: '#F8FAFC',
-          borderBottom: '1px solid #F1F5F9',
+          backgroundColor: "#F8FAFC",
+          borderBottom: "1px solid #F1F5F9",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#F1F5F9';
+          e.currentTarget.style.backgroundColor = "#F1F5F9";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#F8FAFC';
+          e.currentTarget.style.backgroundColor = "#F8FAFC";
         }}
       >
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex flex-1 items-center gap-3 text-left focus:outline-none"
+          className="flex flex-1 items-center gap-3 text-left focus:outline-none cursor-pointer"
         >
           {isOpen ? (
-            <ChevronDown className="w-5 h-5" style={{ color: '#94A3B8' }} />
+            <ChevronDown className="w-5 h-5" style={{ color: "#94A3B8" }} />
           ) : (
-            <ChevronRight className="w-5 h-5" style={{ color: '#94A3B8' }} />
+            <ChevronRight className="w-5 h-5" style={{ color: "#94A3B8" }} />
           )}
-          <span className="font-semibold" style={{ color: '#1B2B4B' }}>
+          <span className="font-semibold" style={{ color: "#1B2B4B" }}>
             {batchName}
           </span>
           <span
             className="text-xs px-2.5 py-1 rounded-full font-medium"
             style={{
-              backgroundColor: '#ECFDF5',
-              color: '#065F46',
-              borderRadius: '20px',
-              padding: '3px 12px',
-              fontSize: '12px',
-              fontWeight: '600',
+              backgroundColor: "#ECFDF5",
+              color: "#065F46",
+              borderRadius: "20px",
+              padding: "3px 12px",
+              fontSize: "12px",
+              fontWeight: "600",
             }}
           >
-            {reports.length} report{reports.length !== 1 ? 's' : ''}
+            {reports.length} report{reports.length !== 1 ? "s" : ""}
           </span>
         </button>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDeleteBatch();
-          }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition ml-4"
-          style={{
-            backgroundColor: '#FEF2F2',
-            color: '#EF4444',
-            border: '1px solid #FCA5A5',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#FEE2E2';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#FEF2F2';
-          }}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          Delete All
-        </button>
+        {/* Action Buttons Group */}
+        <div className="flex items-center gap-2 ml-4">
+          {/* 🚀 2. New Download Batch ZIP Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownloadBatch(batchName);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition"
+            style={{
+              backgroundColor: "#ECFDF5",
+              color: "#047857",
+              border: "1px solid #A7F3D0",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#D1FAE5";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#ECFDF5";
+            }}
+          >
+            <Download className="w-3.5 h-3.5" />
+            Download ZIP
+          </button>
+
+          {/* Delete All Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteBatch();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition"
+            style={{
+              backgroundColor: "#FEF2F2",
+              color: "#EF4444",
+              border: "1px solid #FCA5A5",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#FEE2E2";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#FEF2F2";
+            }}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete All
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -583,13 +654,15 @@ function BatchAccordion({
                   if (!acc[studentId]) acc[studentId] = [];
                   acc[studentId].push(r);
                   return acc;
-                }, {})
+                }, {}),
               ).map(([studentId, studentReports]) => (
                 <StudentAccordion
                   key={studentId}
                   student={studentReports[0].student}
                   reports={studentReports}
-                  onSelectedReport={(r, idx) => onSelectedReport({ report: r, reportIndex: idx })}
+                  onSelectedReport={(r, idx) =>
+                    onSelectedReport({ report: r, reportIndex: idx })
+                  }
                   onDeleteTarget={onDeleteTarget}
                   navigate={navigate}
                 />
@@ -635,10 +708,13 @@ function StudentAccordion({
             <div className="w-7 h-7 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center text-xs font-bold">
               {(student?.name || "S").charAt(0)}
             </div>
-            <span className="font-bold text-[#2563EB] hover:underline" onClick={(e) => { 
-                e.stopPropagation(); 
-                if (student?._id) navigate(`/admin/student/${student._id}`); 
-              }}>
+            <span
+              className="font-bold text-[#2563EB] hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (student?._id) navigate(`/admin/student/${student._id}`);
+              }}
+            >
               {student?.name || "Unknown Student"}
             </span>
           </div>
@@ -646,7 +722,9 @@ function StudentAccordion({
             {reports.length} {reports.length === 1 ? "report" : "reports"}
           </span>
         </div>
-        <div className="text-xs text-[#94A3B8]">{student?.email || "No email"}</div>
+        <div className="text-xs text-[#94A3B8]">
+          {student?.email || "No email"}
+        </div>
       </div>
 
       {/* Reports Table under Student */}
@@ -675,7 +753,7 @@ function StudentAccordion({
                 </thead>
                 <tbody>
                   {reports.map((r, idx) => {
-                    const isExam = r.reportType === 'exam';
+                    const isExam = r.reportType === "exam";
                     return (
                       <tr
                         key={r._id}
@@ -718,7 +796,11 @@ function StudentAccordion({
                             </button>
                             {!isExam && (
                               <button
-                                onClick={() => navigate(`/admin/add-reports`, { state: { editReport: r } })}
+                                onClick={() =>
+                                  navigate(`/admin/add-reports`, {
+                                    state: { editReport: r },
+                                  })
+                                }
                                 className="flex items-center gap-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold bg-[#10B981] hover:bg-[#059669] transition cursor-pointer"
                               >
                                 <Edit size={13} /> Edit
@@ -752,7 +834,7 @@ function Modal({ children, onClose }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
     >
       <motion.div
         initial={{ scale: 0.95 }}
@@ -776,11 +858,11 @@ function Modal({ children, onClose }) {
 function Info({ label, value }) {
   return (
     <div>
-      <div className="text-xs" style={{ color: '#94A3B8' }}>
+      <div className="text-xs" style={{ color: "#94A3B8" }}>
         {label}
       </div>
-      <div className="font-medium" style={{ color: '#1B2B4B' }}>
-        {value || '—'}
+      <div className="font-medium" style={{ color: "#1B2B4B" }}>
+        {value || "—"}
       </div>
     </div>
   );
